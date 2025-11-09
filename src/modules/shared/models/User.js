@@ -1,0 +1,190 @@
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+
+const userSchema = new mongoose.Schema({
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    unique: true,
+    lowercase: true,
+    trim: true,
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+  },
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: [8, 'Password must be at least 8 characters long']
+  },
+  role: {
+    type: String,
+    required: [true, 'Role is required'],
+    enum: ['player', 'coach', 'club', 'specialist'],
+    default: 'player'
+  },
+  
+  // Basic account info
+  firstName: String,
+  lastName: String,
+  phone: String,
+  avatar: String,
+  
+  // Account status
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  
+  // Email verification
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: String,
+  emailVerificationTokenExpires: Date,
+  
+  // Password reset
+  passwordResetToken: String,
+  passwordResetTokenExpires: Date,
+  
+  // Login tracking
+  lastLogin: Date,
+  loginAttempts: {
+    type: Number,
+    default: 0
+  },
+  lockUntil: Date
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Additional indexes for better query performance
+userSchema.index({ emailVerificationToken: 1 });
+userSchema.index({ passwordResetToken: 1 });
+userSchema.index({ role: 1, isVerified: 1 });
+
+// Hash password before saving
+userSchema.pre('save', async function(next) {
+  // Track isVerified changes for debugging
+  if (this.isModified('isVerified')) {
+    console.log(`🔍 [VERIFICATION TRACKING] isVerified changed for ${this.email}`);
+    console.log(`   Previous value: ${this.isVerified ? 'false' : 'true'} → New value: ${this.isVerified}`);
+    console.log(`   Has verification token: ${!!this.emailVerificationToken}`);
+    console.log(`   Token expires: ${this.emailVerificationTokenExpires}`);
+  }
+
+  if (!this.isModified('password')) return next();
+
+  try {
+    const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
+    this.password = await bcrypt.hash(this.password, saltRounds);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Password comparison method
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Generate email verification token
+userSchema.methods.generateEmailVerificationToken = function() {
+  const token = crypto.randomBytes(32).toString('hex');
+  this.emailVerificationToken = token;
+  this.emailVerificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  return token;
+};
+
+// Generate password reset token
+userSchema.methods.generatePasswordResetToken = function() {
+  const token = crypto.randomBytes(32).toString('hex');
+  this.passwordResetToken = token;
+  this.passwordResetTokenExpires = Date.now() + 60 * 60 * 1000; // 60 minutes (1 hour)
+  return token;
+};
+
+// Clear email verification token
+userSchema.methods.clearEmailVerificationToken = function() {
+  this.emailVerificationToken = undefined;
+  this.emailVerificationTokenExpires = undefined;
+};
+
+// Clear password reset token
+userSchema.methods.clearPasswordResetToken = function() {
+  this.passwordResetToken = undefined;
+  this.passwordResetTokenExpires = undefined;
+};
+
+// Virtual for account lock status
+userSchema.virtual('isLocked').get(function() {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
+});
+
+// Virtual for full name
+userSchema.virtual('fullName').get(function() {
+  if (this.firstName && this.lastName) {
+    return `${this.firstName} ${this.lastName}`;
+  }
+  return this.firstName || this.lastName || 'User';
+});
+
+// Method to get safe user object for responses
+userSchema.methods.toSafeObject = function(includeEmail = false) {
+  const userObject = {
+    id: this._id.toString(),
+    role: this.role,
+    firstName: this.firstName,
+    lastName: this.lastName,
+    fullName: this.fullName,
+    phone: this.phone,
+    avatar: this.avatar,
+    isVerified: this.isVerified,
+    isActive: this.isActive,
+    lastLogin: this.lastLogin,
+    createdAt: this.createdAt,
+    updatedAt: this.updatedAt
+  };
+  
+  if (includeEmail) {
+    userObject.email = this.email;
+  }
+  
+  return userObject;
+};
+
+// Method to increment login attempts
+userSchema.methods.incrementLoginAttempts = function() {
+  // If we have a previous lock that has expired, restart at 1
+  if (this.lockUntil && this.lockUntil < Date.now()) {
+    return this.updateOne({
+      $unset: { lockUntil: 1 },
+      $set: { loginAttempts: 1 }
+    });
+  }
+  
+  const updates = { $inc: { loginAttempts: 1 } };
+  
+  // Lock account after 5 failed attempts for 2 hours
+  if (this.loginAttempts + 1 >= 5 && !this.isLocked) {
+    updates.$set = { lockUntil: Date.now() + 2 * 60 * 60 * 1000 }; // 2 hours
+  }
+  
+  return this.updateOne(updates);
+};
+
+// Method to reset login attempts
+userSchema.methods.resetLoginAttempts = function() {
+  return this.updateOne({
+    $unset: { loginAttempts: 1, lockUntil: 1 }
+  });
+};
+
+module.exports = mongoose.model('User', userSchema);
