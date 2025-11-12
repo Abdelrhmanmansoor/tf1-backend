@@ -121,13 +121,24 @@ class AuthController {
       const verificationToken = user.generateEmailVerificationToken();
       await user.save();
 
-      await emailService.sendVerificationEmail(user, verificationToken);
-
-      res.status(201).json({
-        success: true,
-        message: 'Registration successful. Please check your email to verify your account.',
-        user: user.toSafeObject()
-      });
+      // Try to send verification email, but don't fail registration if it fails
+      try {
+        const emailSent = await emailService.sendVerificationEmail(user, verificationToken);
+        res.status(201).json({
+          success: true,
+          message: emailSent
+            ? 'Registration successful. Please check your email to verify your account.'
+            : 'Registration successful. You can now log in to your account.',
+          user: user.toSafeObject()
+        });
+      } catch (emailError) {
+        console.error('Email service error (non-critical):', emailError);
+        res.status(201).json({
+          success: true,
+          message: 'Registration successful. You can now log in to your account.',
+          user: user.toSafeObject()
+        });
+      }
 
     } catch (error) {
       console.error('Registration error:', error);
