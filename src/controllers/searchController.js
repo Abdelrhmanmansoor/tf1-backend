@@ -1272,6 +1272,105 @@ exports.getRecentJobs = async (req, res) => {
 };
 
 // ============================================
+// GET JOB BY ID
+// ============================================
+
+exports.getJobById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const job = await Job.findById(id)
+      .populate('clubId', 'organizationName nameAr logo location email phone website description verified')
+      .populate('postedBy', 'firstName lastName email');
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job not found'
+      });
+    }
+
+    // Check if job is deleted
+    if (job.isDeleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job not found'
+      });
+    }
+
+    // Increment view count (pass userId if authenticated)
+    if (req.user) {
+      await job.incrementViews(req.user._id);
+    } else {
+      await job.incrementViews(null);
+    }
+
+    // Format response
+    const result = {
+      _id: job._id,
+      title: job.title,
+      titleAr: job.titleAr,
+      description: job.description,
+      descriptionAr: job.descriptionAr,
+      club: {
+        _id: job.clubId._id,
+        name: job.clubId.organizationName,
+        nameAr: job.clubId.nameAr,
+        logo: job.clubId.logo,
+        location: job.clubId.location,
+        email: job.clubId.email,
+        phone: job.clubId.phone,
+        website: job.clubId.website,
+        description: job.clubId.description,
+        verified: job.clubId.verified
+      },
+      jobType: job.jobType,
+      category: job.category,
+      sport: job.sport,
+      sportAr: job.sportAr,
+      position: job.position,
+      positionAr: job.positionAr,
+      specialization: job.specialization,
+      employmentType: job.employmentType,
+      location: job.location,
+      salary: job.salary,
+      requirements: job.requirements,
+      responsibilities: job.responsibilities,
+      benefits: job.benefits,
+      workSchedule: job.workSchedule,
+      workScheduleAr: job.workScheduleAr,
+      numberOfPositions: job.numberOfPositions,
+      positionsFilled: job.positionsFilled,
+      applicationDeadline: job.applicationDeadline,
+      expectedStartDate: job.expectedStartDate,
+      applicationStats: job.applicationStats,
+      status: job.status,
+      isFeatured: job.isFeatured,
+      views: job.views,
+      settings: job.settings,
+      questionnaire: job.questionnaire,
+      createdAt: job.createdAt,
+      updatedAt: job.updatedAt,
+      isExpired: job.isExpired,
+      daysUntilDeadline: job.daysUntilDeadline,
+      isFull: job.isFull
+    };
+
+    res.json({
+      success: true,
+      job: result
+    });
+  } catch (error) {
+    console.error('Error fetching job by ID:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching job details',
+      error: error.message
+    });
+  }
+};
+
+// ============================================
 // TOP RATED PLAYERS
 // ============================================
 

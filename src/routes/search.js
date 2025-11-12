@@ -72,6 +72,13 @@ router.get('/jobs', searchController.searchJobs);
 router.get('/jobs/recent', searchController.getRecentJobs);
 
 /**
+ * @route   GET /api/v1/search/jobs/:id
+ * @desc    Get job details by ID
+ * @access  Public
+ */
+router.get('/jobs/:id', searchController.getJobById);
+
+/**
  * @route   GET /api/v1/search/all
  * @desc    Global search (all entities)
  * @access  Public
