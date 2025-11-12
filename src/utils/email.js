@@ -8,14 +8,23 @@ class EmailService {
 
   initializeTransporter() {
     try {
+      // Check if SMTP credentials are configured
+      if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.log('⚠️  Email service disabled - SMTP credentials not configured');
+        return;
+      }
+
       this.transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT),
+        port: parseInt(process.env.SMTP_PORT) || 587,
         secure: process.env.SMTP_SECURE === 'true',
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS
-        }
+        },
+        connectionTimeout: 5000, // 5 seconds
+        greetingTimeout: 5000,
+        socketTimeout: 5000
       });
 
       console.log('✅ Email service initialized');
@@ -25,8 +34,13 @@ class EmailService {
   }
 
   async sendVerificationEmail(user, verificationToken) {
+    if (!this.transporter) {
+      console.log('⚠️  Email service not configured - skipping verification email');
+      return false;
+    }
+
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
-    
+
     // Get appropriate display name based on user type
     let displayName;
     if (user.role === 'club') {
@@ -34,13 +48,13 @@ class EmailService {
     } else {
       displayName = user.firstName || user.displayName || 'User';
     }
-    
+
     const welcomeMessage = user.role === 'club'
       ? `Welcome to SportX Platform! Thank you for registering your organization.`
       : `Welcome to SportX Platform! Thank you for registering.`;
-    
+
     const mailOptions = {
-      from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`,
+      from: `${process.env.SMTP_FROM_NAME || 'SportX Platform'} <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
       to: user.email,
       subject: 'Verify Your Email Address - SportX Platform',
       html: `
@@ -49,7 +63,7 @@ class EmailService {
           <p>Hi ${displayName},</p>
           <p>${welcomeMessage} Please click the button below to verify your email address:</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationUrl}" 
+            <a href="${verificationUrl}"
                style="background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
               Verify Email Address
             </a>
