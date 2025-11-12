@@ -22,9 +22,13 @@ class EmailService {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS
         },
-        connectionTimeout: 5000, // 5 seconds
-        greetingTimeout: 5000,
-        socketTimeout: 5000
+        connectionTimeout: 10000, // 10 seconds
+        greetingTimeout: 10000,
+        socketTimeout: 10000,
+        tls: {
+          rejectUnauthorized: false,
+          minVersion: 'TLSv1.2'
+        }
       });
 
       console.log('✅ Email service initialized');
