@@ -53,32 +53,67 @@ class EmailService {
       displayName = user.firstName || user.displayName || 'User';
     }
 
-    const welcomeMessage = user.role === 'club'
-      ? `Welcome to SportX Platform! Thank you for registering your organization.`
-      : `Welcome to SportX Platform! Thank you for registering.`;
-
     const mailOptions = {
-      from: `${process.env.SMTP_FROM_NAME || 'SportX Platform'} <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
+      from: `${process.env.SMTP_FROM_NAME || 'TF1 Sports Platform'} <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
       to: user.email,
-      subject: 'Verify Your Email Address - SportX Platform',
+      subject: 'Verify Your Email Address - تحقق من بريدك الإلكتروني | TF1',
       html: `
-        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
-          <h2 style="color: #333; text-align: center;">Welcome to SportX Platform!</h2>
-          <p>Hi ${displayName},</p>
-          <p>${welcomeMessage} Please click the button below to verify your email address:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationUrl}"
-               style="background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Verify Email Address
-            </a>
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+          <div style="background-color: #ffffff; border-radius: 10px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #1a73e8; font-size: 28px; margin: 0;">TF1 Sports Platform</h1>
+              <p style="color: #666; font-size: 14px; margin: 5px 0;">منصة TF1 الرياضية</p>
+            </div>
+
+            <!-- English Content -->
+            <div style="margin-bottom: 40px; border-bottom: 2px solid #f0f0f0; padding-bottom: 30px;">
+              <h2 style="color: #333; font-size: 24px; margin-bottom: 20px;">Welcome, ${displayName}!</h2>
+              <p style="color: #555; font-size: 16px; line-height: 1.6;">Thank you for registering with TF1 Sports Platform. Please verify your email address to activate your account and start exploring all our features.</p>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verificationUrl}"
+                   style="background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(26,115,232,0.3);">
+                  Verify Email Address
+                </a>
+              </div>
+
+              <p style="color: #666; font-size: 14px;">Or copy and paste this link in your browser:</p>
+              <p style="word-break: break-all; color: #1a73e8; font-size: 12px; background-color: #f5f5f5; padding: 10px; border-radius: 5px;">${verificationUrl}</p>
+
+              <p style="color: #999; font-size: 13px; margin-top: 20px;">⏰ This link will expire in 24 hours.</p>
+            </div>
+
+            <!-- Arabic Content -->
+            <div style="direction: rtl; text-align: right;">
+              <h2 style="color: #333; font-size: 24px; margin-bottom: 20px;">مرحباً، ${displayName}!</h2>
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">شكراً لتسجيلك في منصة TF1 الرياضية. يرجى تأكيد بريدك الإلكتروني لتفعيل حسابك والبدء في استكشاف جميع ميزاتنا.</p>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verificationUrl}"
+                   style="background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(26,115,232,0.3);">
+                  تحقق من البريد الإلكتروني
+                </a>
+              </div>
+
+              <p style="color: #666; font-size: 14px;">أو انسخ والصق هذا الرابط في متصفحك:</p>
+              <p style="word-break: break-all; color: #1a73e8; font-size: 12px; background-color: #f5f5f5; padding: 10px; border-radius: 5px;">${verificationUrl}</p>
+
+              <p style="color: #999; font-size: 13px; margin-top: 20px;">⏰ ستنتهي صلاحية هذا الرابط خلال 24 ساعة.</p>
+            </div>
+
+            <!-- Footer -->
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+            <p style="color: #999; font-size: 12px; text-align: center; margin: 10px 0;">
+              If you didn't create an account, please ignore this email.
+            </p>
+            <p style="color: #999; font-size: 12px; text-align: center; direction: rtl;">
+              إذا لم تقم بإنشاء حساب، يرجى تجاهل هذا البريد الإلكتروني.
+            </p>
+            <p style="color: #bbb; font-size: 11px; text-align: center; margin-top: 20px;">
+              © 2024 TF1 Sports Platform. All rights reserved.
+            </p>
           </div>
-          <p>Or copy and paste this link in your browser:</p>
-          <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
-          <p>This link will expire in 24 hours.</p>
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-          <p style="color: #666; font-size: 12px;">
-            If you didn't create an account with SportX Platform, please ignore this email.
-          </p>
         </div>
       `
     };
