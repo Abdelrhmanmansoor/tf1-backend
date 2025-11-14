@@ -390,6 +390,41 @@ const validateImageFile = (file) => {
   return true;
 };
 
+// Upload document (PDF, DOC, DOCX) to Cloudinary
+const uploadDocument = async (buffer, userId, documentType = 'resume') => {
+  try {
+    return new Promise((resolve, reject) => {
+      const options = {
+        resource_type: 'raw', // 'raw' for non-image/video files
+        folder: `sportx-platform/documents/${documentType}`,
+        public_id: `${documentType}_${userId}_${Date.now()}`,
+        tags: [documentType, 'application', 'document']
+      };
+
+      cloudinary.uploader.upload_stream(
+        options,
+        (error, result) => {
+          if (error) {
+            console.error('Cloudinary document upload error:', error);
+            reject(error);
+          } else {
+            resolve({
+              url: result.secure_url,
+              publicId: result.public_id,
+              format: result.format,
+              bytes: result.bytes,
+              resourceType: result.resource_type
+            });
+          }
+        }
+      ).end(buffer);
+    });
+  } catch (error) {
+    console.error('Document upload to Cloudinary failed:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   cloudinary,
   uploadToCloudinary,
@@ -401,6 +436,7 @@ module.exports = {
   uploadSpecialistAvatar,
   uploadSpecialistBanner,
   uploadPortfolioImage,
+  uploadDocument,
   cleanupOldImage,
   getOptimizedImageUrl,
   validateImageFile

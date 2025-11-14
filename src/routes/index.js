@@ -9,6 +9,7 @@ const searchRoutes = require('./search');
 const notificationRoutes = require('./notifications');
 const reviewRoutes = require('./reviews');
 const globalRoutes = require('./global');
+const jobsRoutes = require('./jobs');
 
 const router = express.Router();
 
@@ -23,6 +24,7 @@ router.use('/search', searchRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/global', globalRoutes);
+router.use('/jobs', jobsRoutes);
 
 // API documentation endpoint
 router.get('/', (req, res) => {
@@ -42,6 +44,7 @@ router.get('/', (req, res) => {
       notifications: '/notifications',
       reviews: '/reviews',
       global: '/global',
+      jobs: '/jobs',
       health: '/health'
     },
     features: [

@@ -21,6 +21,21 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+// File filter for documents (PDF, DOC, DOCX)
+const documentFilter = (req, file, cb) => {
+  const allowedMimes = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ];
+
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only PDF, DOC, and DOCX files are allowed for resumes.'), false);
+  }
+};
+
 // Multer upload configuration
 const upload = multer({
   storage: storage,
@@ -39,6 +54,19 @@ const uploadLogo = upload.single('logo');
 
 // Banner upload middleware
 const uploadBanner = upload.single('banner');
+
+// Document upload configuration (for resumes, CVs)
+const documentUpload = multer({
+  storage: storage,
+  fileFilter: documentFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit for documents
+    files: 1
+  }
+});
+
+// Resume upload middleware
+const uploadResume = documentUpload.single('resume');
 
 // Process and upload avatar to Cloudinary
 const processAvatar = async (req, res, next) => {
@@ -328,6 +356,7 @@ module.exports = {
   processBanner,
   uploadPortfolio,
   processPortfolioImages,
+  uploadResume,
   cleanupOldAvatar,
   handleUploadError,
   validateImageUpload,
