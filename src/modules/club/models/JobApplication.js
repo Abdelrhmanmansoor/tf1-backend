@@ -536,11 +536,11 @@ jobApplicationSchema.pre('save', async function(next) {
         email: applicant.email,
         phoneNumber: applicant.phoneNumber,
         location: applicant.location,
-        role: applicant.roles[applicant.roles.length - 1]
+        role: applicant.roles && applicant.roles.length > 0 ? applicant.roles[applicant.roles.length - 1] : 'user'
       };
 
       // Get additional info based on role
-      if (applicant.roles.includes('player')) {
+      if (applicant.roles && applicant.roles.includes('player')) {
         const PlayerProfile = mongoose.model('PlayerProfile');
         const profile = await PlayerProfile.findOne({ userId: this.applicantId });
         if (profile) {
@@ -548,7 +548,7 @@ jobApplicationSchema.pre('save', async function(next) {
           this.applicantSnapshot.position = profile.position;
           this.applicantSnapshot.rating = profile.ratingStats?.averageRating;
         }
-      } else if (applicant.roles.includes('coach')) {
+      } else if (applicant.roles && applicant.roles.includes('coach')) {
         const CoachProfile = mongoose.model('CoachProfile');
         const profile = await CoachProfile.findOne({ userId: this.applicantId });
         if (profile) {
