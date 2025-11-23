@@ -26,7 +26,7 @@ The Search API provides comprehensive global search functionality across all ent
 - **Saved searches** with optional notifications
 - **Trending searches** to discover popular content
 - **Geospatial search** for location-based queries
-
+ب
 ---
 
 ## Base URL
