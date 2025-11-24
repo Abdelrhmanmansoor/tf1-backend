@@ -35,6 +35,14 @@ const userSchema = new mongoose.Schema({
     default: true
   },
   
+  // Blocking status (Admin can block users)
+  isBlocked: {
+    type: Boolean,
+    default: false
+  },
+  blockReason: String,
+  blockedAt: Date,
+  
   // Email verification
   isVerified: {
     type: Boolean,
