@@ -94,6 +94,9 @@ router.put('/jobs/:jobId/extend', authorize('club'), clubController.extendJobDea
 // Get job applications
 router.get('/applications', authorize('club'), clubController.getJobApplications);
 
+// Get single application by ID
+router.get('/applications/:applicationId', clubController.getApplicationById);
+
 // Review application (move to under review)
 router.post('/applications/:applicationId/review', authorize('club'), clubController.reviewApplication);
 

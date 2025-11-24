@@ -748,6 +748,34 @@ exports.getJobApplications = async (req, res) => {
   }
 };
 
+// Get single job application by ID
+exports.getApplicationById = async (req, res) => {
+  try {
+    const application = await JobApplication.findById(req.params.applicationId)
+      .populate('jobId', 'title titleAr category sport')
+      .populate('applicantId', 'fullName email phoneNumber')
+      .populate('clubId', 'clubName logo');
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      application
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching application',
+      error: error.message
+    });
+  }
+};
+
 // Review application
 exports.reviewApplication = async (req, res) => {
   try {
