@@ -212,16 +212,26 @@ const startServer = async () => {
     logger.info(chalk.cyan.bold('🚀 INITIALIZING SPORTX PLATFORM...'));
     logger.info(chalk.cyan('━'.repeat(60)));
 
+    let dbConnected = false;
     logger.info('📦 Connecting to MongoDB...');
-    await database.connect();
-    logger.info(chalk.green('✅ Database connected successfully'));
+    try {
+      await database.connect();
+      logger.info(chalk.green('✅ Database connected successfully'));
+      dbConnected = true;
+    } catch (dbError) {
+      logger.warn(chalk.yellow('⚠️  MongoDB connection failed - Server will start without database'));
+      logger.warn(chalk.yellow('⚠️  Please configure MONGODB_URI environment variable'));
+      logger.warn(chalk.yellow('⚠️  Database-dependent features will not work until connected'));
+    }
 
-    logger.info('🔍 Initializing search indexes...');
-    const indexResult = await createSearchIndexes();
-    if (indexResult.success) {
-      logger.info(chalk.green('✅ Search indexes initialized'));
-    } else {
-      logger.warn(chalk.yellow('⚠️  Search indexes initialization failed'));
+    if (dbConnected) {
+      logger.info('🔍 Initializing search indexes...');
+      const indexResult = await createSearchIndexes();
+      if (indexResult.success) {
+        logger.info(chalk.green('✅ Search indexes initialized'));
+      } else {
+        logger.warn(chalk.yellow('⚠️  Search indexes initialization failed'));
+      }
     }
 
     server.listen(PORT, () => {
@@ -257,8 +267,8 @@ const startServer = async () => {
 
       console.log('');
       console.log(chalk.bold('  📊 System Status:'));
-      console.log(chalk.gray('  ├─') + ' Database: ' + chalk.green('✓ Connected'));
-      console.log(chalk.gray('  ├─') + ' Search Indexes: ' + chalk.green('✓ Ready'));
+      console.log(chalk.gray('  ├─') + ' Database: ' + (dbConnected ? chalk.green('✓ Connected') : chalk.yellow('⚠ Not Connected')));
+      console.log(chalk.gray('  ├─') + ' Search Indexes: ' + (dbConnected ? chalk.green('✓ Ready') : chalk.yellow('⚠ Disabled')));
       console.log(chalk.gray('  ├─') + ' Socket.io: ' + chalk.green('✓ Active'));
       console.log(chalk.gray('  └─') + ' Rate Limiting: ' + chalk.green('✓ Enabled'));
 
