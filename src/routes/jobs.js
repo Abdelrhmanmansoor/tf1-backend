@@ -4,6 +4,22 @@ const jobsController = require('../controllers/jobsController');
 const { authenticate } = require('../middleware/auth');
 const { uploadResume, handleUploadError } = require('../middleware/cloudinaryUpload');
 
+// ==================== JOB APPLICATIONS (REQUIRES AUTH) - MUST BE BEFORE /:id ==================== 
+
+/**
+ * @route   GET /api/v1/jobs/applications/me
+ * @desc    Get my job applications
+ * @access  Private
+ */
+router.get('/applications/me', authenticate, jobsController.getMyApplications);
+
+/**
+ * @route   PUT /api/v1/jobs/applications/:applicationId/withdraw
+ * @desc    Withdraw application
+ * @access  Private
+ */
+router.put('/applications/:applicationId/withdraw', authenticate, jobsController.withdrawApplication);
+
 // ==================== JOB BROWSING (PUBLIC/AUTH) ====================
 
 /**
@@ -12,8 +28,6 @@ const { uploadResume, handleUploadError } = require('../middleware/cloudinaryUpl
  * @access  Public
  */
 router.get('/:id', jobsController.getJobById);
-
-// ==================== JOB APPLICATIONS (REQUIRES AUTH) ====================
 
 /**
  * @route   POST /api/v1/jobs/:id/apply
@@ -29,24 +43,10 @@ router.post('/:id/apply',
 );
 
 /**
- * @route   GET /api/v1/jobs/applications/me
- * @desc    Get my job applications
- * @access  Private
- */
-router.get('/applications/me', authenticate, jobsController.getMyApplications);
-
-/**
  * @route   GET /api/v1/jobs/:jobId/applications
  * @desc    Get applications for a specific job (club access only)
  * @access  Private (club)
  */
 router.get('/:jobId/applications', authenticate, jobsController.getJobApplications);
-
-/**
- * @route   PUT /api/v1/jobs/applications/:applicationId/withdraw
- * @desc    Withdraw application
- * @access  Private
- */
-router.put('/applications/:applicationId/withdraw', authenticate, jobsController.withdrawApplication);
 
 module.exports = router;
