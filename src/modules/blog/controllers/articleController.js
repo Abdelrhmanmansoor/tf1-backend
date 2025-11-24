@@ -3,7 +3,7 @@ const { uploadPortfolioImage } = require('../../../config/cloudinary');
 
 // @desc    Create new article
 // @route   POST /api/v1/blog/articles
-// @access  Private (verified users)
+// @access  Private (admin only)
 exports.createArticle = async (req, res) => {
   try {
     const {
@@ -27,6 +27,15 @@ exports.createArticle = async (req, res) => {
         success: false,
         message: 'Title and content are required',
         code: 'MISSING_REQUIRED_FIELDS',
+      });
+    }
+
+    // Verify admin (redundant check but for safety)
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required',
+        code: 'ADMIN_ONLY',
       });
     }
 
@@ -186,7 +195,7 @@ exports.getArticle = async (req, res) => {
 
 // @desc    Update article
 // @route   PATCH /api/v1/blog/articles/:id
-// @access  Private (author only)
+// @access  Private (admin only)
 exports.updateArticle = async (req, res) => {
   try {
     const { id } = req.params;
@@ -202,12 +211,12 @@ exports.updateArticle = async (req, res) => {
       });
     }
 
-    // Check authorization
-    if (article.author.toString() !== req.user._id.toString()) {
+    // Check authorization - admin only
+    if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Only author can update this article',
-        code: 'UNAUTHORIZED',
+        message: 'Admin access required',
+        code: 'ADMIN_ONLY',
       });
     }
 
@@ -245,7 +254,7 @@ exports.updateArticle = async (req, res) => {
 
 // @desc    Delete article
 // @route   DELETE /api/v1/blog/articles/:id
-// @access  Private (author only)
+// @access  Private (admin only)
 exports.deleteArticle = async (req, res) => {
   try {
     const { id } = req.params;
@@ -260,12 +269,12 @@ exports.deleteArticle = async (req, res) => {
       });
     }
 
-    // Check authorization
-    if (article.author.toString() !== req.user._id.toString()) {
+    // Check authorization - admin only
+    if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Only author can delete this article',
-        code: 'UNAUTHORIZED',
+        message: 'Admin access required',
+        code: 'ADMIN_ONLY',
       });
     }
 
@@ -291,7 +300,7 @@ exports.deleteArticle = async (req, res) => {
 
 // @desc    Publish article
 // @route   POST /api/v1/blog/articles/:id/publish
-// @access  Private (author only)
+// @access  Private (admin only)
 exports.publishArticle = async (req, res) => {
   try {
     const { id } = req.params;
@@ -306,12 +315,12 @@ exports.publishArticle = async (req, res) => {
       });
     }
 
-    // Check authorization
-    if (article.author.toString() !== req.user._id.toString()) {
+    // Check authorization - admin only
+    if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Only author can publish this article',
-        code: 'UNAUTHORIZED',
+        message: 'Admin access required',
+        code: 'ADMIN_ONLY',
       });
     }
 
@@ -338,7 +347,7 @@ exports.publishArticle = async (req, res) => {
 
 // @desc    Unpublish article
 // @route   POST /api/v1/blog/articles/:id/unpublish
-// @access  Private (author only)
+// @access  Private (admin only)
 exports.unpublishArticle = async (req, res) => {
   try {
     const { id } = req.params;
@@ -353,12 +362,12 @@ exports.unpublishArticle = async (req, res) => {
       });
     }
 
-    // Check authorization
-    if (article.author.toString() !== req.user._id.toString()) {
+    // Check authorization - admin only
+    if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Only author can unpublish this article',
-        code: 'UNAUTHORIZED',
+        message: 'Admin access required',
+        code: 'ADMIN_ONLY',
       });
     }
 
