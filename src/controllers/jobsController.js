@@ -19,7 +19,7 @@ exports.getJobById = async (req, res) => {
       isDeleted: false,
       status: 'active'
     })
-      .populate('clubId', 'clubName logo location email phoneNumber')
+      .populate('clubId', 'firstName lastName email')
       .populate('postedBy', 'fullName');
 
     if (!job) {
@@ -27,6 +27,14 @@ exports.getJobById = async (req, res) => {
         success: false,
         message: 'Job not found or no longer active',
         code: 'JOB_NOT_FOUND'
+      });
+    }
+
+    if (!job.clubId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job club not found',
+        code: 'CLUB_NOT_FOUND'
       });
     }
 
@@ -38,6 +46,10 @@ exports.getJobById = async (req, res) => {
       await job.save();
     }
 
+    // Get club profile for club name and logo
+    const ClubProfile = require('../modules/club/models/ClubProfile');
+    const clubProfile = await ClubProfile.findOne({ userId: job.clubId._id });
+
     // Format response for frontend
     const response = {
       _id: job._id,
@@ -47,15 +59,15 @@ exports.getJobById = async (req, res) => {
       category: job.category,
       sport: job.sport,
       position: job.position,
-      location: job.clubId?.location || 'N/A',
+      location: clubProfile?.location?.city || 'N/A',
       salaryRange: job.requirements?.salary || null,
       deadline: job.applicationDeadline,
       postedAt: job.createdAt,
       applicationCount: job.applicationStats?.totalApplications || 0,
       club: {
         _id: job.clubId?._id,
-        name: job.clubId?.clubName || 'Unknown Club',
-        logo: job.clubId?.logo,
+        name: clubProfile?.clubName || 'Club',
+        logo: clubProfile?.logo,
       },
       requirements: job.requirements?.skills || [],
       responsibilities: job.responsibilities?.map(r => r.responsibility) || [],
@@ -94,13 +106,21 @@ exports.applyToJob = async (req, res) => {
       _id: jobId,
       isDeleted: false,
       status: 'active'
-    });
+    }).populate('clubId', 'firstName lastName email');
 
     if (!job) {
       return res.status(404).json({
         success: false,
         message: 'Job not found or no longer active',
         code: 'JOB_NOT_FOUND'
+      });
+    }
+
+    if (!job.clubId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job club not found',
+        code: 'CLUB_NOT_FOUND'
       });
     }
 
@@ -158,7 +178,7 @@ exports.applyToJob = async (req, res) => {
     // 5. Create job application
     const application = new JobApplication({
       jobId,
-      clubId: job.clubId,
+      clubId: job.clubId._id,
       applicantId,
       coverLetter: coverLetter || '',
       attachments: resumeAttachment ? [resumeAttachment] : [],
@@ -170,6 +190,61 @@ exports.applyToJob = async (req, res) => {
 
     // 6. Update job application statistics
     await job.updateApplicationStats();
+
+    // 7. Send notification to club (safe with null-guards)
+    try {
+      // Get applicant details
+      const User = require('../modules/shared/models/User');
+      const applicant = await User.findById(applicantId).select('firstName lastName email');
+      const applicantName = applicant ? `${applicant.firstName} ${applicant.lastName}` : 'Applicant';
+
+      // Get club profile if available
+      const ClubProfile = require('../modules/club/models/ClubProfile');
+      const clubProfile = await ClubProfile.findOne({ userId: job.clubId._id });
+      const clubName = clubProfile?.clubName || 'Club';
+
+      // Create notification
+      const Notification = require('../models/Notification');
+      const notification = await Notification.create({
+        userId: job.clubId._id,
+        userRole: 'club',
+        type: 'new_application',
+        title: 'New Job Application',
+        titleAr: 'طلب توظيف جديد',
+        message: `${applicantName} applied for ${job.title}. Review their application now.`,
+        messageAr: `${applicantName} تقدم لوظيفة ${job.titleAr || job.title}. راجع طلبه الآن.`,
+        relatedTo: {
+          entityType: 'job_application',
+          entityId: application._id
+        },
+        actionUrl: `/club/applications/${application._id}`,
+        priority: 'normal'
+      });
+
+      // Send real-time notification via Socket.io
+      const io = req.app.get('io');
+      if (io) {
+        io.to(job.clubId._id.toString()).emit('job:notification', {
+          _id: notification._id,
+          type: 'new_application',
+          applicationId: application._id,
+          jobId: job._id,
+          jobTitle: job.title,
+          jobTitleAr: job.titleAr,
+          applicantName,
+          clubName,
+          message: notification.message,
+          messageAr: notification.messageAr,
+          userId: job.clubId._id,
+          status: 'new',
+          priority: 'normal',
+          createdAt: notification.createdAt
+        });
+      }
+    } catch (notificationError) {
+      console.error('Error sending notification to club:', notificationError);
+      // Continue even if notification fails
+    }
 
     res.status(201).json({
       success: true,
@@ -222,32 +297,47 @@ exports.getMyApplications = async (req, res) => {
       isDeleted: false
     })
       .populate('jobId', 'title sport category status applicationDeadline')
-      .populate('clubId', 'clubName logo location')
+      .populate('clubId', 'firstName lastName email')
       .sort({ createdAt: -1 });
 
-    // Format response
-    const formattedApplications = applications.map(app => ({
-      _id: app._id,
-      job: {
-        _id: app.jobId?._id,
-        title: app.jobId?.title,
-        sport: app.jobId?.sport,
-        category: app.jobId?.category,
-        deadline: app.jobId?.applicationDeadline
-      },
-      club: {
-        _id: app.clubId?._id,
-        name: app.clubId?.clubName,
-        logo: app.clubId?.logo,
-        location: app.clubId?.location
-      },
-      status: app.status,
-      appliedAt: app.createdAt,
-      coverLetter: app.coverLetter,
-      attachments: app.attachments,
-      interview: app.interview,
-      offer: app.offer
-    }));
+    // Get club profiles for all applications
+    const ClubProfile = require('../modules/club/models/ClubProfile');
+    const clubIds = applications.map(app => app.clubId?._id).filter(Boolean);
+    const clubProfiles = await ClubProfile.find({ userId: { $in: clubIds } });
+
+    // Create a map of userId -> clubProfile
+    const clubProfileMap = {};
+    clubProfiles.forEach(profile => {
+      clubProfileMap[profile.userId.toString()] = profile;
+    });
+
+    // Format response with club profiles
+    const formattedApplications = applications.map(app => {
+      const clubProfile = clubProfileMap[app.clubId?._id?.toString()];
+      
+      return {
+        _id: app._id,
+        job: {
+          _id: app.jobId?._id,
+          title: app.jobId?.title,
+          sport: app.jobId?.sport,
+          category: app.jobId?.category,
+          deadline: app.jobId?.applicationDeadline
+        },
+        club: {
+          _id: app.clubId?._id,
+          name: clubProfile?.clubName || 'Club',
+          logo: clubProfile?.logo,
+          location: clubProfile?.location?.city
+        },
+        status: app.status,
+        appliedAt: app.createdAt,
+        coverLetter: app.coverLetter,
+        attachments: app.attachments,
+        interview: app.interview,
+        offer: app.offer
+      };
+    });
 
     res.status(200).json({
       success: true,
