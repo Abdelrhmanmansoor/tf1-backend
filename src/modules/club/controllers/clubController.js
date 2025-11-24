@@ -815,21 +815,27 @@ exports.reviewApplication = async (req, res) => {
       // Send real-time notification via Socket.io
       const io = req.app.get('io');
       if (io) {
-        io.to(application.applicantId._id.toString()).emit('job:notification', {
+        io.to(application.applicantId._id.toString()).emit('new_notification', {
           _id: notification._id,
-          type: 'application_reviewed',
+          type: 'job_application',
+          notificationType: 'application_reviewed',
           applicationId: application._id,
           jobId: application.jobId._id,
           jobTitle: application.jobId.title,
           jobTitleAr: application.jobId.titleAr,
           clubName: application.clubId.clubName,
+          title: notification.title,
+          titleAr: notification.titleAr,
           message: notification.message,
           messageAr: notification.messageAr,
+          actionUrl: notification.actionUrl,
           userId: application.applicantId._id,
           status: 'pending',
           priority: 'high',
+          isRead: false,
           createdAt: notification.createdAt
         });
+        console.log(`🔔 Application review notification sent to applicant ${application.applicantId._id}`);
       }
     } catch (notificationError) {
       console.error('Error sending notification:', notificationError);
@@ -888,22 +894,28 @@ exports.scheduleInterview = async (req, res) => {
       // Send real-time notification via Socket.io
       const io = req.app.get('io');
       if (io) {
-        io.to(application.applicantId._id.toString()).emit('job:notification', {
+        io.to(application.applicantId._id.toString()).emit('new_notification', {
           _id: notification._id,
-          type: 'interview_scheduled',
+          type: 'job_application',
+          notificationType: 'interview_scheduled',
           applicationId: application._id,
           jobId: application.jobId._id,
           jobTitle: application.jobId.title,
           jobTitleAr: application.jobId.titleAr,
           clubName: application.clubId.clubName,
           interviewDate: req.body.date,
+          title: notification.title,
+          titleAr: notification.titleAr,
           message: notification.message,
           messageAr: notification.messageAr,
+          actionUrl: notification.actionUrl,
           userId: application.applicantId._id,
           status: 'pending',
           priority: 'high',
+          isRead: false,
           createdAt: notification.createdAt
         });
+        console.log(`🔔 Interview notification sent to applicant ${application.applicantId._id}`);
       }
     } catch (notificationError) {
       console.error('Error sending notification:', notificationError);
@@ -961,22 +973,28 @@ exports.makeOffer = async (req, res) => {
       // Send real-time notification via Socket.io
       const io = req.app.get('io');
       if (io) {
-        io.to(application.applicantId._id.toString()).emit('job:notification', {
+        io.to(application.applicantId._id.toString()).emit('new_notification', {
           _id: notification._id,
-          type: 'job_offer_received',
+          type: 'job_application',
+          notificationType: 'job_offer_received',
           applicationId: application._id,
           jobId: application.jobId._id,
           jobTitle: application.jobId.title,
           jobTitleAr: application.jobId.titleAr,
           clubName: application.clubId.clubName,
           offerDetails: req.body,
+          title: notification.title,
+          titleAr: notification.titleAr,
           message: notification.message,
           messageAr: notification.messageAr,
+          actionUrl: notification.actionUrl,
           userId: application.applicantId._id,
           status: 'pending',
           priority: 'urgent',
+          isRead: false,
           createdAt: notification.createdAt
         });
+        console.log(`🔔 Job offer notification sent to applicant ${application.applicantId._id}`);
       }
     } catch (notificationError) {
       console.error('Error sending notification:', notificationError);
@@ -1034,21 +1052,27 @@ exports.hireApplicant = async (req, res) => {
       // Send real-time notification via Socket.io
       const io = req.app.get('io');
       if (io) {
-        io.to(application.applicantId._id.toString()).emit('job:notification', {
+        io.to(application.applicantId._id.toString()).emit('new_notification', {
           _id: notification._id,
-          type: 'application_accepted',
+          type: 'club_accepted',
+          notificationType: 'application_accepted',
           applicationId: application._id,
           jobId: application.jobId._id,
           jobTitle: application.jobId.title,
           jobTitleAr: application.jobId.titleAr,
           clubName: application.clubId.clubName,
+          title: notification.title,
+          titleAr: notification.titleAr,
           message: notification.message,
           messageAr: notification.messageAr,
+          actionUrl: notification.actionUrl,
           userId: application.applicantId._id,
           status: 'success',
           priority: 'urgent',
+          isRead: false,
           createdAt: notification.createdAt
         });
+        console.log(`🔔 Hire notification sent to applicant ${application.applicantId._id}`);
       }
     } catch (notificationError) {
       console.error('Error sending notification:', notificationError);
@@ -1107,21 +1131,27 @@ exports.rejectApplication = async (req, res) => {
       // Send real-time notification via Socket.io
       const io = req.app.get('io');
       if (io) {
-        io.to(application.applicantId._id.toString()).emit('job:notification', {
+        io.to(application.applicantId._id.toString()).emit('new_notification', {
           _id: notification._id,
-          type: 'application_rejected',
+          type: 'club_rejected',
+          notificationType: 'application_rejected',
           applicationId: application._id,
           jobId: application.jobId._id,
           jobTitle: application.jobId.title,
           jobTitleAr: application.jobId.titleAr,
           clubName: application.clubId.clubName,
+          title: notification.title,
+          titleAr: notification.titleAr,
           message: notification.message,
           messageAr: notification.messageAr,
+          actionUrl: notification.actionUrl,
           userId: application.applicantId._id,
           status: 'rejected',
           priority: 'normal',
+          isRead: false,
           createdAt: notification.createdAt
         });
+        console.log(`🔔 Rejection notification sent to applicant ${application.applicantId._id}`);
       }
     } catch (notificationError) {
       console.error('Error sending notification:', notificationError);

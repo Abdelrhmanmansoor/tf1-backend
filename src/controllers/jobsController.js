@@ -263,26 +263,86 @@ exports.applyToJob = async (req, res) => {
       // Send real-time via Socket.io
       const io = req.app.get('io');
       if (io) {
-        io.to(job.clubId._id.toString()).emit('job:notification', {
+        io.to(job.clubId._id.toString()).emit('new_notification', {
           _id: notification._id,
-          type: 'new_application',
+          type: 'job_application',
+          notificationType: 'job_application',
           applicationId: application._id,
           jobId: job._id,
           jobTitle: job.title,
           jobTitleAr: job.titleAr,
           applicantName,
           clubName,
+          title: notification.title,
+          titleAr: notification.titleAr,
           message: notification.message,
           messageAr: notification.messageAr,
+          actionUrl: notification.actionUrl,
           userId: job.clubId._id,
           status: 'new',
           priority: 'normal',
           createdAt: notification.createdAt,
+          isRead: false,
           storedIn: source,
         });
+        console.log(`🔔 Real-time notification sent to club ${job.clubId._id}`);
       }
     } catch (notificationError) {
       console.error('Error sending notification to club:', notificationError);
+    }
+
+    // 8. Send notification to applicant (confirmation)
+    try {
+      const { saveNotification } = require('../middleware/notificationHandler');
+      const job_title = job.title || 'الوظيفة';
+      const club_name = (await require('../modules/club/models/ClubProfile').findOne({ userId: job.clubId._id }))?.clubName || 'النادي';
+
+      const { notification: applicantNotification, source: applicantSource } = await saveNotification({
+        userId: applicantId,
+        userRole: req.user.role,
+        type: 'job_application',
+        title: 'Application Submitted',
+        titleAr: 'تم إرسال طلبك',
+        message: `Your application for ${job_title} has been submitted successfully. The club will review it soon.`,
+        messageAr: `تم إرسال طلبك لوظيفة ${job.titleAr || job_title} بنجاح. سيتم مراجعته قريباً من قبل ${club_name}.`,
+        relatedTo: {
+          entityType: 'job_application',
+          entityId: application._id,
+        },
+        actionUrl: `/jobs/${job._id}/application/${application._id}`,
+        priority: 'normal',
+      });
+
+      console.log(`📢 Application confirmation sent to applicant ${applicantId}`);
+
+      // Send real-time via Socket.io
+      const io = req.app.get('io');
+      if (io) {
+        io.to(applicantId.toString()).emit('new_notification', {
+          _id: applicantNotification._id,
+          type: 'job_application',
+          notificationType: 'application_submitted',
+          applicationId: application._id,
+          jobId: job._id,
+          jobTitle: job.title,
+          jobTitleAr: job.titleAr,
+          clubName: club_name,
+          title: applicantNotification.title,
+          titleAr: applicantNotification.titleAr,
+          message: applicantNotification.message,
+          messageAr: applicantNotification.messageAr,
+          actionUrl: applicantNotification.actionUrl,
+          userId: applicantId,
+          status: 'new',
+          priority: 'normal',
+          isRead: false,
+          createdAt: applicantNotification.createdAt,
+          storedIn: applicantSource,
+        });
+        console.log(`🔔 Real-time confirmation sent to applicant ${applicantId}`);
+      }
+    } catch (applicantNotificationError) {
+      console.error('Error sending notification to applicant:', applicantNotificationError);
     }
 
     res.status(201).json({
@@ -589,6 +649,102 @@ exports.withdrawApplication = async (req, res) => {
       message: 'Error withdrawing application',
       error: error.message,
       code: 'WITHDRAW_ERROR',
+    });
+  }
+};
+
+/**
+ * @route   GET /api/v1/jobs/applications/:applicationId/download/:attachmentIndex
+ * @desc    Download application attachment with proper headers
+ * @access  Private (club or applicant)
+ */
+exports.downloadAttachment = async (req, res) => {
+  try {
+    const { applicationId, attachmentIndex } = req.params;
+    const userId = req.user._id;
+
+    // Find application
+    const application = await JobApplication.findOne({
+      _id: applicationId,
+      isDeleted: false,
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found',
+        code: 'APPLICATION_NOT_FOUND',
+      });
+    }
+
+    // Check authorization: either club owner or the applicant
+    const isClub = application.clubId.toString() === userId.toString();
+    const isApplicant = application.applicantId.toString() === userId.toString();
+
+    if (!isClub && !isApplicant) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to download this attachment',
+        code: 'UNAUTHORIZED',
+      });
+    }
+
+    // Get attachment
+    const attachment = application.attachments[parseInt(attachmentIndex)];
+    if (!attachment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Attachment not found',
+        code: 'ATTACHMENT_NOT_FOUND',
+      });
+    }
+
+    // Download file from Cloudinary
+    const protocolModule = attachment.url.startsWith('https') ? https : http;
+    
+    protocolModule.get(attachment.url, (fileStream) => {
+      // Set proper headers for download
+      const filename = attachment.originalName || attachment.name || 'document';
+      const mimeType = attachment.mimeType || 'application/octet-stream';
+      
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+      
+      console.log(`📥 Downloading file: ${filename} (${mimeType})`);
+      
+      // Pipe the file stream to response
+      fileStream.pipe(res);
+      
+      fileStream.on('error', (error) => {
+        console.error('Error streaming file:', error);
+        if (!res.headersSent) {
+          res.status(500).json({
+            success: false,
+            message: 'Error downloading file',
+            code: 'DOWNLOAD_ERROR',
+          });
+        }
+      });
+    }).on('error', (error) => {
+      console.error('Error fetching file from Cloudinary:', error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          message: 'Error fetching file',
+          code: 'FETCH_ERROR',
+        });
+      }
+    });
+
+  } catch (error) {
+    console.error('Download attachment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error downloading attachment',
+      error: error.message,
+      code: 'DOWNLOAD_ERROR',
     });
   }
 };

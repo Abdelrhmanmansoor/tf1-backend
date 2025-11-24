@@ -61,6 +61,15 @@ router.get(
   jobsController.getJobApplications
 );
 
-// Download attachment route - to be implemented
+/**
+ * @route   GET /api/v1/jobs/applications/:applicationId/download/:attachmentIndex
+ * @desc    Download application attachment (resume, CV, etc.)
+ * @access  Private (club or applicant)
+ */
+router.get(
+  '/applications/:applicationId/download/:attachmentIndex',
+  authenticate,
+  jobsController.downloadAttachment
+);
 
 module.exports = router;
