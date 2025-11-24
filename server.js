@@ -12,6 +12,7 @@ const { Server } = require('socket.io');
 
 const database = require('./src/config/database');
 const routes = require('./src/routes');
+const blogRoutes = require('./src/modules/blog/routes');
 const { createSearchIndexes } = require('./src/config/searchIndexes');
 const configureSocket = require('./src/config/socket');
 const logger = require('./src/utils/logger');
@@ -166,6 +167,7 @@ app.get('/health', (req, res) => {
 
 // ==================== API ROUTES ====================
 app.use(`/api/${API_VERSION}`, routes);
+app.use(`/api/${API_VERSION}/blog`, blogRoutes);
 
 // ==================== ERROR HANDLING ====================
 app.use((err, req, res, next) => {
