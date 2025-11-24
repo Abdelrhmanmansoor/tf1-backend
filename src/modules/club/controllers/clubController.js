@@ -796,7 +796,7 @@ exports.reviewApplication = async (req, res) => {
 
     // Send notification to applicant
     try {
-      await Notification.create({
+      const notification = await Notification.create({
         userId: application.applicantId._id,
         userRole: 'player',
         type: 'job_application',
@@ -811,6 +811,26 @@ exports.reviewApplication = async (req, res) => {
         actionUrl: `/jobs/${application.jobId._id}/application/${application._id}`,
         priority: 'high'
       });
+
+      // Send real-time notification via Socket.io
+      const io = req.app.get('io');
+      if (io) {
+        io.to(application.applicantId._id.toString()).emit('job:notification', {
+          _id: notification._id,
+          type: 'application_reviewed',
+          applicationId: application._id,
+          jobId: application.jobId._id,
+          jobTitle: application.jobId.title,
+          jobTitleAr: application.jobId.titleAr,
+          clubName: application.clubId.clubName,
+          message: notification.message,
+          messageAr: notification.messageAr,
+          userId: application.applicantId._id,
+          status: 'pending',
+          priority: 'high',
+          createdAt: notification.createdAt
+        });
+      }
     } catch (notificationError) {
       console.error('Error sending notification:', notificationError);
       // Don't fail the request if notification fails
@@ -836,7 +856,7 @@ exports.scheduleInterview = async (req, res) => {
     const application = await JobApplication.findOne({
       _id: req.params.applicationId,
       clubId: req.user._id
-    });
+    }).populate('applicantId jobId clubId');
 
     if (!application) {
       return res.status(404).json({
@@ -846,6 +866,48 @@ exports.scheduleInterview = async (req, res) => {
     }
 
     await application.scheduleInterview(req.body, req.user._id);
+
+    // Send notification to applicant
+    try {
+      const notification = await Notification.create({
+        userId: application.applicantId._id,
+        userRole: 'player',
+        type: 'job_application',
+        title: 'Interview Scheduled',
+        titleAr: 'تم جدولة المقابلة',
+        message: `Interview scheduled for ${application.jobId.title} at ${application.clubId.clubName} on ${new Date(req.body.date).toLocaleDateString()}.`,
+        messageAr: `تم جدولة مقابلة لوظيفة ${application.jobId.titleAr || application.jobId.title} في ${application.clubId.clubName} بتاريخ ${new Date(req.body.date).toLocaleDateString()}.`,
+        relatedTo: {
+          entityType: 'job_application',
+          entityId: application._id
+        },
+        actionUrl: `/jobs/${application.jobId._id}/application/${application._id}`,
+        priority: 'high'
+      });
+
+      // Send real-time notification via Socket.io
+      const io = req.app.get('io');
+      if (io) {
+        io.to(application.applicantId._id.toString()).emit('job:notification', {
+          _id: notification._id,
+          type: 'interview_scheduled',
+          applicationId: application._id,
+          jobId: application.jobId._id,
+          jobTitle: application.jobId.title,
+          jobTitleAr: application.jobId.titleAr,
+          clubName: application.clubId.clubName,
+          interviewDate: req.body.date,
+          message: notification.message,
+          messageAr: notification.messageAr,
+          userId: application.applicantId._id,
+          status: 'pending',
+          priority: 'high',
+          createdAt: notification.createdAt
+        });
+      }
+    } catch (notificationError) {
+      console.error('Error sending notification:', notificationError);
+    }
 
     res.json({
       success: true,
@@ -867,7 +929,7 @@ exports.makeOffer = async (req, res) => {
     const application = await JobApplication.findOne({
       _id: req.params.applicationId,
       clubId: req.user._id
-    });
+    }).populate('applicantId jobId clubId');
 
     if (!application) {
       return res.status(404).json({
@@ -877,6 +939,48 @@ exports.makeOffer = async (req, res) => {
     }
 
     await application.makeOffer(req.body, req.user._id);
+
+    // Send notification to applicant
+    try {
+      const notification = await Notification.create({
+        userId: application.applicantId._id,
+        userRole: 'player',
+        type: 'job_application',
+        title: 'Job Offer Received!',
+        titleAr: 'تم استلام عرض العمل!',
+        message: `Congratulations! You received a job offer for ${application.jobId.title} at ${application.clubId.clubName}.`,
+        messageAr: `تهانينا! لقد تلقيت عرض عمل لوظيفة ${application.jobId.titleAr || application.jobId.title} في ${application.clubId.clubName}.`,
+        relatedTo: {
+          entityType: 'job_application',
+          entityId: application._id
+        },
+        actionUrl: `/jobs/${application.jobId._id}/application/${application._id}`,
+        priority: 'urgent'
+      });
+
+      // Send real-time notification via Socket.io
+      const io = req.app.get('io');
+      if (io) {
+        io.to(application.applicantId._id.toString()).emit('job:notification', {
+          _id: notification._id,
+          type: 'job_offer_received',
+          applicationId: application._id,
+          jobId: application.jobId._id,
+          jobTitle: application.jobId.title,
+          jobTitleAr: application.jobId.titleAr,
+          clubName: application.clubId.clubName,
+          offerDetails: req.body,
+          message: notification.message,
+          messageAr: notification.messageAr,
+          userId: application.applicantId._id,
+          status: 'pending',
+          priority: 'urgent',
+          createdAt: notification.createdAt
+        });
+      }
+    } catch (notificationError) {
+      console.error('Error sending notification:', notificationError);
+    }
 
     res.json({
       success: true,
@@ -898,7 +1002,7 @@ exports.hireApplicant = async (req, res) => {
     const application = await JobApplication.findOne({
       _id: req.params.applicationId,
       clubId: req.user._id
-    });
+    }).populate('applicantId jobId clubId');
 
     if (!application) {
       return res.status(404).json({
@@ -908,6 +1012,47 @@ exports.hireApplicant = async (req, res) => {
     }
 
     await application.hire(req.body, req.user._id);
+
+    // Send notification to applicant
+    try {
+      const notification = await Notification.create({
+        userId: application.applicantId._id,
+        userRole: 'player',
+        type: 'club_accepted',
+        title: 'Congratulations - You Are Hired!',
+        titleAr: 'تهانينا - تم قبولك!',
+        message: `Congratulations! You have been hired for ${application.jobId.title} at ${application.clubId.clubName}. Welcome to the team!`,
+        messageAr: `تهانينا! لقد تم قبولك لوظيفة ${application.jobId.titleAr || application.jobId.title} في ${application.clubId.clubName}. مرحباً بك في الفريق!`,
+        relatedTo: {
+          entityType: 'job_application',
+          entityId: application._id
+        },
+        actionUrl: `/jobs/${application.jobId._id}/application/${application._id}`,
+        priority: 'urgent'
+      });
+
+      // Send real-time notification via Socket.io
+      const io = req.app.get('io');
+      if (io) {
+        io.to(application.applicantId._id.toString()).emit('job:notification', {
+          _id: notification._id,
+          type: 'application_accepted',
+          applicationId: application._id,
+          jobId: application.jobId._id,
+          jobTitle: application.jobId.title,
+          jobTitleAr: application.jobId.titleAr,
+          clubName: application.clubId.clubName,
+          message: notification.message,
+          messageAr: notification.messageAr,
+          userId: application.applicantId._id,
+          status: 'success',
+          priority: 'urgent',
+          createdAt: notification.createdAt
+        });
+      }
+    } catch (notificationError) {
+      console.error('Error sending notification:', notificationError);
+    }
 
     res.json({
       success: true,
@@ -930,7 +1075,7 @@ exports.rejectApplication = async (req, res) => {
     const application = await JobApplication.findOne({
       _id: req.params.applicationId,
       clubId: req.user._id
-    });
+    }).populate('applicantId jobId clubId');
 
     if (!application) {
       return res.status(404).json({
@@ -940,6 +1085,47 @@ exports.rejectApplication = async (req, res) => {
     }
 
     await application.reject(reason, req.user._id);
+
+    // Send notification to applicant
+    try {
+      const notification = await Notification.create({
+        userId: application.applicantId._id,
+        userRole: 'player',
+        type: 'club_rejected',
+        title: 'Application Update',
+        titleAr: 'تحديث الطلب',
+        message: `Thank you for your interest in ${application.jobId.title} at ${application.clubId.clubName}. Unfortunately, we have decided to move forward with other candidates.`,
+        messageAr: `شكراً لاهتمامك بوظيفة ${application.jobId.titleAr || application.jobId.title} في ${application.clubId.clubName}. للأسف، قررنا المضي قدماً مع مرشحين آخرين.`,
+        relatedTo: {
+          entityType: 'job_application',
+          entityId: application._id
+        },
+        actionUrl: `/jobs/${application.jobId._id}/application/${application._id}`,
+        priority: 'normal'
+      });
+
+      // Send real-time notification via Socket.io
+      const io = req.app.get('io');
+      if (io) {
+        io.to(application.applicantId._id.toString()).emit('job:notification', {
+          _id: notification._id,
+          type: 'application_rejected',
+          applicationId: application._id,
+          jobId: application.jobId._id,
+          jobTitle: application.jobId.title,
+          jobTitleAr: application.jobId.titleAr,
+          clubName: application.clubId.clubName,
+          message: notification.message,
+          messageAr: notification.messageAr,
+          userId: application.applicantId._id,
+          status: 'rejected',
+          priority: 'normal',
+          createdAt: notification.createdAt
+        });
+      }
+    } catch (notificationError) {
+      console.error('Error sending notification:', notificationError);
+    }
 
     res.json({
       success: true,
