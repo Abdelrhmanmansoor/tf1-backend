@@ -45,3 +45,7 @@ waitForPort = 3000
 [[ports]]
 localPort = 3000
 externalPort = 3000
+
+[deployment]
+deploymentTarget = "vm"
+run = ["node", "server.js"]
