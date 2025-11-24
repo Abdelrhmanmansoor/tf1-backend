@@ -364,6 +364,39 @@ const handleImageUpload = (uploadType = 'avatar') => {
   };
 };
 
+// Cover image upload middleware (for blog articles)
+const uploadCoverImage = upload.single('coverImage');
+
+// Process and upload cover image to Cloudinary
+const processCoverImage = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      // Cover image is optional
+      return next();
+    }
+
+    const userId = req.user.id || req.user._id;
+    const result = await uploadPortfolioImage(req.file.buffer, userId, 'blog', 'cover');
+
+    req.processedFile = {
+      url: result.url,
+      publicId: result.publicId,
+      thumbnailUrl: result.thumbnailUrl,
+      mediumUrl: result.mediumUrl,
+      largeUrl: result.largeUrl,
+      width: result.width,
+      height: result.height,
+      format: result.format,
+      bytes: result.bytes,
+    };
+
+    next();
+  } catch (error) {
+    console.error('Cover image upload error:', error);
+    next(error);
+  }
+};
+
 module.exports = {
   uploadAvatar,
   processAvatar,
@@ -374,6 +407,8 @@ module.exports = {
   uploadPortfolio,
   processPortfolioImages,
   uploadResume,
+  uploadCoverImage,
+  processCoverImage,
   cleanupOldAvatar,
   handleUploadError,
   validateImageUpload,

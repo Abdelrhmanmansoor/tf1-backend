@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const articleController = require('../controllers/articleController');
 const { authenticate } = require('../../../middleware/auth');
-const { uploadCoverImage } = require('../../../middleware/cloudinaryUpload');
+const { uploadCoverImage, processCoverImage, handleUploadError } = require('../../../middleware/cloudinaryUpload');
 const { isAdmin } = require('../../../middleware/adminCheck');
 
 // Public routes
@@ -13,7 +13,7 @@ router.get('/articles/:id', articleController.getArticle);
 router.use(authenticate);
 
 // Admin only - Article management
-router.post('/articles', isAdmin, uploadCoverImage, articleController.createArticle);
+router.post('/articles', isAdmin, uploadCoverImage, processCoverImage, handleUploadError, articleController.createArticle);
 router.patch('/articles/:id', isAdmin, articleController.updateArticle);
 router.delete('/articles/:id', isAdmin, articleController.deleteArticle);
 
