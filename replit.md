@@ -21,9 +21,10 @@ SportX Platform is a comprehensive sports networking platform for Egypt and the 
 - **NEW:** Real-time Notifications via Socket.io
 
 ⚠️ **CRITICAL: MongoDB Authentication Failed**
-- Server runs without database (in-memory fallback)
-- Notifications work but don't persist
-- User must update password in MongoDB Atlas to `SportX2025Pass`
+- Server runs without database
+- Notifications system: File-backed JSON (temporary - **NOT production-safe**)
+- Real-time Socket.io works ✅ but notifications don't persist reliably ❌
+- **ACTION REQUIRED:** Update password in MongoDB Atlas to `SportX2025Pass` (see FIX_MONGODB_NOW.md)
 
 ## Quick Access
 

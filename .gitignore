@@ -78,12 +78,15 @@ Thumbs.db
 # Uploads (temporary files)
 uploads/
 
+# Notification data (JSON fallback)
+data/
+
 # Test files
 test-results/
 coverage/
 
 # Sentry
 .sentryclirc
-#Claude
+
+# Claude
 .Claude/
-FRONTEND_AUTH_INTEGRATION_GUIDE.mduploads/

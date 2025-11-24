@@ -1,17 +1,68 @@
 /**
- * In-Memory Notification Store
- * Temporary storage for notifications while MongoDB connects
- * Automatically persists to MongoDB when available
+ * Persistent Notification Store (with File Backup)
+ * Stores notifications in memory + JSON file
+ * Works even without MongoDB!
  */
+
+const fs = require('fs').promises;
+const path = require('path');
+
+const STORAGE_FILE = path.join(__dirname, '../../data/notifications.json');
 
 class InMemoryNotificationStore {
   constructor() {
     this.notifications = new Map(); // userId -> [notifications]
     this.maxPerUser = 100; // Keep last 100 notifications per user
+    this.loaded = false;
+    this.load(); // Load on startup
+  }
+
+  async ensureDataDir() {
+    const dataDir = path.join(__dirname, '../../data');
+    try {
+      await fs.mkdir(dataDir, { recursive: true });
+    } catch (error) {
+      // Ignore
+    }
+  }
+
+  async load() {
+    if (this.loaded) return;
+    
+    try {
+      await this.ensureDataDir();
+      const data = await fs.readFile(STORAGE_FILE, 'utf8');
+      const parsed = JSON.parse(data);
+      
+      this.notifications = new Map();
+      parsed.forEach(({ userId, notifications }) => {
+        this.notifications.set(userId, notifications);
+      });
+      
+      console.log(`📦 Loaded notifications from file: ${this.notifications.size} users`);
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        console.error('⚠️  Error loading notifications:', error.message);
+      }
+    }
+    this.loaded = true;
+  }
+
+  async save() {
+    try {
+      await this.ensureDataDir();
+      const data = [];
+      for (const [userId, notifications] of this.notifications.entries()) {
+        data.push({ userId, notifications });
+      }
+      await fs.writeFile(STORAGE_FILE, JSON.stringify(data, null, 2));
+    } catch (error) {
+      console.error('⚠️  Error saving notifications:', error.message);
+    }
   }
 
   /**
-   * Add notification to memory
+   * Add notification to memory + save to file
    */
   addNotification(userId, notification) {
     if (!userId) return null;
@@ -37,6 +88,9 @@ class InMemoryNotificationStore {
       userNotifications.pop();
     }
 
+    // Save to file (async, no await to keep it fast)
+    this.save().catch(err => console.error('Save error:', err));
+
     return notif;
   }
 
@@ -61,7 +115,7 @@ class InMemoryNotificationStore {
   }
 
   /**
-   * Mark notification as read
+   * Mark notification as read + save
    */
   markAsRead(userId, notificationId) {
     const userIdStr = userId.toString();
@@ -72,18 +126,20 @@ class InMemoryNotificationStore {
     );
     if (notif) {
       notif.isRead = true;
+      this.save().catch(err => console.error('Save error:', err));
       return true;
     }
     return false;
   }
 
   /**
-   * Mark all as read for user
+   * Mark all as read for user + save
    */
   markAllAsRead(userId) {
     const userIdStr = userId.toString();
     const notifs = this.notifications.get(userIdStr) || [];
     notifs.forEach(n => (n.isRead = true));
+    this.save().catch(err => console.error('Save error:', err));
     return notifs.length;
   }
 
@@ -97,7 +153,7 @@ class InMemoryNotificationStore {
   }
 
   /**
-   * Delete notification
+   * Delete notification + save
    */
   deleteNotification(userId, notificationId) {
     const userIdStr = userId.toString();
@@ -108,6 +164,7 @@ class InMemoryNotificationStore {
     );
     if (index > -1) {
       notifs.splice(index, 1);
+      this.save().catch(err => console.error('Save error:', err));
       return true;
     }
     return false;
@@ -159,8 +216,31 @@ class InMemoryNotificationStore {
       totalUsers,
       totalNotifications,
       totalUnread,
-      storageType: 'IN-MEMORY',
+      storageType: 'FILE-BACKED (JSON)',
     };
+  }
+
+  /**
+   * Cleanup old notifications (30+ days)
+   */
+  async cleanup(daysOld = 30) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+    
+    let deletedCount = 0;
+    for (const [userId, notifs] of this.notifications.entries()) {
+      const before = notifs.length;
+      const filtered = notifs.filter(n => new Date(n.createdAt) > cutoffDate);
+      this.notifications.set(userId, filtered);
+      deletedCount += (before - filtered.length);
+    }
+    
+    if (deletedCount > 0) {
+      await this.save();
+      console.log(`🗑️  Cleaned up ${deletedCount} old notifications`);
+    }
+    
+    return deletedCount;
   }
 }
 
