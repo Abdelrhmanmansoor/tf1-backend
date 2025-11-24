@@ -602,6 +602,33 @@ exports.getJobs = async (req, res) => {
   }
 };
 
+// Get single job posting by ID
+exports.getJobById = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.jobId)
+      .populate('clubId', 'clubName logo location')
+      .populate('postedBy', 'fullName email');
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job posting not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      job
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching job posting',
+      error: error.message
+    });
+  }
+};
+
 // Update job posting
 exports.updateJob = async (req, res) => {
   try {

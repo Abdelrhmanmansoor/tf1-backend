@@ -79,6 +79,9 @@ router.post('/jobs', authorize('club'), clubController.createJob);
 // Get club's job postings
 router.get('/jobs', authorize('club'), clubController.getJobs);
 
+// Get single job posting by ID
+router.get('/jobs/:jobId', clubController.getJobById);
+
 // Update job posting
 router.put('/jobs/:jobId', authorize('club'), clubController.updateJob);
 
