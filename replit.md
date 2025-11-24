@@ -16,6 +16,14 @@ SportX Platform is a comprehensive sports networking platform for Egypt and the 
 - CORS Configured for Production (tf1one.com)
 - All APIs Tested and Working
 - Authentication & Authorization Active
+- **NEW:** Local File Upload (PDF preserved in original format)
+- **NEW:** Interview Scheduling Fields (coordinator, company, reminders)
+- **NEW:** Real-time Notifications via Socket.io
+
+⚠️ **CRITICAL: MongoDB Authentication Failed**
+- Server runs without database (in-memory fallback)
+- Notifications work but don't persist
+- User must update password in MongoDB Atlas to `SportX2025Pass`
 
 ## Quick Access
 
@@ -175,14 +183,17 @@ server.js            # Main entry point
 - `PORT` - 3000
 - `API_VERSION` - v1
 - `ALLOWED_ORIGINS` - https://tf1one.com,https://www.tf1one.com,http://localhost:3000
+- `MONGODB_URI` - ⚠️ **Authentication Failed** (password needs update in Atlas)
 
-### Optional
-- `MONGODB_URI` - MongoDB connection
-- `CLOUDINARY_CLOUD_NAME` - File uploads
-- `CLOUDINARY_API_KEY` - File uploads
-- `CLOUDINARY_API_SECRET` - File uploads
+### Optional (Not Required)
+- ~~`CLOUDINARY_*`~~ - **Removed** (using local upload now)
 - `SMTP_HOST` - Email service
 - `SMTP_PORT` - Email port
+
+### New Features
+- **Local File Upload**: Files saved to `uploads/resumes/` in original PDF format
+- **Interview Scheduling**: coordinator, companyName, reminders fields added to JobApplication model
+- **Download Endpoint**: `GET /api/v1/jobs/applications/:id/download/:index`
 
 ## Documentation
 
