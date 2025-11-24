@@ -169,8 +169,12 @@ app.get('/health', (req, res) => {
 // ==================== STATIC FILES ====================
 app.use(express.static('src/public'));
 
-// Admin Dashboard Page
-app.get('/dashboard/admin', (req, res) => {
+// Admin Dashboard Page - Multiple routes for accessibility
+app.get('/admin', (req, res) => {
+  res.sendFile(`${__dirname}/src/public/admin-dashboard.html`);
+});
+
+app.get('/admin-panel', (req, res) => {
   res.sendFile(`${__dirname}/src/public/admin-dashboard.html`);
 });
 
