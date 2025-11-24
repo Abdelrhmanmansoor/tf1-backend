@@ -11,7 +11,7 @@ exports.getNotifications = async (req, res) => {
       limit = 20,
       unreadOnly = false,
       priority,
-      type
+      type,
     } = req.query;
 
     const result = await Notification.getUserNotifications(req.user._id, {
@@ -19,15 +19,21 @@ exports.getNotifications = async (req, res) => {
       limit: parseInt(limit),
       unreadOnly: unreadOnly === 'true',
       priority,
-      type
+      type,
     });
 
     // Format notifications with user's language preference
     const language = req.user.language || 'en';
     const formattedNotifications = result.notifications.map(notification => ({
       ...notification,
-      title: language === 'ar' && notification.titleAr ? notification.titleAr : notification.title,
-      message: language === 'ar' && notification.messageAr ? notification.messageAr : notification.message
+      title:
+        language === 'ar' && notification.titleAr
+          ? notification.titleAr
+          : notification.title,
+      message:
+        language === 'ar' && notification.messageAr
+          ? notification.messageAr
+          : notification.message,
     }));
 
     res.status(200).json({
@@ -37,15 +43,14 @@ exports.getNotifications = async (req, res) => {
       page: result.page,
       pages: result.pages,
       hasMore: result.hasMore,
-      data: formattedNotifications
+      data: formattedNotifications,
     });
-
   } catch (error) {
     console.error('Error fetching notifications:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching notifications',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -60,14 +65,20 @@ exports.getUnreadNotifications = async (req, res) => {
     const result = await Notification.getUserNotifications(req.user._id, {
       page: parseInt(page),
       limit: parseInt(limit),
-      unreadOnly: true
+      unreadOnly: true,
     });
 
     const language = req.user.language || 'en';
     const formattedNotifications = result.notifications.map(notification => ({
       ...notification,
-      title: language === 'ar' && notification.titleAr ? notification.titleAr : notification.title,
-      message: language === 'ar' && notification.messageAr ? notification.messageAr : notification.message
+      title:
+        language === 'ar' && notification.titleAr
+          ? notification.titleAr
+          : notification.title,
+      message:
+        language === 'ar' && notification.messageAr
+          ? notification.messageAr
+          : notification.message,
     }));
 
     res.status(200).json({
@@ -77,15 +88,14 @@ exports.getUnreadNotifications = async (req, res) => {
       page: result.page,
       pages: result.pages,
       hasMore: result.hasMore,
-      data: formattedNotifications
+      data: formattedNotifications,
     });
-
   } catch (error) {
     console.error('Error fetching unread notifications:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching unread notifications',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -99,15 +109,14 @@ exports.getUnreadCount = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      count
+      count,
     });
-
   } catch (error) {
     console.error('Error fetching unread count:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching unread count',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -119,13 +128,13 @@ exports.markAsRead = async (req, res) => {
   try {
     const notification = await Notification.findOne({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.user._id,
     });
 
     if (!notification) {
       return res.status(404).json({
         success: false,
-        message: 'Notification not found'
+        message: 'Notification not found',
       });
     }
 
@@ -134,15 +143,14 @@ exports.markAsRead = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Notification marked as read',
-      data: notification
+      data: notification,
     });
-
   } catch (error) {
     console.error('Error marking notification as read:', error);
     res.status(500).json({
       success: false,
       message: 'Error marking notification as read',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -157,15 +165,14 @@ exports.markAllAsRead = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'All notifications marked as read',
-      modifiedCount: result.modifiedCount
+      modifiedCount: result.modifiedCount,
     });
-
   } catch (error) {
     console.error('Error marking all notifications as read:', error);
     res.status(500).json({
       success: false,
       message: 'Error marking all notifications as read',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -177,27 +184,33 @@ exports.markMultipleAsRead = async (req, res) => {
   try {
     const { notificationIds } = req.body;
 
-    if (!notificationIds || !Array.isArray(notificationIds) || notificationIds.length === 0) {
+    if (
+      !notificationIds ||
+      !Array.isArray(notificationIds) ||
+      notificationIds.length === 0
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide an array of notification IDs'
+        message: 'Please provide an array of notification IDs',
       });
     }
 
-    const result = await Notification.markMultipleAsRead(req.user._id, notificationIds);
+    const result = await Notification.markMultipleAsRead(
+      req.user._id,
+      notificationIds
+    );
 
     res.status(200).json({
       success: true,
       message: 'Notifications marked as read',
-      modifiedCount: result.modifiedCount
+      modifiedCount: result.modifiedCount,
     });
-
   } catch (error) {
     console.error('Error marking multiple notifications as read:', error);
     res.status(500).json({
       success: false,
       message: 'Error marking notifications as read',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -209,27 +222,26 @@ exports.deleteNotification = async (req, res) => {
   try {
     const notification = await Notification.findOneAndDelete({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.user._id,
     });
 
     if (!notification) {
       return res.status(404).json({
         success: false,
-        message: 'Notification not found'
+        message: 'Notification not found',
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Notification deleted successfully'
+      message: 'Notification deleted successfully',
     });
-
   } catch (error) {
     console.error('Error deleting notification:', error);
     res.status(500).json({
       success: false,
       message: 'Error deleting notification',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -240,21 +252,20 @@ exports.deleteNotification = async (req, res) => {
 exports.clearAllNotifications = async (req, res) => {
   try {
     const result = await Notification.deleteMany({
-      userId: req.user._id
+      userId: req.user._id,
     });
 
     res.status(200).json({
       success: true,
       message: 'All notifications cleared',
-      deletedCount: result.deletedCount
+      deletedCount: result.deletedCount,
     });
-
   } catch (error) {
     console.error('Error clearing notifications:', error);
     res.status(500).json({
       success: false,
       message: 'Error clearing notifications',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -268,15 +279,14 @@ exports.getNotificationSettings = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: preferences
+      data: preferences,
     });
-
   } catch (error) {
     console.error('Error fetching notification settings:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching notification settings',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -290,12 +300,18 @@ exports.updateNotificationSettings = async (req, res) => {
 
     // Update preferences
     if (req.body.preferences) {
-      preferences.preferences = { ...preferences.preferences, ...req.body.preferences };
+      preferences.preferences = {
+        ...preferences.preferences,
+        ...req.body.preferences,
+      };
     }
 
     // Update quiet hours
     if (req.body.quietHours) {
-      preferences.quietHours = { ...preferences.quietHours, ...req.body.quietHours };
+      preferences.quietHours = {
+        ...preferences.quietHours,
+        ...req.body.quietHours,
+      };
     }
 
     await preferences.save();
@@ -303,15 +319,14 @@ exports.updateNotificationSettings = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Notification settings updated successfully',
-      data: preferences
+      data: preferences,
     });
-
   } catch (error) {
     console.error('Error updating notification settings:', error);
     res.status(500).json({
       success: false,
       message: 'Error updating notification settings',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -326,7 +341,7 @@ exports.toggleAllNotifications = async (req, res) => {
     if (enabled === undefined) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide enabled status (true/false)'
+        message: 'Please provide enabled status (true/false)',
       });
     }
 
@@ -336,15 +351,14 @@ exports.toggleAllNotifications = async (req, res) => {
     res.status(200).json({
       success: true,
       message: `All notifications ${enabled ? 'enabled' : 'disabled'}`,
-      data: preferences
+      data: preferences,
     });
-
   } catch (error) {
     console.error('Error toggling notifications:', error);
     res.status(500).json({
       success: false,
       message: 'Error toggling notifications',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -363,45 +377,52 @@ exports.getGroupedNotifications = async (req, res) => {
     const formattedNotifications = notifications.map(notification => ({
       _id: notification._id,
       type: notification.type,
-      title: language === 'ar' && notification.titleAr ? notification.titleAr : notification.title,
-      message: language === 'ar' && notification.messageAr ? notification.messageAr : notification.message,
+      title:
+        language === 'ar' && notification.titleAr
+          ? notification.titleAr
+          : notification.title,
+      message:
+        language === 'ar' && notification.messageAr
+          ? notification.messageAr
+          : notification.message,
       relatedTo: notification.relatedTo,
       actionUrl: notification.actionUrl,
       isRead: notification.isRead,
       readAt: notification.readAt,
       priority: notification.priority,
       metadata: notification.metadata,
-      createdAt: notification.createdAt
+      createdAt: notification.createdAt,
     }));
 
     res.status(200).json({
       success: true,
       count: formattedNotifications.length,
-      data: formattedNotifications
+      data: formattedNotifications,
     });
-
   } catch (error) {
     console.error('Error fetching grouped notifications:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching grouped notifications',
-      error: error.message
+      error: error.message,
     });
   }
 };
 
 // Helper function to create and send notification (used by other controllers)
-exports.createNotification = async (notificationData) => {
+exports.createNotification = async notificationData => {
   try {
     // Get user preferences
-    const preferences = await NotificationPreferences.getOrCreate(notificationData.userId);
+    const preferences = await NotificationPreferences.getOrCreate(
+      notificationData.userId
+    );
 
     // Determine channels based on preferences
     const channels = {
       inApp: true, // Always create in-app notification
       email: false,
       push: false,
-      sms: false
+      sms: false,
     };
 
     // Map notification type to preference category
@@ -425,28 +446,41 @@ exports.createNotification = async (notificationData) => {
       consultation_request: 'trainingRequests',
       membership_request: 'applications',
       facility_booking: 'applications',
-      system_update: 'systemUpdates'
+      system_update: 'systemUpdates',
     };
 
-    const preferenceCategory = typeMapping[notificationData.type] || 'systemUpdates';
+    const preferenceCategory =
+      typeMapping[notificationData.type] || 'systemUpdates';
 
     // Check if we should send to each channel
     if (preferences.preferences[preferenceCategory]) {
-      channels.email = preferences.shouldSendNotification(preferenceCategory, 'email');
-      channels.push = preferences.shouldSendNotification(preferenceCategory, 'push');
-      channels.sms = preferences.shouldSendNotification(preferenceCategory, 'sms');
+      channels.email = preferences.shouldSendNotification(
+        preferenceCategory,
+        'email'
+      );
+      channels.push = preferences.shouldSendNotification(
+        preferenceCategory,
+        'push'
+      );
+      channels.sms = preferences.shouldSendNotification(
+        preferenceCategory,
+        'sms'
+      );
     }
 
     // Create notification with determined channels
     const notification = await Notification.createNotification({
       ...notificationData,
-      channels
+      channels,
     });
 
     // Emit Socket.io event for real-time delivery
     const io = global.io;
     if (io) {
-      io.to(notificationData.userId.toString()).emit('new_notification', notification);
+      io.to(notificationData.userId.toString()).emit(
+        'new_notification',
+        notification
+      );
     }
 
     // TODO: Send email if channels.email is true
@@ -454,7 +488,6 @@ exports.createNotification = async (notificationData) => {
     // TODO: Send SMS if channels.sms is true
 
     return notification;
-
   } catch (error) {
     console.error('Error creating notification:', error);
     throw error;
@@ -465,15 +498,16 @@ exports.createNotification = async (notificationData) => {
 exports.createBulkNotifications = async (users, notificationDataTemplate) => {
   try {
     const notifications = await Promise.all(
-      users.map(user => exports.createNotification({
-        ...notificationDataTemplate,
-        userId: user._id || user,
-        userRole: user.role
-      }))
+      users.map(user =>
+        exports.createNotification({
+          ...notificationDataTemplate,
+          userId: user._id || user,
+          userRole: user.role,
+        })
+      )
     );
 
     return notifications;
-
   } catch (error) {
     console.error('Error creating bulk notifications:', error);
     throw error;

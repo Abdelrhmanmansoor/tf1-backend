@@ -1,27 +1,18 @@
 const jwt = require('jsonwebtoken');
 
 class JWTService {
-  
   generateAccessToken(payload) {
-    return jwt.sign(
-      payload,
-      process.env.JWT_ACCESS_SECRET,
-      { 
-        expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
-        issuer: 'sportsplatform-api'
-      }
-    );
+    return jwt.sign(payload, process.env.JWT_ACCESS_SECRET, {
+      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+      issuer: 'sportsplatform-api',
+    });
   }
 
   generateRefreshToken(payload) {
-    return jwt.sign(
-      payload,
-      process.env.JWT_REFRESH_SECRET,
-      { 
-        expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
-        issuer: 'sportsplatform-api'
-      }
-    );
+    return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+      issuer: 'sportsplatform-api',
+    });
   }
 
   verifyAccessToken(token) {
@@ -44,7 +35,7 @@ class JWTService {
     const payload = {
       userId: user._id || user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
     };
 
     const accessToken = this.generateAccessToken(payload);
@@ -52,7 +43,7 @@ class JWTService {
 
     return {
       accessToken,
-      refreshToken
+      refreshToken,
     };
   }
 

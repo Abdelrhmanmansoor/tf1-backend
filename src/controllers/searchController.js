@@ -9,7 +9,13 @@ const SavedSearch = require('../models/SavedSearch');
 const { sanitizeSearchQuery } = require('../utils/sanitize');
 
 // Helper function to save search history
-const saveSearchHistory = async (userId, searchQuery, searchType, filters, resultsCount) => {
+const saveSearchHistory = async (
+  userId,
+  searchQuery,
+  searchType,
+  filters,
+  resultsCount
+) => {
   try {
     if (userId && searchQuery) {
       await SearchHistory.create({
@@ -17,7 +23,7 @@ const saveSearchHistory = async (userId, searchQuery, searchType, filters, resul
         searchQuery,
         searchType,
         filters: filters || {},
-        resultsCount
+        resultsCount,
       });
     }
   } catch (error) {
@@ -47,14 +53,14 @@ exports.searchUsers = async (req, res) => {
       language,
       page = 1,
       limit = 20,
-      sortBy = 'relevance' // relevance, rating, date
+      sortBy = 'relevance', // relevance, rating, date
     } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     // Build user query
     const userQuery = {
-      isEmailVerified: true
+      isEmailVerified: true,
     };
 
     if (role) {
@@ -67,7 +73,7 @@ exports.searchUsers = async (req, res) => {
       userQuery.$or = [
         { firstName: { $regex: sanitizedQuery, $options: 'i' } },
         { lastName: { $regex: sanitizedQuery, $options: 'i' } },
-        { email: { $regex: sanitizedQuery, $options: 'i' } }
+        { email: { $regex: sanitizedQuery, $options: 'i' } },
       ];
     }
 
@@ -77,55 +83,61 @@ exports.searchUsers = async (req, res) => {
       .skip(skip);
 
     // Get profile details based on role
-    const results = await Promise.all(users.map(async (user) => {
-      let profileModel;
-      let profileData = null;
+    const results = await Promise.all(
+      users.map(async user => {
+        let profileModel;
+        let profileData = null;
 
-      if (user.role === 'player') {
-        profileModel = PlayerProfile;
-      } else if (user.role === 'coach') {
-        profileModel = CoachProfile;
-      } else if (user.role === 'specialist') {
-        profileModel = SpecialistProfile;
-      } else if (user.role === 'club') {
-        profileModel = ClubProfile;
-      }
+        if (user.role === 'player') {
+          profileModel = PlayerProfile;
+        } else if (user.role === 'coach') {
+          profileModel = CoachProfile;
+        } else if (user.role === 'specialist') {
+          profileModel = SpecialistProfile;
+        } else if (user.role === 'club') {
+          profileModel = ClubProfile;
+        }
 
-      if (profileModel) {
-        profileData = await profileModel.findOne({ userId: user._id })
-          .select('sports primarySport specializations location rating level verified');
-      }
+        if (profileModel) {
+          profileData = await profileModel
+            .findOne({ userId: user._id })
+            .select(
+              'sports primarySport specializations location rating level verified'
+            );
+        }
 
-      return {
-        _id: user._id,
-        role: user.role,
-        fullName: `${user.firstName} ${user.lastName}`,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        avatar: user.profileImage,
-        ...profileData?.toObject()
-      };
-    }));
+        return {
+          _id: user._id,
+          role: user.role,
+          fullName: `${user.firstName} ${user.lastName}`,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          avatar: user.profileImage,
+          ...profileData?.toObject(),
+        };
+      })
+    );
 
     // Apply additional filters on profile data
     let filteredResults = results.filter(r => r !== null);
 
     if (sport) {
-      filteredResults = filteredResults.filter(r =>
-        r.sports?.includes(sport) || r.primarySport === sport
+      filteredResults = filteredResults.filter(
+        r => r.sports?.includes(sport) || r.primarySport === sport
       );
     }
 
     if (location) {
-      filteredResults = filteredResults.filter(r =>
-        r.location?.city?.toLowerCase().includes(location.toLowerCase()) ||
-        r.location?.country?.toLowerCase().includes(location.toLowerCase())
+      filteredResults = filteredResults.filter(
+        r =>
+          r.location?.city?.toLowerCase().includes(location.toLowerCase()) ||
+          r.location?.country?.toLowerCase().includes(location.toLowerCase())
       );
     }
 
     if (minRating) {
-      filteredResults = filteredResults.filter(r =>
-        r.rating?.average >= parseFloat(minRating)
+      filteredResults = filteredResults.filter(
+        r => r.rating?.average >= parseFloat(minRating)
       );
     }
 
@@ -135,9 +147,13 @@ exports.searchUsers = async (req, res) => {
 
     // Sort results
     if (sortBy === 'rating') {
-      filteredResults.sort((a, b) => (b.rating?.average || 0) - (a.rating?.average || 0));
+      filteredResults.sort(
+        (a, b) => (b.rating?.average || 0) - (a.rating?.average || 0)
+      );
     } else if (sortBy === 'date') {
-      filteredResults.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      filteredResults.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
     }
 
     const total = filteredResults.length;
@@ -151,13 +167,13 @@ exports.searchUsers = async (req, res) => {
       total,
       page: parseInt(page),
       pages: Math.ceil(total / parseInt(limit)),
-      hasMore: total > parseInt(page) * parseInt(limit)
+      hasMore: total > parseInt(page) * parseInt(limit),
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error searching users',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -183,14 +199,14 @@ exports.searchCoaches = async (req, res) => {
       availability,
       page = 1,
       limit = 20,
-      sortBy = 'relevance'
+      sortBy = 'relevance',
     } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     // Build query
     const query = {
-      isDeleted: false
+      isDeleted: false,
     };
 
     // Text search
@@ -200,8 +216,8 @@ exports.searchCoaches = async (req, res) => {
         role: 'coach',
         $or: [
           { firstName: { $regex: sanitizedQuery, $options: 'i' } },
-          { lastName: { $regex: sanitizedQuery, $options: 'i' } }
-        ]
+          { lastName: { $regex: sanitizedQuery, $options: 'i' } },
+        ],
       };
 
       // Exclude current user only if authenticated
@@ -219,10 +235,7 @@ exports.searchCoaches = async (req, res) => {
 
     // Filters
     if (sport) {
-      query.$or = [
-        { primarySport: sport },
-        { sports: sport }
-      ];
+      query.$or = [{ primarySport: sport }, { sports: sport }];
     }
 
     if (specialization) {
@@ -232,7 +245,7 @@ exports.searchCoaches = async (req, res) => {
     if (location) {
       query.$or = [
         { 'location.city': { $regex: location, $options: 'i' } },
-        { 'location.country': { $regex: location, $options: 'i' } }
+        { 'location.country': { $regex: location, $options: 'i' } },
       ];
     }
 
@@ -252,7 +265,9 @@ exports.searchCoaches = async (req, res) => {
     }
 
     if (coachingLevel) {
-      query.coachingLevel = { $in: Array.isArray(coachingLevel) ? coachingLevel : [coachingLevel] };
+      query.coachingLevel = {
+        $in: Array.isArray(coachingLevel) ? coachingLevel : [coachingLevel],
+      };
     }
 
     if (language) {
@@ -292,10 +307,12 @@ exports.searchCoaches = async (req, res) => {
       rating: coach.rating.average,
       reviewCount: coach.rating.count,
       specializations: coach.specializations,
-      priceRange: coach.pricing?.sessionPrice ? `$${coach.pricing.sessionPrice}` : 'Contact for price',
+      priceRange: coach.pricing?.sessionPrice
+        ? `$${coach.pricing.sessionPrice}`
+        : 'Contact for price',
       availability: coach.availability?.isAvailable ? 'Available' : 'Busy',
       experienceYears: coach.yearsOfExperience,
-      verified: coach.verified
+      verified: coach.verified,
     }));
 
     // Save search history
@@ -307,13 +324,13 @@ exports.searchCoaches = async (req, res) => {
       total,
       page: parseInt(page),
       pages: Math.ceil(total / parseInt(limit)),
-      hasMore: total > parseInt(page) * parseInt(limit)
+      hasMore: total > parseInt(page) * parseInt(limit),
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error searching coaches',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -334,13 +351,13 @@ exports.searchPlayers = async (req, res) => {
       ageMax,
       page = 1,
       limit = 20,
-      sortBy = 'relevance'
+      sortBy = 'relevance',
     } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const query = {
-      isDeleted: false
+      isDeleted: false,
     };
 
     // Text search
@@ -350,8 +367,8 @@ exports.searchPlayers = async (req, res) => {
         role: 'player',
         $or: [
           { firstName: { $regex: sanitizedQuery, $options: 'i' } },
-          { lastName: { $regex: sanitizedQuery, $options: 'i' } }
-        ]
+          { lastName: { $regex: sanitizedQuery, $options: 'i' } },
+        ],
       };
 
       // Exclude current user only if authenticated
@@ -369,10 +386,7 @@ exports.searchPlayers = async (req, res) => {
 
     // Filters
     if (sport) {
-      query.$or = [
-        { primarySport: sport },
-        { sports: sport }
-      ];
+      query.$or = [{ primarySport: sport }, { sports: sport }];
     }
 
     if (position) {
@@ -386,7 +400,7 @@ exports.searchPlayers = async (req, res) => {
     if (location) {
       query.$or = [
         { 'location.city': { $regex: location, $options: 'i' } },
-        { 'location.country': { $regex: location, $options: 'i' } }
+        { 'location.country': { $regex: location, $options: 'i' } },
       ];
     }
 
@@ -415,7 +429,10 @@ exports.searchPlayers = async (req, res) => {
       position: player.position,
       level: player.level,
       location: player.location?.city + ', ' + player.location?.country,
-      age: player.userId.dateOfBirth ? new Date().getFullYear() - new Date(player.userId.dateOfBirth).getFullYear() : null
+      age: player.userId.dateOfBirth
+        ? new Date().getFullYear() -
+          new Date(player.userId.dateOfBirth).getFullYear()
+        : null,
     }));
 
     // Save search history
@@ -427,13 +444,13 @@ exports.searchPlayers = async (req, res) => {
       total,
       page: parseInt(page),
       pages: Math.ceil(total / parseInt(limit)),
-      hasMore: total > parseInt(page) * parseInt(limit)
+      hasMore: total > parseInt(page) * parseInt(limit),
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error searching players',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -453,13 +470,13 @@ exports.searchSpecialists = async (req, res) => {
       language,
       page = 1,
       limit = 20,
-      sortBy = 'relevance'
+      sortBy = 'relevance',
     } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const query = {
-      isDeleted: false
+      isDeleted: false,
     };
 
     // Text search
@@ -469,8 +486,8 @@ exports.searchSpecialists = async (req, res) => {
         role: 'specialist',
         $or: [
           { firstName: { $regex: sanitizedQuery, $options: 'i' } },
-          { lastName: { $regex: sanitizedQuery, $options: 'i' } }
-        ]
+          { lastName: { $regex: sanitizedQuery, $options: 'i' } },
+        ],
       };
 
       // Exclude current user only if authenticated
@@ -490,7 +507,7 @@ exports.searchSpecialists = async (req, res) => {
     if (specialization) {
       query.$or = [
         { primarySpecialization: specialization },
-        { additionalSpecializations: specialization }
+        { additionalSpecializations: specialization },
       ];
     }
 
@@ -499,7 +516,10 @@ exports.searchSpecialists = async (req, res) => {
     }
 
     if (location) {
-      query['serviceLocations.address.city'] = { $regex: location, $options: 'i' };
+      query['serviceLocations.address.city'] = {
+        $regex: location,
+        $options: 'i',
+      };
     }
 
     if (minRating) {
@@ -534,11 +554,14 @@ exports.searchSpecialists = async (req, res) => {
       fullName: `${spec.userId.firstName} ${spec.userId.lastName}`,
       avatar: spec.userId.profileImage,
       specialization: spec.primarySpecialization,
-      location: spec.serviceLocations?.[0]?.address?.city + ', ' + spec.serviceLocations?.[0]?.address?.country,
+      location:
+        spec.serviceLocations?.[0]?.address?.city +
+        ', ' +
+        spec.serviceLocations?.[0]?.address?.country,
       rating: spec.rating.average,
       reviewCount: spec.rating.count,
       verified: spec.verified,
-      experienceYears: spec.yearsOfExperience
+      experienceYears: spec.yearsOfExperience,
     }));
 
     // Save search history
@@ -550,13 +573,13 @@ exports.searchSpecialists = async (req, res) => {
       total,
       page: parseInt(page),
       pages: Math.ceil(total / parseInt(limit)),
-      hasMore: total > parseInt(page) * parseInt(limit)
+      hasMore: total > parseInt(page) * parseInt(limit),
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error searching specialists',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -579,13 +602,13 @@ exports.searchClubs = async (req, res) => {
       programType,
       page = 1,
       limit = 20,
-      sortBy = 'relevance'
+      sortBy = 'relevance',
     } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const query = {
-      isDeleted: false
+      isDeleted: false,
     };
 
     // Exclude current user's club only if authenticated
@@ -598,22 +621,19 @@ exports.searchClubs = async (req, res) => {
       const sanitizedQuery = sanitizeSearchQuery(q);
       query.$or = [
         { organizationName: { $regex: sanitizedQuery, $options: 'i' } },
-        { description: { $regex: sanitizedQuery, $options: 'i' } }
+        { description: { $regex: sanitizedQuery, $options: 'i' } },
       ];
     }
 
     // Filters
     if (sport) {
-      query.$or = [
-        { primarySport: sport },
-        { sports: sport }
-      ];
+      query.$or = [{ primarySport: sport }, { sports: sport }];
     }
 
     if (location) {
       query.$or = [
         { 'location.city': { $regex: location, $options: 'i' } },
-        { 'location.country': { $regex: location, $options: 'i' } }
+        { 'location.country': { $regex: location, $options: 'i' } },
       ];
     }
 
@@ -634,7 +654,7 @@ exports.searchClubs = async (req, res) => {
     if (sortBy === 'rating') {
       sort = { 'rating.average': -1 };
     } else if (sortBy === 'members') {
-      sort = { 'memberCount': -1 };
+      sort = { memberCount: -1 };
     } else {
       sort = { createdAt: -1 };
     }
@@ -650,15 +670,19 @@ exports.searchClubs = async (req, res) => {
     // Check for open positions if requested
     let results = clubs;
     if (hasOpenPositions === 'true') {
-      const clubsWithJobs = await Promise.all(clubs.map(async (club) => {
-        const openJobs = await Job.countDocuments({
-          clubId: club._id,
-          status: 'active',
-          applicationDeadline: { $gte: new Date() }
-        });
+      const clubsWithJobs = await Promise.all(
+        clubs.map(async club => {
+          const openJobs = await Job.countDocuments({
+            clubId: club._id,
+            status: 'active',
+            applicationDeadline: { $gte: new Date() },
+          });
 
-        return openJobs > 0 ? { ...club.toObject(), openPositions: openJobs } : null;
-      }));
+          return openJobs > 0
+            ? { ...club.toObject(), openPositions: openJobs }
+            : null;
+        })
+      );
 
       results = clubsWithJobs.filter(c => c !== null);
     }
@@ -677,7 +701,7 @@ exports.searchClubs = async (req, res) => {
       verified: club.verified,
       facilities: club.facilities?.map(f => f.name),
       programs: club.programs?.map(p => p.name),
-      openPositions: club.openPositions || 0
+      openPositions: club.openPositions || 0,
     }));
 
     // Save search history
@@ -689,13 +713,13 @@ exports.searchClubs = async (req, res) => {
       total,
       page: parseInt(page),
       pages: Math.ceil(total / parseInt(limit)),
-      hasMore: total > parseInt(page) * parseInt(limit)
+      hasMore: total > parseInt(page) * parseInt(limit),
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error searching clubs',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -718,14 +742,14 @@ exports.searchJobs = async (req, res) => {
       clubId,
       page = 1,
       limit = 20,
-      sortBy = 'date'
+      sortBy = 'date',
     } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const query = {
       status: 'active',
-      applicationDeadline: { $gte: new Date() }
+      applicationDeadline: { $gte: new Date() },
     };
 
     // Text search
@@ -733,7 +757,7 @@ exports.searchJobs = async (req, res) => {
       const sanitizedQuery = sanitizeSearchQuery(q);
       query.$or = [
         { title: { $regex: sanitizedQuery, $options: 'i' } },
-        { description: { $regex: sanitizedQuery, $options: 'i' } }
+        { description: { $regex: sanitizedQuery, $options: 'i' } },
       ];
     }
 
@@ -803,16 +827,18 @@ exports.searchJobs = async (req, res) => {
       club: {
         _id: job.clubId._id,
         name: job.clubId.organizationName,
-        logo: job.clubId.logo
+        logo: job.clubId.logo,
       },
       jobType: job.jobType,
       sport: job.sport,
       position: job.position,
       location: job.location?.city + ', ' + job.location?.country,
-      salaryRange: job.salary?.amount ? `${job.salary.currency} ${job.salary.amount}/${job.salary.period}` : 'Not specified',
+      salaryRange: job.salary?.amount
+        ? `${job.salary.currency} ${job.salary.amount}/${job.salary.period}`
+        : 'Not specified',
       deadline: job.applicationDeadline,
       applicationCount: job.applicationCount || 0,
-      postedAt: job.createdAt
+      postedAt: job.createdAt,
     }));
 
     // Save search history
@@ -824,13 +850,13 @@ exports.searchJobs = async (req, res) => {
       total,
       page: parseInt(page),
       pages: Math.ceil(total / parseInt(limit)),
-      hasMore: total > parseInt(page) * parseInt(limit)
+      hasMore: total > parseInt(page) * parseInt(limit),
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error searching jobs',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -846,7 +872,7 @@ exports.searchAll = async (req, res) => {
     if (!q || q.trim().length < 2) {
       return res.status(400).json({
         success: false,
-        message: 'Search query must be at least 2 characters'
+        message: 'Search query must be at least 2 characters',
       });
     }
 
@@ -856,8 +882,8 @@ exports.searchAll = async (req, res) => {
     const userQuery = {
       $or: [
         { firstName: { $regex: sanitizedQuery, $options: 'i' } },
-        { lastName: { $regex: sanitizedQuery, $options: 'i' } }
-      ]
+        { lastName: { $regex: sanitizedQuery, $options: 'i' } },
+      ],
     };
 
     // Exclude current user only if authenticated
@@ -867,9 +893,15 @@ exports.searchAll = async (req, res) => {
 
     const matchingUsers = await User.find(userQuery).select('_id role');
 
-    const coachUserIds = matchingUsers.filter(u => u.role === 'coach').map(u => u._id);
-    const playerUserIds = matchingUsers.filter(u => u.role === 'player').map(u => u._id);
-    const specialistUserIds = matchingUsers.filter(u => u.role === 'specialist').map(u => u._id);
+    const coachUserIds = matchingUsers
+      .filter(u => u.role === 'coach')
+      .map(u => u._id);
+    const playerUserIds = matchingUsers
+      .filter(u => u.role === 'player')
+      .map(u => u._id);
+    const specialistUserIds = matchingUsers
+      .filter(u => u.role === 'specialist')
+      .map(u => u._id);
 
     // Search in parallel
     const [coaches, players, specialists, clubs, jobs] = await Promise.all([
@@ -877,24 +909,30 @@ exports.searchAll = async (req, res) => {
       coachUserIds.length > 0
         ? CoachProfile.find({
             isDeleted: false,
-            userId: { $in: coachUserIds }
-          }).populate('userId').limit(5)
+            userId: { $in: coachUserIds },
+          })
+            .populate('userId')
+            .limit(5)
         : Promise.resolve([]),
 
       // Players
       playerUserIds.length > 0
         ? PlayerProfile.find({
             isDeleted: false,
-            userId: { $in: playerUserIds }
-          }).populate('userId').limit(5)
+            userId: { $in: playerUserIds },
+          })
+            .populate('userId')
+            .limit(5)
         : Promise.resolve([]),
 
       // Specialists
       specialistUserIds.length > 0
         ? SpecialistProfile.find({
             isDeleted: false,
-            userId: { $in: specialistUserIds }
-          }).populate('userId').limit(5)
+            userId: { $in: specialistUserIds },
+          })
+            .populate('userId')
+            .limit(5)
         : Promise.resolve([]),
 
       // Clubs
@@ -902,9 +940,11 @@ exports.searchAll = async (req, res) => {
         isDeleted: false,
         $or: [
           { organizationName: { $regex: sanitizedQuery, $options: 'i' } },
-          { description: { $regex: sanitizedQuery, $options: 'i' } }
-        ]
-      }).populate('userId').limit(5),
+          { description: { $regex: sanitizedQuery, $options: 'i' } },
+        ],
+      })
+        .populate('userId')
+        .limit(5),
 
       // Jobs
       Job.find({
@@ -912,9 +952,11 @@ exports.searchAll = async (req, res) => {
         applicationDeadline: { $gte: new Date() },
         $or: [
           { title: { $regex: sanitizedQuery, $options: 'i' } },
-          { description: { $regex: sanitizedQuery, $options: 'i' } }
-        ]
-      }).populate('clubId', 'organizationName logo').limit(5)
+          { description: { $regex: sanitizedQuery, $options: 'i' } },
+        ],
+      })
+        .populate('clubId', 'organizationName logo')
+        .limit(5),
     ]);
 
     const results = {
@@ -925,7 +967,7 @@ exports.searchAll = async (req, res) => {
           name: `${c.userId.firstName} ${c.userId.lastName}`,
           avatar: c.userId.profileImage,
           sport: c.primarySport,
-          rating: c.rating?.average || 0
+          rating: c.rating?.average || 0,
         })),
         players: players.map(p => ({
           _id: p._id,
@@ -934,7 +976,7 @@ exports.searchAll = async (req, res) => {
           avatar: p.userId.profileImage,
           sport: p.primarySport,
           position: p.position,
-          rating: p.ratingStats?.averageRating || 0
+          rating: p.ratingStats?.averageRating || 0,
         })),
         specialists: specialists.map(s => ({
           _id: s._id,
@@ -942,8 +984,8 @@ exports.searchAll = async (req, res) => {
           name: `${s.userId.firstName} ${s.userId.lastName}`,
           avatar: s.userId.profileImage,
           specialization: s.primarySpecialization,
-          rating: s.rating?.average || 0
-        }))
+          rating: s.rating?.average || 0,
+        })),
       },
       clubs: clubs.map(c => ({
         _id: c._id,
@@ -951,7 +993,7 @@ exports.searchAll = async (req, res) => {
         name: c.organizationName,
         logo: c.logo,
         location: c.location?.city,
-        rating: c.rating?.average || 0
+        rating: c.rating?.average || 0,
       })),
       jobs: jobs.map(j => ({
         _id: j._id,
@@ -959,29 +1001,35 @@ exports.searchAll = async (req, res) => {
         title: j.title,
         club: j.clubId.organizationName,
         sport: j.sport,
-        deadline: j.applicationDeadline
-      }))
+        deadline: j.applicationDeadline,
+      })),
     };
 
     const total = {
       users: coaches.length + players.length + specialists.length,
       clubs: clubs.length,
-      jobs: jobs.length
+      jobs: jobs.length,
     };
 
     // Save search history
-    await saveSearchHistory(req.user?._id, q, 'all', req.query, total.users + total.clubs + total.jobs);
+    await saveSearchHistory(
+      req.user?._id,
+      q,
+      'all',
+      req.query,
+      total.users + total.clubs + total.jobs
+    );
 
     res.json({
       success: true,
       results,
-      total
+      total,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error performing global search',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -997,72 +1045,79 @@ exports.autocomplete = async (req, res) => {
     if (!q || q.length < 2) {
       return res.json({
         success: true,
-        suggestions: []
+        suggestions: [],
       });
     }
 
     const sanitizedQuery = sanitizeSearchQuery(q);
 
     // Get suggestions from different sources
-    const [userSuggestions, clubSuggestions, jobSuggestions, popularSearches] = await Promise.all([
-      // User names
-      User.find({
-        isEmailVerified: true,
-        $or: [
-          { firstName: { $regex: sanitizedQuery, $options: 'i' } },
-          { lastName: { $regex: sanitizedQuery, $options: 'i' } }
-        ]
-      }).select('firstName lastName role').limit(5),
+    const [userSuggestions, clubSuggestions, jobSuggestions, popularSearches] =
+      await Promise.all([
+        // User names
+        User.find({
+          isEmailVerified: true,
+          $or: [
+            { firstName: { $regex: sanitizedQuery, $options: 'i' } },
+            { lastName: { $regex: sanitizedQuery, $options: 'i' } },
+          ],
+        })
+          .select('firstName lastName role')
+          .limit(5),
 
-      // Club names
-      ClubProfile.find({
-        organizationName: { $regex: sanitizedQuery, $options: 'i' },
-        isDeleted: false
-      }).select('organizationName').limit(5),
+        // Club names
+        ClubProfile.find({
+          organizationName: { $regex: sanitizedQuery, $options: 'i' },
+          isDeleted: false,
+        })
+          .select('organizationName')
+          .limit(5),
 
-      // Job titles
-      Job.find({
-        title: { $regex: sanitizedQuery, $options: 'i' },
-        status: 'active'
-      }).select('title sport').limit(5),
+        // Job titles
+        Job.find({
+          title: { $regex: sanitizedQuery, $options: 'i' },
+          status: 'active',
+        })
+          .select('title sport')
+          .limit(5),
 
-      // Popular searches
-      SearchHistory.getPopularSearches(null, 5)
-    ]);
+        // Popular searches
+        SearchHistory.getPopularSearches(null, 5),
+      ]);
 
     const suggestions = [
       ...userSuggestions.map(u => ({
         text: `${u.firstName} ${u.lastName}`,
         type: 'user',
-        role: u.role
+        role: u.role,
       })),
       ...clubSuggestions.map(c => ({
         text: c.organizationName,
-        type: 'club'
+        type: 'club',
       })),
       ...jobSuggestions.map(j => ({
         text: j.title,
         type: 'job',
-        sport: j.sport
+        sport: j.sport,
       })),
-      ...popularSearches.filter(ps =>
-        ps.query.toLowerCase().includes(q.toLowerCase())
-      ).map(ps => ({
-        text: ps.query,
-        type: 'popular',
-        count: ps.count
-      }))
+      ...popularSearches
+        .filter(ps => ps.query.toLowerCase().includes(q.toLowerCase()))
+        .map(ps => ({
+          text: ps.query,
+          type: 'popular',
+          count: ps.count,
+        })),
     ].slice(0, 10);
 
     res.json({
       success: true,
-      suggestions
+      suggestions,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error getting autocomplete suggestions',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -1075,17 +1130,20 @@ exports.getSearchHistory = async (req, res) => {
   try {
     const { limit = 10 } = req.query;
 
-    const history = await SearchHistory.getRecentSearches(req.user._id, parseInt(limit));
+    const history = await SearchHistory.getRecentSearches(
+      req.user._id,
+      parseInt(limit)
+    );
 
     res.json({
       success: true,
-      history
+      history,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error fetching search history',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -1096,13 +1154,13 @@ exports.clearSearchHistory = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Search history cleared'
+      message: 'Search history cleared',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error clearing search history',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -1113,7 +1171,8 @@ exports.clearSearchHistory = async (req, res) => {
 
 exports.saveSearch = async (req, res) => {
   try {
-    const { name, searchQuery, searchType, filters, notifyOnNewResults } = req.body;
+    const { name, searchQuery, searchType, filters, notifyOnNewResults } =
+      req.body;
 
     const savedSearch = await SavedSearch.create({
       userId: req.user._id,
@@ -1121,19 +1180,19 @@ exports.saveSearch = async (req, res) => {
       searchQuery,
       searchType,
       filters,
-      notifyOnNewResults: notifyOnNewResults || false
+      notifyOnNewResults: notifyOnNewResults || false,
     });
 
     res.status(201).json({
       success: true,
       message: 'Search saved successfully',
-      savedSearch
+      savedSearch,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error saving search',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -1144,13 +1203,13 @@ exports.getSavedSearches = async (req, res) => {
 
     res.json({
       success: true,
-      savedSearches
+      savedSearches,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error fetching saved searches',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -1159,13 +1218,13 @@ exports.deleteSavedSearch = async (req, res) => {
   try {
     const savedSearch = await SavedSearch.findOne({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.user._id,
     });
 
     if (!savedSearch) {
       return res.status(404).json({
         success: false,
-        message: 'Saved search not found'
+        message: 'Saved search not found',
       });
     }
 
@@ -1173,13 +1232,13 @@ exports.deleteSavedSearch = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Saved search deleted'
+      message: 'Saved search deleted',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error deleting saved search',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -1192,17 +1251,20 @@ exports.getTrendingSearches = async (req, res) => {
   try {
     const { type, limit = 10 } = req.query;
 
-    const trending = await SearchHistory.getPopularSearches(type, parseInt(limit));
+    const trending = await SearchHistory.getPopularSearches(
+      type,
+      parseInt(limit)
+    );
 
     res.json({
       success: true,
-      trending
+      trending,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error fetching trending searches',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -1218,7 +1280,7 @@ exports.getRecentJobs = async (req, res) => {
     const jobs = await Job.find({
       status: 'active',
       isDeleted: false,
-      applicationDeadline: { $gte: new Date() }
+      applicationDeadline: { $gte: new Date() },
     })
       .populate('clubId', 'organizationName logo location')
       .sort({ createdAt: -1 })
@@ -1237,7 +1299,7 @@ exports.getRecentJobs = async (req, res) => {
         _id: job.clubId._id,
         name: job.clubId.organizationName,
         logo: job.clubId.logo,
-        location: job.clubId.location
+        location: job.clubId.location,
       },
       jobType: job.jobType,
       category: job.category,
@@ -1251,22 +1313,28 @@ exports.getRecentJobs = async (req, res) => {
       expectedStartDate: job.expectedStartDate,
       applicationStats: job.applicationStats,
       isFeatured: job.isFeatured,
-      createdAt: job.createdAt
+      createdAt: job.createdAt,
     }));
 
     // Save search history if user is authenticated
-    await saveSearchHistory(req.user?._id, 'recent_jobs', 'jobs', req.query, total);
+    await saveSearchHistory(
+      req.user?._id,
+      'recent_jobs',
+      'jobs',
+      req.query,
+      total
+    );
 
     res.json({
       success: true,
       jobs: results,
-      total
+      total,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error fetching recent jobs',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -1280,13 +1348,16 @@ exports.getJobById = async (req, res) => {
     const { id } = req.params;
 
     const job = await Job.findById(id)
-      .populate('clubId', 'organizationName nameAr logo location email phone website description verified')
+      .populate(
+        'clubId',
+        'organizationName nameAr logo location email phone website description verified'
+      )
       .populate('postedBy', 'firstName lastName email');
 
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found'
+        message: 'Job not found',
       });
     }
 
@@ -1294,7 +1365,7 @@ exports.getJobById = async (req, res) => {
     if (job.isDeleted) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found'
+        message: 'Job not found',
       });
     }
 
@@ -1322,7 +1393,7 @@ exports.getJobById = async (req, res) => {
         phone: job.clubId.phone,
         website: job.clubId.website,
         description: job.clubId.description,
-        verified: job.clubId.verified
+        verified: job.clubId.verified,
       },
       jobType: job.jobType,
       category: job.category,
@@ -1353,19 +1424,19 @@ exports.getJobById = async (req, res) => {
       updatedAt: job.updatedAt,
       isExpired: job.isExpired,
       daysUntilDeadline: job.daysUntilDeadline,
-      isFull: job.isFull
+      isFull: job.isFull,
     };
 
     res.json({
       success: true,
-      job: result
+      job: result,
     });
   } catch (error) {
     console.error('Error fetching job by ID:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching job details',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -1382,22 +1453,19 @@ exports.getTopRatedPlayers = async (req, res) => {
     const query = {
       isDeleted: false,
       'ratingStats.totalReviews': { $gte: parseInt(minReviews) },
-      'ratingStats.averageRating': { $gt: 0 }
+      'ratingStats.averageRating': { $gt: 0 },
     };
 
     // Filter by sport if provided
     if (sport) {
-      query.$or = [
-        { primarySport: sport },
-        { additionalSports: sport }
-      ];
+      query.$or = [{ primarySport: sport }, { additionalSports: sport }];
     }
 
     const players = await PlayerProfile.find(query)
       .populate('userId', 'firstName lastName email profileImage dateOfBirth')
       .sort({
         'ratingStats.averageRating': -1,
-        'ratingStats.totalReviews': -1
+        'ratingStats.totalReviews': -1,
       })
       .limit(parseInt(limit));
 
@@ -1421,27 +1489,34 @@ exports.getTopRatedPlayers = async (req, res) => {
       bioAr: player.bioAr,
       ratingStats: {
         averageRating: player.ratingStats.averageRating,
-        totalReviews: player.ratingStats.totalReviews
+        totalReviews: player.ratingStats.totalReviews,
       },
       verified: player.verified,
       age: player.userId.dateOfBirth
-        ? new Date().getFullYear() - new Date(player.userId.dateOfBirth).getFullYear()
-        : null
+        ? new Date().getFullYear() -
+          new Date(player.userId.dateOfBirth).getFullYear()
+        : null,
     }));
 
     // Save search history if user is authenticated
-    await saveSearchHistory(req.user?._id, 'top_rated_players', 'players', req.query, total);
+    await saveSearchHistory(
+      req.user?._id,
+      'top_rated_players',
+      'players',
+      req.query,
+      total
+    );
 
     res.json({
       success: true,
       players: results,
-      total
+      total,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error fetching top rated players',
-      error: error.message
+      error: error.message,
     });
   }
 };

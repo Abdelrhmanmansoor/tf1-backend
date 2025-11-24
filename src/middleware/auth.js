@@ -4,24 +4,24 @@ const User = require('../modules/shared/models/User');
 const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader) {
       return res.status(401).json({
         success: false,
         message: 'Access denied. No token provided.',
-        code: 'NO_TOKEN'
+        code: 'NO_TOKEN',
       });
     }
 
     const token = jwtService.extractTokenFromHeader(authHeader);
     const decoded = jwtService.verifyAccessToken(token);
-    
+
     const user = await User.findById(decoded.userId).select('-password');
     if (!user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid token. User not found.',
-        code: 'USER_NOT_FOUND'
+        code: 'USER_NOT_FOUND',
       });
     }
 
@@ -30,19 +30,19 @@ const authenticate = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Authentication error:', error);
-    
+
     if (error.message.includes('expired')) {
       return res.status(401).json({
         success: false,
         message: 'Token has expired. Please log in again.',
-        code: 'TOKEN_EXPIRED'
+        code: 'TOKEN_EXPIRED',
       });
     }
 
     return res.status(401).json({
       success: false,
       message: 'Invalid token.',
-      code: 'INVALID_TOKEN'
+      code: 'INVALID_TOKEN',
     });
   }
 };
@@ -53,7 +53,7 @@ const authorize = (...roles) => {
       return res.status(401).json({
         success: false,
         message: 'Access denied. Please authenticate first.',
-        code: 'NOT_AUTHENTICATED'
+        code: 'NOT_AUTHENTICATED',
       });
     }
 
@@ -61,7 +61,7 @@ const authorize = (...roles) => {
       return res.status(403).json({
         success: false,
         message: 'Access denied. Insufficient permissions.',
-        code: 'INSUFFICIENT_PERMISSIONS'
+        code: 'INSUFFICIENT_PERMISSIONS',
       });
     }
 
@@ -72,7 +72,7 @@ const authorize = (...roles) => {
 const optionalAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader) {
       req.user = null;
       return next();
@@ -80,11 +80,11 @@ const optionalAuth = async (req, res, next) => {
 
     const token = jwtService.extractTokenFromHeader(authHeader);
     const decoded = jwtService.verifyAccessToken(token);
-    
+
     const user = await User.findById(decoded.userId).select('-password');
     req.user = user || null;
     req.token = token;
-    
+
     next();
   } catch (error) {
     req.user = null;
@@ -97,7 +97,7 @@ const requireEmailVerification = (req, res, next) => {
     return res.status(401).json({
       success: false,
       message: 'Access denied. Please authenticate first.',
-      code: 'NOT_AUTHENTICATED'
+      code: 'NOT_AUTHENTICATED',
     });
   }
 
@@ -105,7 +105,7 @@ const requireEmailVerification = (req, res, next) => {
     return res.status(403).json({
       success: false,
       message: 'Email verification required. Please verify your email address.',
-      code: 'EMAIL_NOT_VERIFIED'
+      code: 'EMAIL_NOT_VERIFIED',
     });
   }
 
@@ -116,5 +116,5 @@ module.exports = {
   authenticate,
   authorize,
   optionalAuth,
-  requireEmailVerification
+  requireEmailVerification,
 };

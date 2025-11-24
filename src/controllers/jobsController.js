@@ -17,7 +17,7 @@ exports.getJobById = async (req, res) => {
     const job = await Job.findOne({
       _id: id,
       isDeleted: false,
-      status: 'active'
+      status: 'active',
     })
       .populate('clubId', 'firstName lastName email')
       .populate('postedBy', 'fullName');
@@ -26,7 +26,7 @@ exports.getJobById = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Job not found or no longer active',
-        code: 'JOB_NOT_FOUND'
+        code: 'JOB_NOT_FOUND',
       });
     }
 
@@ -34,7 +34,7 @@ exports.getJobById = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Job club not found',
-        code: 'CLUB_NOT_FOUND'
+        code: 'CLUB_NOT_FOUND',
       });
     }
 
@@ -75,7 +75,7 @@ exports.getJobById = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      job: response
+      job: response,
     });
   } catch (error) {
     console.error('Get job by ID error:', error);
@@ -83,7 +83,7 @@ exports.getJobById = async (req, res) => {
       success: false,
       message: 'Error fetching job details',
       error: error.message,
-      code: 'FETCH_JOB_ERROR'
+      code: 'FETCH_JOB_ERROR',
     });
   }
 };
@@ -104,14 +104,14 @@ exports.checkExistingApplication = async (req, res, next) => {
     const existingApplication = await JobApplication.findOne({
       jobId,
       applicantId,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (existingApplication) {
       return res.status(409).json({
         success: false,
         message: 'You have already applied to this job',
-        code: 'ALREADY_APPLIED'
+        code: 'ALREADY_APPLIED',
       });
     }
 
@@ -122,7 +122,7 @@ exports.checkExistingApplication = async (req, res, next) => {
       success: false,
       message: 'Error checking application status',
       error: error.message,
-      code: 'CHECK_APPLICATION_ERROR'
+      code: 'CHECK_APPLICATION_ERROR',
     });
   }
 };
@@ -142,14 +142,14 @@ exports.applyToJob = async (req, res) => {
     const job = await Job.findOne({
       _id: jobId,
       isDeleted: false,
-      status: 'active'
+      status: 'active',
     }).populate('clubId', 'firstName lastName email');
 
     if (!job) {
       return res.status(404).json({
         success: false,
         message: 'Job not found or no longer active',
-        code: 'JOB_NOT_FOUND'
+        code: 'JOB_NOT_FOUND',
       });
     }
 
@@ -157,7 +157,7 @@ exports.applyToJob = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Job club not found',
-        code: 'CLUB_NOT_FOUND'
+        code: 'CLUB_NOT_FOUND',
       });
     }
 
@@ -166,7 +166,7 @@ exports.applyToJob = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Application deadline has passed',
-        code: 'DEADLINE_PASSED'
+        code: 'DEADLINE_PASSED',
       });
     }
 
@@ -184,7 +184,7 @@ exports.applyToJob = async (req, res) => {
           type: 'resume',
           name: req.file.originalname,
           url: uploadResult.url,
-          uploadedAt: new Date()
+          uploadedAt: new Date(),
         };
       } catch (uploadError) {
         console.error('Resume upload error:', uploadError);
@@ -192,7 +192,7 @@ exports.applyToJob = async (req, res) => {
           success: false,
           message: 'Failed to upload resume',
           error: uploadError.message,
-          code: 'RESUME_UPLOAD_FAILED'
+          code: 'RESUME_UPLOAD_FAILED',
         });
       }
     }
@@ -205,7 +205,7 @@ exports.applyToJob = async (req, res) => {
       coverLetter: coverLetter || '',
       attachments: resumeAttachment ? [resumeAttachment] : [],
       status: 'new',
-      source: 'direct'
+      source: 'direct',
     });
 
     await application.save();
@@ -217,8 +217,12 @@ exports.applyToJob = async (req, res) => {
     try {
       const { saveNotification } = require('../middleware/notificationHandler');
       const User = require('../modules/shared/models/User');
-      const applicant = await User.findById(applicantId).select('firstName lastName email');
-      const applicantName = applicant ? `${applicant.firstName} ${applicant.lastName}` : 'Applicant';
+      const applicant = await User.findById(applicantId).select(
+        'firstName lastName email'
+      );
+      const applicantName = applicant
+        ? `${applicant.firstName} ${applicant.lastName}`
+        : 'Applicant';
 
       const ClubProfile = require('../modules/club/models/ClubProfile');
       const clubProfile = await ClubProfile.findOne({ userId: job.clubId._id });
@@ -235,13 +239,15 @@ exports.applyToJob = async (req, res) => {
         messageAr: `${applicantName} تقدم لوظيفة ${job.titleAr || job.title}. راجع طلبه الآن.`,
         relatedTo: {
           entityType: 'job_application',
-          entityId: application._id
+          entityId: application._id,
         },
         actionUrl: `/club/applications/${application._id}`,
-        priority: 'normal'
+        priority: 'normal',
       });
 
-      console.log(`📢 Notification saved to ${source} for club ${job.clubId._id}`);
+      console.log(
+        `📢 Notification saved to ${source} for club ${job.clubId._id}`
+      );
 
       // Send real-time via Socket.io
       const io = req.app.get('io');
@@ -261,7 +267,7 @@ exports.applyToJob = async (req, res) => {
           status: 'new',
           priority: 'normal',
           createdAt: notification.createdAt,
-          storedIn: source
+          storedIn: source,
         });
       }
     } catch (notificationError) {
@@ -275,8 +281,8 @@ exports.applyToJob = async (req, res) => {
         _id: application._id,
         jobId: application.jobId,
         status: application.status,
-        appliedAt: application.createdAt
-      }
+        appliedAt: application.createdAt,
+      },
     });
   } catch (error) {
     console.error('Apply to job error:', error);
@@ -285,14 +291,14 @@ exports.applyToJob = async (req, res) => {
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => ({
         field: err.path,
-        message: err.message
+        message: err.message,
       }));
 
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
         errors,
-        code: 'VALIDATION_ERROR'
+        code: 'VALIDATION_ERROR',
       });
     }
 
@@ -300,7 +306,7 @@ exports.applyToJob = async (req, res) => {
       success: false,
       message: 'Error submitting application',
       error: error.message,
-      code: 'APPLICATION_ERROR'
+      code: 'APPLICATION_ERROR',
     });
   }
 };
@@ -316,7 +322,7 @@ exports.getMyApplications = async (req, res) => {
 
     const applications = await JobApplication.find({
       applicantId,
-      isDeleted: false
+      isDeleted: false,
     })
       .populate('jobId', 'title sport category status applicationDeadline')
       .populate('clubId', 'firstName lastName email')
@@ -336,7 +342,7 @@ exports.getMyApplications = async (req, res) => {
     // Format response with club profiles
     const formattedApplications = applications.map(app => {
       const clubProfile = clubProfileMap[app.clubId?._id?.toString()];
-      
+
       return {
         _id: app._id,
         job: {
@@ -344,27 +350,43 @@ exports.getMyApplications = async (req, res) => {
           title: app.jobId?.title,
           sport: app.jobId?.sport,
           category: app.jobId?.category,
-          deadline: app.jobId?.applicationDeadline
+          deadline: app.jobId?.applicationDeadline,
         },
         club: {
           _id: app.clubId?._id,
           name: clubProfile?.clubName || 'Club',
           logo: clubProfile?.logo,
-          location: clubProfile?.location?.city
+          location: clubProfile?.location?.city,
         },
-        status: app.status,
-        appliedAt: app.createdAt,
-        coverLetter: app.coverLetter,
-        attachments: app.attachments,
-        interview: app.interview,
-        offer: app.offer
+        applicationDetails: {
+          status: app.status,
+          appliedAt: app.createdAt,
+          coverLetter: app.coverLetter,
+          videoUrl: app.videoUrl,
+          // Attachments with proper formatting
+          attachments:
+            app.attachments?.map(att => ({
+              type: att.type,
+              name: att.name,
+              url: att.url,
+              uploadedAt: att.uploadedAt,
+              downloadLink: att.url,
+            })) || [],
+          responses: app.questionnaireResponses || [],
+        },
+        assessment: {
+          interview: app.interview,
+          offer: app.offer,
+          review: app.review,
+          statusHistory: app.statusHistory,
+        },
       };
     });
 
     res.status(200).json({
       success: true,
       total: formattedApplications.length,
-      applications: formattedApplications
+      applications: formattedApplications,
     });
   } catch (error) {
     console.error('Get my applications error:', error);
@@ -372,7 +394,7 @@ exports.getMyApplications = async (req, res) => {
       success: false,
       message: 'Error fetching applications',
       error: error.message,
-      code: 'FETCH_APPLICATIONS_ERROR'
+      code: 'FETCH_APPLICATIONS_ERROR',
     });
   }
 };
@@ -391,14 +413,14 @@ exports.getJobApplications = async (req, res) => {
     const job = await Job.findOne({
       _id: jobId,
       clubId,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!job) {
       return res.status(404).json({
         success: false,
         message: 'Job not found or you do not have access',
-        code: 'JOB_NOT_FOUND'
+        code: 'JOB_NOT_FOUND',
       });
     }
 
@@ -408,38 +430,95 @@ exports.getJobApplications = async (req, res) => {
     if (status) query.status = status;
 
     const applications = await JobApplication.find(query)
-      .populate('applicantId', 'fullName email phoneNumber profilePicture roles')
+      .populate(
+        'applicantId',
+        'firstName lastName email phoneNumber profilePicture roles'
+      )
       .populate('review.reviewedBy', 'fullName')
       .sort({ createdAt: -1 });
 
-    // Format response with applicant details
-    const formattedApplications = applications.map(app => ({
-      _id: app._id,
-      applicant: {
-        _id: app.applicantId?._id,
-        name: app.applicantSnapshot?.fullName || app.applicantId?.fullName,
-        email: app.applicantSnapshot?.email || app.applicantId?.email,
-        phone: app.applicantSnapshot?.phoneNumber || app.applicantId?.phoneNumber,
-        profilePicture: app.applicantId?.profilePicture,
-        role: app.applicantSnapshot?.role || app.applicantId?.roles?.[0],
-        sport: app.applicantSnapshot?.sport,
-        position: app.applicantSnapshot?.position,
-        experienceYears: app.applicantSnapshot?.experienceYears,
-        rating: app.applicantSnapshot?.rating
-      },
-      status: app.status,
-      appliedAt: app.createdAt,
-      coverLetter: app.coverLetter,
-      attachments: app.attachments,
-      review: app.review,
-      interview: app.interview,
-      statusHistory: app.statusHistory
-    }));
+    // Get full applicant profiles
+    const PlayerProfile = require('../modules/player/models/PlayerProfile');
+    const CoachProfile = require('../modules/coach/models/CoachProfile');
+    const SpecialistProfile = require('../modules/specialist/models/SpecialistProfile');
+
+    const applicantIds = applications
+      .map(app => app.applicantId?._id)
+      .filter(Boolean);
+    const playerProfiles = await PlayerProfile.find({
+      userId: { $in: applicantIds },
+    });
+    const coachProfiles = await CoachProfile.find({
+      userId: { $in: applicantIds },
+    });
+    const specialistProfiles = await SpecialistProfile.find({
+      userId: { $in: applicantIds },
+    });
+
+    const profileMap = {};
+    [...playerProfiles, ...coachProfiles, ...specialistProfiles].forEach(
+      profile => {
+        profileMap[profile.userId.toString()] = profile;
+      }
+    );
+
+    // Format response with all applicant details
+    const formattedApplications = applications.map(app => {
+      const profile = profileMap[app.applicantId?._id?.toString()];
+      const user = app.applicantId;
+
+      return {
+        _id: app._id,
+        applicant: {
+          _id: user?._id,
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+          fullName: `${user?.firstName} ${user?.lastName}`,
+          email: user?.email,
+          phone: user?.phoneNumber,
+          profilePicture: user?.profilePicture,
+          role: user?.roles?.[0],
+          // Profile-specific details
+          sport: app.applicantSnapshot?.sport || profile?.sport,
+          position: app.applicantSnapshot?.position || profile?.position,
+          specialization: profile?.specialization,
+          experienceYears:
+            app.applicantSnapshot?.experienceYears ||
+            profile?.yearsOfExperience,
+          rating: app.applicantSnapshot?.rating || profile?.rating,
+          bio: profile?.bio || profile?.about,
+          location: profile?.location || app.applicantSnapshot?.location,
+        },
+        applicationDetails: {
+          status: app.status,
+          appliedAt: app.createdAt,
+          coverLetter: app.coverLetter,
+          videoUrl: app.videoUrl,
+          // Attachments with proper formatting
+          attachments:
+            app.attachments?.map(att => ({
+              type: att.type,
+              name: att.name,
+              url: att.url,
+              uploadedAt: att.uploadedAt,
+              downloadLink: att.url, // Direct download link
+            })) || [],
+          // Questionnaire responses
+          responses: app.questionnaireResponses || [],
+        },
+        assessment: {
+          review: app.review,
+          interview: app.interview,
+          offer: app.offer,
+          statusHistory: app.statusHistory,
+        },
+      };
+    });
 
     res.status(200).json({
       success: true,
       total: formattedApplications.length,
-      applications: formattedApplications
+      applications: formattedApplications,
     });
   } catch (error) {
     console.error('Get job applications error:', error);
@@ -447,7 +526,7 @@ exports.getJobApplications = async (req, res) => {
       success: false,
       message: 'Error fetching job applications',
       error: error.message,
-      code: 'FETCH_APPLICATIONS_ERROR'
+      code: 'FETCH_APPLICATIONS_ERROR',
     });
   }
 };
@@ -466,14 +545,14 @@ exports.withdrawApplication = async (req, res) => {
     const application = await JobApplication.findOne({
       _id: applicationId,
       applicantId,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!application) {
       return res.status(404).json({
         success: false,
         message: 'Application not found',
-        code: 'APPLICATION_NOT_FOUND'
+        code: 'APPLICATION_NOT_FOUND',
       });
     }
 
@@ -482,7 +561,7 @@ exports.withdrawApplication = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Cannot withdraw application at this stage',
-        code: 'CANNOT_WITHDRAW'
+        code: 'CANNOT_WITHDRAW',
       });
     }
 
@@ -490,7 +569,7 @@ exports.withdrawApplication = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Application withdrawn successfully'
+      message: 'Application withdrawn successfully',
     });
   } catch (error) {
     console.error('Withdraw application error:', error);
@@ -498,7 +577,7 @@ exports.withdrawApplication = async (req, res) => {
       success: false,
       message: 'Error withdrawing application',
       error: error.message,
-      code: 'WITHDRAW_ERROR'
+      code: 'WITHDRAW_ERROR',
     });
   }
 };

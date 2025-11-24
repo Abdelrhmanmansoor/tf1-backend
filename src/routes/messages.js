@@ -65,21 +65,30 @@ router.put('/conversations/:id/archive', messageController.archiveConversation);
  * @desc    Unarchive conversation
  * @access  Private
  */
-router.put('/conversations/:id/unarchive', messageController.unarchiveConversation);
+router.put(
+  '/conversations/:id/unarchive',
+  messageController.unarchiveConversation
+);
 
 /**
  * @route   POST /api/v1/messages/conversations/:id/participants
  * @desc    Add participant to group conversation
  * @access  Private (Admin only)
  */
-router.post('/conversations/:id/participants', messageController.addParticipant);
+router.post(
+  '/conversations/:id/participants',
+  messageController.addParticipant
+);
 
 /**
  * @route   DELETE /api/v1/messages/conversations/:id/participants/:userId
  * @desc    Remove participant from group conversation
  * @access  Private (Admin only)
  */
-router.delete('/conversations/:id/participants/:userId', messageController.removeParticipant);
+router.delete(
+  '/conversations/:id/participants/:userId',
+  messageController.removeParticipant
+);
 
 // ===================================
 // MESSAGE ROUTES

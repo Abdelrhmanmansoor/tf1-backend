@@ -6,19 +6,22 @@ const { authenticate } = require('../middleware/auth');
 // ==================== FILE UPLOAD & MEDIA MANAGEMENT ====================
 
 // Upload endpoints (protected)
-router.post('/upload/image',
+router.post(
+  '/upload/image',
   authenticate,
   globalController.upload.single('file'),
   globalController.uploadImage
 );
 
-router.post('/upload/video',
+router.post(
+  '/upload/video',
   authenticate,
   globalController.upload.single('file'),
   globalController.uploadVideo
 );
 
-router.post('/upload/document',
+router.post(
+  '/upload/document',
   authenticate,
   globalController.upload.single('file'),
   globalController.uploadDocument
@@ -53,8 +56,16 @@ router.post('/report', authenticate, globalController.reportContent);
 // ==================== ANALYTICS ====================
 
 // Analytics (protected)
-router.get('/analytics/profile-views', authenticate, globalController.getProfileViews);
-router.get('/analytics/search-appearances', authenticate, globalController.getSearchAppearances);
+router.get(
+  '/analytics/profile-views',
+  authenticate,
+  globalController.getProfileViews
+);
+router.get(
+  '/analytics/search-appearances',
+  authenticate,
+  globalController.getSearchAppearances
+);
 
 // ==================== UNIVERSAL PROFILE ====================
 

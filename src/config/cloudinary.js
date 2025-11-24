@@ -16,20 +16,19 @@ const uploadToCloudinary = async (buffer, options = {}) => {
         folder: 'sportx-platform', // Organize uploads in a folder
         quality: 'auto', // Automatic quality optimization
         fetch_format: 'auto', // Automatic format optimization
-        ...options
+        ...options,
       };
 
-      cloudinary.uploader.upload_stream(
-        uploadOptions,
-        (error, result) => {
+      cloudinary.uploader
+        .upload_stream(uploadOptions, (error, result) => {
           if (error) {
             console.error('Cloudinary upload error:', error);
             reject(error);
           } else {
             resolve(result);
           }
-        }
-      ).end(buffer);
+        })
+        .end(buffer);
     });
   } catch (error) {
     console.error('Upload to Cloudinary failed:', error);
@@ -38,7 +37,7 @@ const uploadToCloudinary = async (buffer, options = {}) => {
 };
 
 // Utility function to delete image from Cloudinary
-const deleteFromCloudinary = async (publicId) => {
+const deleteFromCloudinary = async publicId => {
   try {
     const result = await cloudinary.uploader.destroy(publicId);
     return result;
@@ -49,22 +48,22 @@ const deleteFromCloudinary = async (publicId) => {
 };
 
 // Extract public ID from Cloudinary URL
-const extractPublicId = (cloudinaryUrl) => {
+const extractPublicId = cloudinaryUrl => {
   if (!cloudinaryUrl) return null;
-  
+
   try {
     // Extract public ID from URL like: https://res.cloudinary.com/dsh8xyg9m/image/upload/v1234567890/sportx-platform/avatar_abc123.jpg
     const parts = cloudinaryUrl.split('/');
     const uploadIndex = parts.indexOf('upload');
-    
+
     if (uploadIndex === -1) return null;
-    
+
     // Get everything after version number (v1234567890)
     const publicIdWithExtension = parts.slice(uploadIndex + 2).join('/');
-    
+
     // Remove file extension
     const publicId = publicIdWithExtension.replace(/\.[^/.]+$/, '');
-    
+
     return publicId;
   } catch (error) {
     console.error('Error extracting public ID:', error);
@@ -85,21 +84,21 @@ const uploadAvatar = async (buffer, userId, userRole) => {
           crop: 'fill',
           gravity: 'face', // Focus on face if detected
           quality: 'auto',
-          fetch_format: 'auto'
-        }
+          fetch_format: 'auto',
+        },
       ],
       // Generate multiple sizes for responsive images
       eager: [
         { width: 150, height: 150, crop: 'fill', gravity: 'face' }, // Thumbnail
         { width: 300, height: 300, crop: 'fill', gravity: 'face' }, // Medium
-        { width: 600, height: 600, crop: 'fill', gravity: 'face' }  // Large
+        { width: 600, height: 600, crop: 'fill', gravity: 'face' }, // Large
       ],
       eager_async: true, // Generate transformations asynchronously
-      tags: ['avatar', userRole, 'profile'] // Add tags for organization
+      tags: ['avatar', userRole, 'profile'], // Add tags for organization
     };
 
     const result = await uploadToCloudinary(buffer, options);
-    
+
     return {
       url: result.secure_url,
       publicId: result.public_id,
@@ -109,7 +108,7 @@ const uploadAvatar = async (buffer, userId, userRole) => {
       width: result.width,
       height: result.height,
       format: result.format,
-      bytes: result.bytes
+      bytes: result.bytes,
     };
   } catch (error) {
     console.error('Avatar upload failed:', error);
@@ -130,16 +129,16 @@ const uploadClubLogo = async (buffer, userId) => {
           crop: 'fit', // Maintain aspect ratio
           background: 'white', // Add white background if needed
           quality: 'auto',
-          fetch_format: 'auto'
-        }
+          fetch_format: 'auto',
+        },
       ],
       eager: [
         { width: 100, height: 100, crop: 'fit' }, // Small
         { width: 200, height: 200, crop: 'fit' }, // Medium
-        { width: 400, height: 400, crop: 'fit' }  // Large
+        { width: 400, height: 400, crop: 'fit' }, // Large
       ],
       eager_async: true,
-      tags: ['logo', 'club', 'branding']
+      tags: ['logo', 'club', 'branding'],
     };
 
     const result = await uploadToCloudinary(buffer, options);
@@ -153,7 +152,7 @@ const uploadClubLogo = async (buffer, userId) => {
       width: result.width,
       height: result.height,
       format: result.format,
-      bytes: result.bytes
+      bytes: result.bytes,
     };
   } catch (error) {
     console.error('Club logo upload failed:', error);
@@ -174,16 +173,16 @@ const uploadClubBanner = async (buffer, userId) => {
           crop: 'fill', // Fill the banner area
           gravity: 'center', // Center the image
           quality: 'auto',
-          fetch_format: 'auto'
-        }
+          fetch_format: 'auto',
+        },
       ],
       eager: [
-        { width: 640, height: 200, crop: 'fill', gravity: 'center' },  // Mobile
+        { width: 640, height: 200, crop: 'fill', gravity: 'center' }, // Mobile
         { width: 1024, height: 320, crop: 'fill', gravity: 'center' }, // Tablet
-        { width: 1920, height: 600, crop: 'fill', gravity: 'center' }  // Desktop
+        { width: 1920, height: 600, crop: 'fill', gravity: 'center' }, // Desktop
       ],
       eager_async: true,
-      tags: ['banner', 'club', 'cover']
+      tags: ['banner', 'club', 'cover'],
     };
 
     const result = await uploadToCloudinary(buffer, options);
@@ -197,7 +196,7 @@ const uploadClubBanner = async (buffer, userId) => {
       width: result.width,
       height: result.height,
       format: result.format,
-      bytes: result.bytes
+      bytes: result.bytes,
     };
   } catch (error) {
     console.error('Club banner upload failed:', error);
@@ -218,16 +217,16 @@ const uploadSpecialistAvatar = async (buffer, userId) => {
           crop: 'fill',
           gravity: 'face', // Focus on face if detected
           quality: 'auto',
-          fetch_format: 'auto'
-        }
+          fetch_format: 'auto',
+        },
       ],
       eager: [
         { width: 150, height: 150, crop: 'fill', gravity: 'face' }, // Thumbnail
         { width: 300, height: 300, crop: 'fill', gravity: 'face' }, // Medium
-        { width: 600, height: 600, crop: 'fill', gravity: 'face' }  // Large
+        { width: 600, height: 600, crop: 'fill', gravity: 'face' }, // Large
       ],
       eager_async: true,
-      tags: ['avatar', 'specialist', 'profile']
+      tags: ['avatar', 'specialist', 'profile'],
     };
 
     const result = await uploadToCloudinary(buffer, options);
@@ -241,7 +240,7 @@ const uploadSpecialistAvatar = async (buffer, userId) => {
       width: result.width,
       height: result.height,
       format: result.format,
-      bytes: result.bytes
+      bytes: result.bytes,
     };
   } catch (error) {
     console.error('Specialist avatar upload failed:', error);
@@ -262,16 +261,16 @@ const uploadSpecialistBanner = async (buffer, userId) => {
           crop: 'fill',
           gravity: 'center',
           quality: 'auto',
-          fetch_format: 'auto'
-        }
+          fetch_format: 'auto',
+        },
       ],
       eager: [
-        { width: 640, height: 200, crop: 'fill', gravity: 'center' },  // Mobile
+        { width: 640, height: 200, crop: 'fill', gravity: 'center' }, // Mobile
         { width: 1024, height: 320, crop: 'fill', gravity: 'center' }, // Tablet
-        { width: 1920, height: 600, crop: 'fill', gravity: 'center' }  // Desktop
+        { width: 1920, height: 600, crop: 'fill', gravity: 'center' }, // Desktop
       ],
       eager_async: true,
-      tags: ['banner', 'specialist', 'cover']
+      tags: ['banner', 'specialist', 'cover'],
     };
 
     const result = await uploadToCloudinary(buffer, options);
@@ -285,7 +284,7 @@ const uploadSpecialistBanner = async (buffer, userId) => {
       width: result.width,
       height: result.height,
       format: result.format,
-      bytes: result.bytes
+      bytes: result.bytes,
     };
   } catch (error) {
     console.error('Specialist banner upload failed:', error);
@@ -294,7 +293,12 @@ const uploadSpecialistBanner = async (buffer, userId) => {
 };
 
 // Utility function for portfolio images
-const uploadPortfolioImage = async (buffer, userId, userRole, imageType = 'general') => {
+const uploadPortfolioImage = async (
+  buffer,
+  userId,
+  userRole,
+  imageType = 'general'
+) => {
   try {
     const options = {
       folder: `sportx-platform/portfolio/${userRole}/${userId}`,
@@ -305,20 +309,20 @@ const uploadPortfolioImage = async (buffer, userId, userRole, imageType = 'gener
           height: 800,
           crop: 'limit', // Don't upscale
           quality: 'auto',
-          fetch_format: 'auto'
-        }
+          fetch_format: 'auto',
+        },
       ],
       eager: [
         { width: 300, height: 200, crop: 'fill' }, // Thumbnail
         { width: 600, height: 400, crop: 'fill' }, // Medium
-        { width: 1200, height: 800, crop: 'limit' } // Large
+        { width: 1200, height: 800, crop: 'limit' }, // Large
       ],
       eager_async: true,
-      tags: ['portfolio', userRole, imageType]
+      tags: ['portfolio', userRole, imageType],
     };
 
     const result = await uploadToCloudinary(buffer, options);
-    
+
     return {
       url: result.secure_url,
       publicId: result.public_id,
@@ -329,7 +333,7 @@ const uploadPortfolioImage = async (buffer, userId, userRole, imageType = 'gener
       height: result.height,
       format: result.format,
       bytes: result.bytes,
-      type: imageType
+      type: imageType,
     };
   } catch (error) {
     console.error('Portfolio image upload failed:', error);
@@ -338,9 +342,9 @@ const uploadPortfolioImage = async (buffer, userId, userRole, imageType = 'gener
 };
 
 // Cleanup old images when user updates their avatar/logo
-const cleanupOldImage = async (oldImageUrl) => {
+const cleanupOldImage = async oldImageUrl => {
   if (!oldImageUrl) return;
-  
+
   try {
     const publicId = extractPublicId(oldImageUrl);
     if (publicId) {
@@ -356,37 +360,42 @@ const cleanupOldImage = async (oldImageUrl) => {
 // Get optimized image URL with transformations
 const getOptimizedImageUrl = (publicId, transformations = {}) => {
   if (!publicId) return null;
-  
+
   const defaultTransformations = {
     quality: 'auto',
-    fetch_format: 'auto'
+    fetch_format: 'auto',
   };
-  
-  const finalTransformations = { ...defaultTransformations, ...transformations };
-  
+
+  const finalTransformations = {
+    ...defaultTransformations,
+    ...transformations,
+  };
+
   return cloudinary.url(publicId, finalTransformations);
 };
 
 // Validate image file
-const validateImageFile = (file) => {
+const validateImageFile = file => {
   const allowedMimeTypes = [
     'image/jpeg',
-    'image/jpg', 
+    'image/jpg',
     'image/png',
     'image/gif',
-    'image/webp'
+    'image/webp',
   ];
-  
+
   const maxFileSize = 5 * 1024 * 1024; // 5MB
-  
+
   if (!allowedMimeTypes.includes(file.mimetype)) {
-    throw new Error('Invalid file type. Only JPEG, PNG, GIF, and WebP files are allowed.');
+    throw new Error(
+      'Invalid file type. Only JPEG, PNG, GIF, and WebP files are allowed.'
+    );
   }
-  
+
   if (file.size > maxFileSize) {
     throw new Error('File size too large. Maximum size is 5MB.');
   }
-  
+
   return true;
 };
 
@@ -398,12 +407,11 @@ const uploadDocument = async (buffer, userId, documentType = 'resume') => {
         resource_type: 'raw', // 'raw' for non-image/video files
         folder: `sportx-platform/documents/${documentType}`,
         public_id: `${documentType}_${userId}_${Date.now()}`,
-        tags: [documentType, 'application', 'document']
+        tags: [documentType, 'application', 'document'],
       };
 
-      cloudinary.uploader.upload_stream(
-        options,
-        (error, result) => {
+      cloudinary.uploader
+        .upload_stream(options, (error, result) => {
           if (error) {
             console.error('Cloudinary document upload error:', error);
             reject(error);
@@ -413,11 +421,11 @@ const uploadDocument = async (buffer, userId, documentType = 'resume') => {
               publicId: result.public_id,
               format: result.format,
               bytes: result.bytes,
-              resourceType: result.resource_type
+              resourceType: result.resource_type,
             });
           }
-        }
-      ).end(buffer);
+        })
+        .end(buffer);
     });
   } catch (error) {
     console.error('Document upload to Cloudinary failed:', error);
@@ -439,5 +447,5 @@ module.exports = {
   uploadDocument,
   cleanupOldImage,
   getOptimizedImageUrl,
-  validateImageFile
+  validateImageFile,
 };

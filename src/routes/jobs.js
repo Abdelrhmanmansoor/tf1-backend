@@ -2,9 +2,12 @@ const express = require('express');
 const router = express.Router();
 const jobsController = require('../controllers/jobsController');
 const { authenticate } = require('../middleware/auth');
-const { uploadResume, handleUploadError } = require('../middleware/cloudinaryUpload');
+const {
+  uploadResume,
+  handleUploadError,
+} = require('../middleware/cloudinaryUpload');
 
-// ==================== JOB APPLICATIONS (REQUIRES AUTH) - MUST BE BEFORE /:id ==================== 
+// ==================== JOB APPLICATIONS (REQUIRES AUTH) - MUST BE BEFORE /:id ====================
 
 /**
  * @route   GET /api/v1/jobs/applications/me
@@ -18,7 +21,11 @@ router.get('/applications/me', authenticate, jobsController.getMyApplications);
  * @desc    Withdraw application
  * @access  Private
  */
-router.put('/applications/:applicationId/withdraw', authenticate, jobsController.withdrawApplication);
+router.put(
+  '/applications/:applicationId/withdraw',
+  authenticate,
+  jobsController.withdrawApplication
+);
 
 // ==================== JOB BROWSING (PUBLIC/AUTH) ====================
 
@@ -34,7 +41,8 @@ router.get('/:id', jobsController.getJobById);
  * @desc    Apply to a job (LinkedIn-style easy apply)
  * @access  Private (player, coach, specialist)
  */
-router.post('/:id/apply',
+router.post(
+  '/:id/apply',
   authenticate,
   jobsController.checkExistingApplication,
   uploadResume,
@@ -47,6 +55,10 @@ router.post('/:id/apply',
  * @desc    Get applications for a specific job (club access only)
  * @access  Private (club)
  */
-router.get('/:jobId/applications', authenticate, jobsController.getJobApplications);
+router.get(
+  '/:jobId/applications',
+  authenticate,
+  jobsController.getJobApplications
+);
 
 module.exports = router;

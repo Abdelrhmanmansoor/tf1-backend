@@ -5,7 +5,7 @@ const {
   uploadClubBanner,
   uploadPortfolioImage,
   cleanupOldImage,
-  validateImageFile
+  validateImageFile,
 } = require('../config/cloudinary');
 
 // Multer configuration for memory storage (required for Cloudinary)
@@ -26,13 +26,18 @@ const documentFilter = (req, file, cb) => {
   const allowedMimes = [
     'application/pdf',
     'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ];
 
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only PDF, DOC, and DOCX files are allowed for resumes.'), false);
+    cb(
+      new Error(
+        'Invalid file type. Only PDF, DOC, and DOCX files are allowed for resumes.'
+      ),
+      false
+    );
   }
 };
 
@@ -42,8 +47,8 @@ const upload = multer({
   fileFilter: fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
-    files: 1
-  }
+    files: 1,
+  },
 });
 
 // Avatar upload middleware
@@ -61,8 +66,8 @@ const documentUpload = multer({
   fileFilter: documentFilter,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit for documents
-    files: 1
-  }
+    files: 1,
+  },
 });
 
 // Resume upload middleware
@@ -75,7 +80,7 @@ const processAvatar = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'No image file provided',
-        code: 'NO_FILE'
+        code: 'NO_FILE',
       });
     }
 
@@ -90,7 +95,11 @@ const processAvatar = async (req, res, next) => {
       result = await uploadClubLogo(req.file.buffer, userId);
     } else {
       // Upload as user avatar
-      result = await uploadAvatarToCloudinary(req.file.buffer, userId, userRole);
+      result = await uploadAvatarToCloudinary(
+        req.file.buffer,
+        userId,
+        userRole
+      );
     }
 
     // Attach processed file info to request
@@ -103,7 +112,7 @@ const processAvatar = async (req, res, next) => {
       width: result.width,
       height: result.height,
       format: result.format,
-      bytes: result.bytes
+      bytes: result.bytes,
     };
 
     next();
@@ -115,14 +124,14 @@ const processAvatar = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: `Upload failed: ${error.error.message}`,
-        code: 'CLOUDINARY_ERROR'
+        code: 'CLOUDINARY_ERROR',
       });
     }
 
     res.status(500).json({
       success: false,
       message: 'Failed to upload avatar image',
-      code: 'UPLOAD_ERROR'
+      code: 'UPLOAD_ERROR',
     });
   }
 };
@@ -134,7 +143,7 @@ const processLogo = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'No logo file provided',
-        code: 'NO_FILE'
+        code: 'NO_FILE',
       });
     }
 
@@ -150,7 +159,7 @@ const processLogo = async (req, res, next) => {
       width: result.width,
       height: result.height,
       format: result.format,
-      bytes: result.bytes
+      bytes: result.bytes,
     };
 
     next();
@@ -161,14 +170,14 @@ const processLogo = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: `Upload failed: ${error.error.message}`,
-        code: 'CLOUDINARY_ERROR'
+        code: 'CLOUDINARY_ERROR',
       });
     }
 
     res.status(500).json({
       success: false,
       message: 'Failed to upload logo image',
-      code: 'UPLOAD_ERROR'
+      code: 'UPLOAD_ERROR',
     });
   }
 };
@@ -180,7 +189,7 @@ const processBanner = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'No banner file provided',
-        code: 'NO_FILE'
+        code: 'NO_FILE',
       });
     }
 
@@ -196,7 +205,7 @@ const processBanner = async (req, res, next) => {
       width: result.width,
       height: result.height,
       format: result.format,
-      bytes: result.bytes
+      bytes: result.bytes,
     };
 
     next();
@@ -207,14 +216,14 @@ const processBanner = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: `Upload failed: ${error.error.message}`,
-        code: 'CLOUDINARY_ERROR'
+        code: 'CLOUDINARY_ERROR',
       });
     }
 
     res.status(500).json({
       success: false,
       message: 'Failed to upload banner image',
-      code: 'UPLOAD_ERROR'
+      code: 'UPLOAD_ERROR',
     });
   }
 };
@@ -229,17 +238,22 @@ const processPortfolioImages = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'No image files provided',
-        code: 'NO_FILES'
+        code: 'NO_FILES',
       });
     }
 
     const userId = req.user.id || req.user._id;
     const userRole = req.user.role;
     const imageType = req.body.imageType || 'portfolio';
-    
+
     const uploadPromises = req.files.map(async (file, index) => {
       try {
-        const result = await uploadPortfolioImage(file.buffer, userId, userRole, `${imageType}_${index}`);
+        const result = await uploadPortfolioImage(
+          file.buffer,
+          userId,
+          userRole,
+          `${imageType}_${index}`
+        );
         return {
           url: result.url,
           publicId: result.publicId,
@@ -250,33 +264,33 @@ const processPortfolioImages = async (req, res, next) => {
           height: result.height,
           format: result.format,
           bytes: result.bytes,
-          type: result.type
+          type: result.type,
         };
       } catch (error) {
         console.error(`Failed to upload image ${index}:`, error);
         throw error;
       }
     });
-    
+
     const uploadedImages = await Promise.all(uploadPromises);
-    
+
     // Attach processed files info to request
     req.processedFiles = uploadedImages;
 
     next();
   } catch (error) {
     console.error('Portfolio images upload to Cloudinary error:', error);
-    
+
     res.status(500).json({
       success: false,
       message: 'Failed to upload portfolio images',
-      code: 'UPLOAD_ERROR'
+      code: 'UPLOAD_ERROR',
     });
   }
 };
 
 // Cleanup old avatar/logo from Cloudinary
-const cleanupOldAvatar = async (oldImageUrl) => {
+const cleanupOldAvatar = async oldImageUrl => {
   try {
     if (oldImageUrl) {
       await cleanupOldImage(oldImageUrl);
@@ -295,33 +309,36 @@ const handleUploadError = (error, req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'File too large. Maximum size is 5MB.',
-        code: 'FILE_TOO_LARGE'
+        code: 'FILE_TOO_LARGE',
       });
     }
-    
+
     if (error.code === 'LIMIT_FILE_COUNT') {
       return res.status(400).json({
         success: false,
         message: 'Too many files. Maximum 5 files allowed.',
-        code: 'TOO_MANY_FILES'
+        code: 'TOO_MANY_FILES',
       });
     }
-    
+
     return res.status(400).json({
       success: false,
       message: 'Upload error: ' + error.message,
-      code: 'UPLOAD_ERROR'
+      code: 'UPLOAD_ERROR',
     });
   }
-  
-  if (error.message.includes('Invalid file type') || error.message.includes('File size too large')) {
+
+  if (
+    error.message.includes('Invalid file type') ||
+    error.message.includes('File size too large')
+  ) {
     return res.status(400).json({
       success: false,
       message: error.message,
-      code: 'INVALID_FILE'
+      code: 'INVALID_FILE',
     });
   }
-  
+
   next(error);
 };
 
@@ -332,10 +349,10 @@ const validateImageUpload = (req, res, next) => {
     return res.status(401).json({
       success: false,
       message: 'Authentication required',
-      code: 'AUTH_REQUIRED'
+      code: 'AUTH_REQUIRED',
     });
   }
-  
+
   next();
 };
 
@@ -360,5 +377,5 @@ module.exports = {
   cleanupOldAvatar,
   handleUploadError,
   validateImageUpload,
-  handleImageUpload
+  handleImageUpload,
 };

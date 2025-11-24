@@ -7,7 +7,8 @@ class Database {
 
   async connect() {
     try {
-      const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/sportsplatform';
+      const mongoUri =
+        process.env.MONGODB_URI || 'mongodb://localhost:27017/sportsplatform';
 
       // Suppress duplicate index warnings
       mongoose.set('strictQuery', false);
@@ -15,8 +16,8 @@ class Database {
       this.connection = await mongoose.connect(mongoUri);
 
       console.log('✅ MongoDB connected successfully');
-      
-      mongoose.connection.on('error', (error) => {
+
+      mongoose.connection.on('error', error => {
         console.error('❌ MongoDB connection error:', error);
       });
 

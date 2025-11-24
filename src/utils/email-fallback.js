@@ -14,8 +14,8 @@ class FallbackEmailService {
         port: 587,
         auth: {
           user: 'ethereal.user@ethereal.email',
-          pass: 'ethereal.pass'
-        }
+          pass: 'ethereal.pass',
+        },
       });
       console.log('✅ Fallback email service initialized (Ethereal)');
     } catch (error) {
@@ -26,22 +26,22 @@ class FallbackEmailService {
   async createTestAccount() {
     try {
       const testAccount = await nodemailer.createTestAccount();
-      
+
       this.transporter = nodemailer.createTransporter({
         host: 'smtp.ethereal.email',
         port: 587,
         secure: false,
         auth: {
           user: testAccount.user,
-          pass: testAccount.pass
-        }
+          pass: testAccount.pass,
+        },
       });
 
       console.log('✅ Test email account created:');
       console.log('User:', testAccount.user);
       console.log('Pass:', testAccount.pass);
       console.log('Preview URL: Will be shown after sending');
-      
+
       return testAccount;
     } catch (error) {
       console.error('❌ Failed to create test account:', error);
@@ -51,7 +51,7 @@ class FallbackEmailService {
 
   async sendVerificationEmail(user, verificationToken) {
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
-    
+
     const mailOptions = {
       from: `SportX Platform <noreply@sportx.com>`,
       to: user.email,
@@ -78,14 +78,16 @@ class FallbackEmailService {
             <strong>Note:</strong> This is a test email service. In production, emails will be sent from your Gmail account.
           </p>
         </div>
-      `
+      `,
     };
 
     try {
       const info = await this.transporter.sendMail(mailOptions);
       console.log(`✅ Test verification email sent to ${user.email}`);
       console.log(`📧 Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
-      console.log(`🔗 Copy this URL to see the email: ${nodemailer.getTestMessageUrl(info)}`);
+      console.log(
+        `🔗 Copy this URL to see the email: ${nodemailer.getTestMessageUrl(info)}`
+      );
       return true;
     } catch (error) {
       console.error('❌ Failed to send test verification email:', error);

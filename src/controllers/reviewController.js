@@ -15,14 +15,14 @@ exports.createReview = async (req, res) => {
       title,
       review,
       reviewAr,
-      detailedRatings
+      detailedRatings,
     } = req.body;
 
     // Validation
     if (!revieweeId || !revieweeRole || !relatedTo || !rating || !review) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required fields'
+        message: 'Please provide all required fields',
       });
     }
 
@@ -36,7 +36,7 @@ exports.createReview = async (req, res) => {
     if (!canReview) {
       return res.status(400).json({
         success: false,
-        message: 'You have already reviewed this entity'
+        message: 'You have already reviewed this entity',
       });
     }
 
@@ -51,7 +51,7 @@ exports.createReview = async (req, res) => {
       title,
       review,
       reviewAr,
-      detailedRatings
+      detailedRatings,
     });
 
     // Populate reviewer info
@@ -68,24 +68,23 @@ exports.createReview = async (req, res) => {
       messageAr: `${req.user.firstName} ${req.user.lastName} ترك لك تقييم ${rating} نجوم`,
       relatedTo: {
         entityType: 'review',
-        entityId: newReview._id
+        entityId: newReview._id,
       },
       actionUrl: `/reviews/${newReview._id}`,
-      priority: rating <= 2 ? 'high' : 'normal'
+      priority: rating <= 2 ? 'high' : 'normal',
     });
 
     res.status(201).json({
       success: true,
       message: 'Review created successfully',
-      data: newReview
+      data: newReview,
     });
-
   } catch (error) {
     console.error('Error creating review:', error);
     res.status(500).json({
       success: false,
       message: 'Error creating review',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -101,7 +100,7 @@ exports.getCoachReviews = async (req, res) => {
       page: parseInt(page),
       limit: parseInt(limit),
       minRating: minRating ? parseInt(minRating) : undefined,
-      sort
+      sort,
     });
 
     res.status(200).json({
@@ -111,15 +110,14 @@ exports.getCoachReviews = async (req, res) => {
       page: result.page,
       pages: result.pages,
       statistics: result.statistics,
-      data: result.reviews
+      data: result.reviews,
     });
-
   } catch (error) {
     console.error('Error fetching coach reviews:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching coach reviews',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -135,7 +133,7 @@ exports.getSpecialistReviews = async (req, res) => {
       page: parseInt(page),
       limit: parseInt(limit),
       minRating: minRating ? parseInt(minRating) : undefined,
-      sort
+      sort,
     });
 
     res.status(200).json({
@@ -145,15 +143,14 @@ exports.getSpecialistReviews = async (req, res) => {
       page: result.page,
       pages: result.pages,
       statistics: result.statistics,
-      data: result.reviews
+      data: result.reviews,
     });
-
   } catch (error) {
     console.error('Error fetching specialist reviews:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching specialist reviews',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -169,7 +166,7 @@ exports.getClubReviews = async (req, res) => {
       page: parseInt(page),
       limit: parseInt(limit),
       minRating: minRating ? parseInt(minRating) : undefined,
-      sort
+      sort,
     });
 
     res.status(200).json({
@@ -179,15 +176,14 @@ exports.getClubReviews = async (req, res) => {
       page: result.page,
       pages: result.pages,
       statistics: result.statistics,
-      data: result.reviews
+      data: result.reviews,
     });
-
   } catch (error) {
     console.error('Error fetching club reviews:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching club reviews',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -203,7 +199,7 @@ exports.getPlayerReviews = async (req, res) => {
       page: parseInt(page),
       limit: parseInt(limit),
       minRating: minRating ? parseInt(minRating) : undefined,
-      sort
+      sort,
     });
 
     res.status(200).json({
@@ -213,15 +209,14 @@ exports.getPlayerReviews = async (req, res) => {
       page: result.page,
       pages: result.pages,
       statistics: result.statistics,
-      data: result.reviews
+      data: result.reviews,
     });
-
   } catch (error) {
     console.error('Error fetching player reviews:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching player reviews',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -235,7 +230,7 @@ exports.getUserReviews = async (req, res) => {
 
     const result = await Review.getReviewsByUser(req.params.userId, {
       page: parseInt(page),
-      limit: parseInt(limit)
+      limit: parseInt(limit),
     });
 
     res.status(200).json({
@@ -244,15 +239,14 @@ exports.getUserReviews = async (req, res) => {
       total: result.total,
       page: result.page,
       pages: result.pages,
-      data: result.reviews
+      data: result.reviews,
     });
-
   } catch (error) {
     console.error('Error fetching user reviews:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching user reviews',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -264,7 +258,7 @@ exports.getReviewById = async (req, res) => {
   try {
     const review = await Review.findOne({
       _id: req.params.id,
-      isDeleted: false
+      isDeleted: false,
     })
       .populate('reviewerId', 'firstName lastName avatar')
       .populate('revieweeId', 'firstName lastName avatar');
@@ -272,21 +266,20 @@ exports.getReviewById = async (req, res) => {
     if (!review) {
       return res.status(404).json({
         success: false,
-        message: 'Review not found'
+        message: 'Review not found',
       });
     }
 
     res.status(200).json({
       success: true,
-      data: review
+      data: review,
     });
-
   } catch (error) {
     console.error('Error fetching review:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching review',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -299,13 +292,13 @@ exports.updateReview = async (req, res) => {
     const review = await Review.findOne({
       _id: req.params.id,
       reviewerId: req.user._id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!review) {
       return res.status(404).json({
         success: false,
-        message: 'Review not found'
+        message: 'Review not found',
       });
     }
 
@@ -316,12 +309,18 @@ exports.updateReview = async (req, res) => {
     if (hoursDiff > 24) {
       return res.status(400).json({
         success: false,
-        message: 'Reviews can only be edited within 24 hours of creation'
+        message: 'Reviews can only be edited within 24 hours of creation',
       });
     }
 
     // Update allowed fields
-    const { rating, title, review: reviewText, reviewAr, detailedRatings } = req.body;
+    const {
+      rating,
+      title,
+      review: reviewText,
+      reviewAr,
+      detailedRatings,
+    } = req.body;
 
     if (rating !== undefined) review.rating = rating;
     if (title !== undefined) review.title = title;
@@ -334,15 +333,14 @@ exports.updateReview = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Review updated successfully',
-      data: review
+      data: review,
     });
-
   } catch (error) {
     console.error('Error updating review:', error);
     res.status(500).json({
       success: false,
       message: 'Error updating review',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -355,13 +353,13 @@ exports.deleteReview = async (req, res) => {
     const review = await Review.findOne({
       _id: req.params.id,
       reviewerId: req.user._id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!review) {
       return res.status(404).json({
         success: false,
-        message: 'Review not found'
+        message: 'Review not found',
       });
     }
 
@@ -369,15 +367,14 @@ exports.deleteReview = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Review deleted successfully'
+      message: 'Review deleted successfully',
     });
-
   } catch (error) {
     console.error('Error deleting review:', error);
     res.status(500).json({
       success: false,
       message: 'Error deleting review',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -392,19 +389,19 @@ exports.addResponse = async (req, res) => {
     if (!text) {
       return res.status(400).json({
         success: false,
-        message: 'Response text is required'
+        message: 'Response text is required',
       });
     }
 
     const review = await Review.findOne({
       _id: req.params.id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!review) {
       return res.status(404).json({
         success: false,
-        message: 'Review not found'
+        message: 'Review not found',
       });
     }
 
@@ -412,7 +409,7 @@ exports.addResponse = async (req, res) => {
     if (review.revieweeId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
-        message: 'Only the reviewee can respond to this review'
+        message: 'Only the reviewee can respond to this review',
       });
     }
 
@@ -429,24 +426,23 @@ exports.addResponse = async (req, res) => {
       messageAr: `${req.user.firstName} ${req.user.lastName} رد على تقييمك`,
       relatedTo: {
         entityType: 'review',
-        entityId: review._id
+        entityId: review._id,
       },
       actionUrl: `/reviews/${review._id}`,
-      priority: 'normal'
+      priority: 'normal',
     });
 
     res.status(200).json({
       success: true,
       message: 'Response added successfully',
-      data: review
+      data: review,
     });
-
   } catch (error) {
     console.error('Error adding response:', error);
     res.status(500).json({
       success: false,
       message: 'Error adding response',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -458,13 +454,13 @@ exports.markAsHelpful = async (req, res) => {
   try {
     const review = await Review.findOne({
       _id: req.params.id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!review) {
       return res.status(404).json({
         success: false,
-        message: 'Review not found'
+        message: 'Review not found',
       });
     }
 
@@ -475,16 +471,15 @@ exports.markAsHelpful = async (req, res) => {
       message: 'Review marked as helpful',
       data: {
         helpfulCount: review.helpfulCount,
-        notHelpfulCount: review.notHelpfulCount
-      }
+        notHelpfulCount: review.notHelpfulCount,
+      },
     });
-
   } catch (error) {
     console.error('Error marking review as helpful:', error);
     res.status(500).json({
       success: false,
       message: 'Error marking review as helpful',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -496,13 +491,13 @@ exports.markAsNotHelpful = async (req, res) => {
   try {
     const review = await Review.findOne({
       _id: req.params.id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!review) {
       return res.status(404).json({
         success: false,
-        message: 'Review not found'
+        message: 'Review not found',
       });
     }
 
@@ -513,16 +508,15 @@ exports.markAsNotHelpful = async (req, res) => {
       message: 'Feedback recorded',
       data: {
         helpfulCount: review.helpfulCount,
-        notHelpfulCount: review.notHelpfulCount
-      }
+        notHelpfulCount: review.notHelpfulCount,
+      },
     });
-
   } catch (error) {
     console.error('Error marking review as not helpful:', error);
     res.status(500).json({
       success: false,
       message: 'Error recording feedback',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -537,19 +531,19 @@ exports.reportReview = async (req, res) => {
     if (!reason) {
       return res.status(400).json({
         success: false,
-        message: 'Report reason is required'
+        message: 'Report reason is required',
       });
     }
 
     const review = await Review.findOne({
       _id: req.params.id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!review) {
       return res.status(404).json({
         success: false,
-        message: 'Review not found'
+        message: 'Review not found',
       });
     }
 
@@ -557,15 +551,14 @@ exports.reportReview = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Review reported successfully. Our team will review it.'
+      message: 'Review reported successfully. Our team will review it.',
     });
-
   } catch (error) {
     console.error('Error reporting review:', error);
     res.status(500).json({
       success: false,
       message: 'Error reporting review',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -576,20 +569,19 @@ exports.reportReview = async (req, res) => {
 exports.getReviewStatistics = async (req, res) => {
   try {
     const result = await Review.getReviewsForReviewee(req.params.revieweeId, {
-      limit: 1
+      limit: 1,
     });
 
     res.status(200).json({
       success: true,
-      data: result.statistics
+      data: result.statistics,
     });
-
   } catch (error) {
     console.error('Error fetching review statistics:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching review statistics',
-      error: error.message
+      error: error.message,
     });
   }
 };

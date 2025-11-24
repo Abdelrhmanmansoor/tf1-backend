@@ -45,7 +45,7 @@ router.get('/', (req, res) => {
       reviews: '/reviews',
       global: '/global',
       jobs: '/jobs',
-      health: '/health'
+      health: '/health',
     },
     features: [
       'Role-based authentication (Player, Coach, Club, Specialist)',
@@ -96,8 +96,8 @@ router.get('/', (req, res) => {
       'Multilingual support (English & Arabic)',
       'User blocking system',
       'Content reporting & moderation',
-      'Profile analytics & insights'
-    ]
+      'Profile analytics & insights',
+    ],
   });
 });
 

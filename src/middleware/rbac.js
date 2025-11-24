@@ -5,7 +5,7 @@ const rolePermissions = {
     'opportunities:view',
     'opportunities:apply',
     'messages:send',
-    'messages:read'
+    'messages:read',
   ],
   coach: [
     'profile:read',
@@ -18,7 +18,7 @@ const rolePermissions = {
     'players:contact',
     'messages:send',
     'messages:read',
-    'teams:manage'
+    'teams:manage',
   ],
   club: [
     'profile:read',
@@ -36,7 +36,7 @@ const rolePermissions = {
     'events:create',
     'events:manage',
     'teams:create',
-    'teams:manage'
+    'teams:manage',
   ],
   specialist: [
     'profile:read',
@@ -52,8 +52,8 @@ const rolePermissions = {
     'messages:send',
     'messages:read',
     'services:create',
-    'services:manage'
-  ]
+    'services:manage',
+  ],
 };
 
 const hasPermission = (userRole, requiredPermission) => {
@@ -61,13 +61,13 @@ const hasPermission = (userRole, requiredPermission) => {
   return permissions.includes(requiredPermission);
 };
 
-const requirePermission = (permission) => {
+const requirePermission = permission => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
         success: false,
         message: 'Authentication required',
-        code: 'NOT_AUTHENTICATED'
+        code: 'NOT_AUTHENTICATED',
       });
     }
 
@@ -77,7 +77,7 @@ const requirePermission = (permission) => {
         message: `Access denied. Permission '${permission}' required.`,
         code: 'INSUFFICIENT_PERMISSIONS',
         requiredPermission: permission,
-        userRole: req.user.role
+        userRole: req.user.role,
       });
     }
 
@@ -85,17 +85,17 @@ const requirePermission = (permission) => {
   };
 };
 
-const requireAnyPermission = (permissions) => {
+const requireAnyPermission = permissions => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
         success: false,
         message: 'Authentication required',
-        code: 'NOT_AUTHENTICATED'
+        code: 'NOT_AUTHENTICATED',
       });
     }
 
-    const hasAnyPermission = permissions.some(permission => 
+    const hasAnyPermission = permissions.some(permission =>
       hasPermission(req.user.role, permission)
     );
 
@@ -105,7 +105,7 @@ const requireAnyPermission = (permissions) => {
         message: `Access denied. One of the following permissions required: ${permissions.join(', ')}`,
         code: 'INSUFFICIENT_PERMISSIONS',
         requiredPermissions: permissions,
-        userRole: req.user.role
+        userRole: req.user.role,
       });
     }
 
@@ -113,17 +113,17 @@ const requireAnyPermission = (permissions) => {
   };
 };
 
-const requireAllPermissions = (permissions) => {
+const requireAllPermissions = permissions => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
         success: false,
         message: 'Authentication required',
-        code: 'NOT_AUTHENTICATED'
+        code: 'NOT_AUTHENTICATED',
       });
     }
 
-    const hasAllPermissions = permissions.every(permission => 
+    const hasAllPermissions = permissions.every(permission =>
       hasPermission(req.user.role, permission)
     );
 
@@ -133,7 +133,7 @@ const requireAllPermissions = (permissions) => {
         message: `Access denied. All of the following permissions required: ${permissions.join(', ')}`,
         code: 'INSUFFICIENT_PERMISSIONS',
         requiredPermissions: permissions,
-        userRole: req.user.role
+        userRole: req.user.role,
       });
     }
 
@@ -141,7 +141,7 @@ const requireAllPermissions = (permissions) => {
   };
 };
 
-const getUserPermissions = (userRole) => {
+const getUserPermissions = userRole => {
   return rolePermissions[userRole] || [];
 };
 
@@ -150,17 +150,17 @@ const getRoleHierarchy = () => {
     player: 1,
     coach: 2,
     specialist: 3,
-    club: 4
+    club: 4,
   };
 };
 
-const requireMinimumRole = (minimumRole) => {
+const requireMinimumRole = minimumRole => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
         success: false,
         message: 'Authentication required',
-        code: 'NOT_AUTHENTICATED'
+        code: 'NOT_AUTHENTICATED',
       });
     }
 
@@ -174,7 +174,7 @@ const requireMinimumRole = (minimumRole) => {
         message: `Access denied. Minimum role '${minimumRole}' required.`,
         code: 'INSUFFICIENT_ROLE',
         requiredRole: minimumRole,
-        userRole: req.user.role
+        userRole: req.user.role,
       });
     }
 
@@ -190,5 +190,5 @@ module.exports = {
   requireAllPermissions,
   getUserPermissions,
   getRoleHierarchy,
-  requireMinimumRole
+  requireMinimumRole,
 };

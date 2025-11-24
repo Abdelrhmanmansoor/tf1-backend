@@ -21,12 +21,22 @@ const storage = multer.memoryStorage();
 
 // File filter for images only
 const fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-  
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+  ];
+
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, and WebP images are allowed.'), false);
+    cb(
+      new Error(
+        'Invalid file type. Only JPEG, PNG, and WebP images are allowed.'
+      ),
+      false
+    );
   }
 };
 
@@ -36,8 +46,8 @@ const upload = multer({
   fileFilter: fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
-    files: 1
-  }
+    files: 1,
+  },
 });
 
 // Avatar upload middleware
@@ -50,7 +60,7 @@ const processAvatar = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'No image file provided',
-        code: 'NO_FILE'
+        code: 'NO_FILE',
       });
     }
 
@@ -62,22 +72,22 @@ const processAvatar = async (req, res, next) => {
     await sharp(req.file.buffer)
       .resize(300, 300, {
         fit: 'cover',
-        position: 'center'
+        position: 'center',
       })
       .webp({
         quality: 80,
-        effort: 4
+        effort: 4,
       })
       .toFile(filepath);
 
     // Generate URL for the uploaded avatar
     const avatarUrl = `/uploads/avatars/${filename}`;
-    
+
     // Attach processed file info to request
     req.processedFile = {
       filename,
       filepath,
-      url: avatarUrl
+      url: avatarUrl,
     };
 
     next();
@@ -86,19 +96,24 @@ const processAvatar = async (req, res, next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to process avatar image',
-      code: 'PROCESSING_ERROR'
+      code: 'PROCESSING_ERROR',
     });
   }
 };
 
 // Cleanup old avatar file
-const cleanupOldAvatar = async (oldAvatarUrl) => {
+const cleanupOldAvatar = async oldAvatarUrl => {
   try {
     if (oldAvatarUrl && oldAvatarUrl.startsWith('/uploads/avatars/')) {
       const filename = path.basename(oldAvatarUrl);
 
       // Security: Validate filename to prevent path traversal
-      if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      if (
+        !filename ||
+        filename.includes('..') ||
+        filename.includes('/') ||
+        filename.includes('\\')
+      ) {
         console.warn('⚠️ Suspicious filename detected in cleanup:', filename);
         return;
       }
@@ -128,33 +143,33 @@ const handleUploadError = (error, req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'File too large. Maximum size is 5MB.',
-        code: 'FILE_TOO_LARGE'
+        code: 'FILE_TOO_LARGE',
       });
     }
-    
+
     if (error.code === 'LIMIT_FILE_COUNT') {
       return res.status(400).json({
         success: false,
         message: 'Too many files. Only one file is allowed.',
-        code: 'TOO_MANY_FILES'
+        code: 'TOO_MANY_FILES',
       });
     }
-    
+
     return res.status(400).json({
       success: false,
       message: 'Upload error: ' + error.message,
-      code: 'UPLOAD_ERROR'
+      code: 'UPLOAD_ERROR',
     });
   }
-  
+
   if (error.message.includes('Invalid file type')) {
     return res.status(400).json({
       success: false,
       message: error.message,
-      code: 'INVALID_FILE_TYPE'
+      code: 'INVALID_FILE_TYPE',
     });
   }
-  
+
   next(error);
 };
 
@@ -162,19 +177,19 @@ const handleUploadError = (error, req, res, next) => {
 const serveAvatars = (req, res, next) => {
   const filename = req.params.filename;
   const filepath = path.join(avatarsDir, filename);
-  
+
   if (!fs.existsSync(filepath)) {
     return res.status(404).json({
       success: false,
       message: 'Avatar not found',
-      code: 'AVATAR_NOT_FOUND'
+      code: 'AVATAR_NOT_FOUND',
     });
   }
-  
+
   // Set cache headers
   res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
   res.setHeader('ETag', `"${filename}"`);
-  
+
   res.sendFile(filepath);
 };
 
@@ -183,5 +198,5 @@ module.exports = {
   processAvatar,
   cleanupOldAvatar,
   handleUploadError,
-  serveAvatars
+  serveAvatars,
 };

@@ -1,115 +1,118 @@
 const mongoose = require('mongoose');
 
-const notificationPreferencesSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    unique: true,
-    index: true
-  },
+const notificationPreferencesSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      unique: true,
+      index: true,
+    },
 
-  preferences: {
-    // Channel preferences
-    email: {
-      enabled: {
-        type: Boolean,
-        default: true
+    preferences: {
+      // Channel preferences
+      email: {
+        enabled: {
+          type: Boolean,
+          default: true,
+        },
+        frequency: {
+          type: String,
+          enum: ['instant', 'daily_digest', 'weekly_digest'],
+          default: 'instant',
+        },
       },
-      frequency: {
+      push: {
+        enabled: {
+          type: Boolean,
+          default: true,
+        },
+      },
+      sms: {
+        enabled: {
+          type: Boolean,
+          default: false,
+        },
+      },
+
+      // Type preferences
+      trainingRequests: {
+        inApp: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+      },
+      messages: {
+        inApp: { type: Boolean, default: true },
+        email: { type: Boolean, default: false },
+        push: { type: Boolean, default: true },
+      },
+      payments: {
+        inApp: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: false },
+      },
+      reviews: {
+        inApp: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+      },
+      jobMatches: {
+        inApp: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: false },
+      },
+      sessionReminders: {
+        inApp: { type: Boolean, default: true },
+        email: { type: Boolean, default: false },
+        push: { type: Boolean, default: true },
+      },
+      applications: {
+        inApp: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+      },
+      clubInvitations: {
+        inApp: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+      },
+      systemUpdates: {
+        inApp: { type: Boolean, default: true },
+        email: { type: Boolean, default: false },
+        push: { type: Boolean, default: false },
+      },
+    },
+
+    // Quiet hours
+    quietHours: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      start: {
+        type: String, // "22:00"
+        default: '22:00',
+      },
+      end: {
+        type: String, // "08:00"
+        default: '08:00',
+      },
+      timezone: {
         type: String,
-        enum: ['instant', 'daily_digest', 'weekly_digest'],
-        default: 'instant'
-      }
+        default: 'Africa/Cairo',
+      },
     },
-    push: {
-      enabled: {
-        type: Boolean,
-        default: true
-      }
-    },
-    sms: {
-      enabled: {
-        type: Boolean,
-        default: false
-      }
-    },
-
-    // Type preferences
-    trainingRequests: {
-      inApp: { type: Boolean, default: true },
-      email: { type: Boolean, default: true },
-      push: { type: Boolean, default: true }
-    },
-    messages: {
-      inApp: { type: Boolean, default: true },
-      email: { type: Boolean, default: false },
-      push: { type: Boolean, default: true }
-    },
-    payments: {
-      inApp: { type: Boolean, default: true },
-      email: { type: Boolean, default: true },
-      push: { type: Boolean, default: false }
-    },
-    reviews: {
-      inApp: { type: Boolean, default: true },
-      email: { type: Boolean, default: true },
-      push: { type: Boolean, default: true }
-    },
-    jobMatches: {
-      inApp: { type: Boolean, default: true },
-      email: { type: Boolean, default: true },
-      push: { type: Boolean, default: false }
-    },
-    sessionReminders: {
-      inApp: { type: Boolean, default: true },
-      email: { type: Boolean, default: false },
-      push: { type: Boolean, default: true }
-    },
-    applications: {
-      inApp: { type: Boolean, default: true },
-      email: { type: Boolean, default: true },
-      push: { type: Boolean, default: true }
-    },
-    clubInvitations: {
-      inApp: { type: Boolean, default: true },
-      email: { type: Boolean, default: true },
-      push: { type: Boolean, default: true }
-    },
-    systemUpdates: {
-      inApp: { type: Boolean, default: true },
-      email: { type: Boolean, default: false },
-      push: { type: Boolean, default: false }
-    }
   },
-
-  // Quiet hours
-  quietHours: {
-    enabled: {
-      type: Boolean,
-      default: false
-    },
-    start: {
-      type: String, // "22:00"
-      default: "22:00"
-    },
-    end: {
-      type: String, // "08:00"
-      default: "08:00"
-    },
-    timezone: {
-      type: String,
-      default: "Africa/Cairo"
-    }
+  {
+    timestamps: true,
   }
-}, {
-  timestamps: true
-});
+);
 
 // Statics
 
 // Get or create preferences for a user
-notificationPreferencesSchema.statics.getOrCreate = async function(userId) {
+notificationPreferencesSchema.statics.getOrCreate = async function (userId) {
   let preferences = await this.findOne({ userId });
 
   if (!preferences) {
@@ -122,7 +125,10 @@ notificationPreferencesSchema.statics.getOrCreate = async function(userId) {
 // Methods
 
 // Check if notification should be sent based on preferences and quiet hours
-notificationPreferencesSchema.methods.shouldSendNotification = function(notificationType, channel) {
+notificationPreferencesSchema.methods.shouldSendNotification = function (
+  notificationType,
+  channel
+) {
   // Check channel is enabled
   if (!this.preferences[channel] || !this.preferences[channel].enabled) {
     return false;
@@ -141,7 +147,9 @@ notificationPreferencesSchema.methods.shouldSendNotification = function(notifica
     const currentMinute = now.getMinutes();
     const currentTime = currentHour * 60 + currentMinute;
 
-    const [startHour, startMinute] = this.quietHours.start.split(':').map(Number);
+    const [startHour, startMinute] = this.quietHours.start
+      .split(':')
+      .map(Number);
     const [endHour, endMinute] = this.quietHours.end.split(':').map(Number);
     const startTime = startHour * 60 + startMinute;
     const endTime = endHour * 60 + endMinute;
@@ -162,7 +170,11 @@ notificationPreferencesSchema.methods.shouldSendNotification = function(notifica
 };
 
 // Update specific preference
-notificationPreferencesSchema.methods.updatePreference = function(notificationType, channel, value) {
+notificationPreferencesSchema.methods.updatePreference = function (
+  notificationType,
+  channel,
+  value
+) {
   if (!this.preferences[notificationType]) {
     this.preferences[notificationType] = {};
   }
@@ -172,9 +184,14 @@ notificationPreferencesSchema.methods.updatePreference = function(notificationTy
 };
 
 // Enable/disable all notifications
-notificationPreferencesSchema.methods.toggleAllNotifications = function(enabled) {
+notificationPreferencesSchema.methods.toggleAllNotifications = function (
+  enabled
+) {
   Object.keys(this.preferences).forEach(key => {
-    if (typeof this.preferences[key] === 'object' && this.preferences[key] !== null) {
+    if (
+      typeof this.preferences[key] === 'object' &&
+      this.preferences[key] !== null
+    ) {
       if (this.preferences[key].enabled !== undefined) {
         this.preferences[key].enabled = enabled;
       }
@@ -184,4 +201,7 @@ notificationPreferencesSchema.methods.toggleAllNotifications = function(enabled)
   return this.save();
 };
 
-module.exports = mongoose.model('NotificationPreferences', notificationPreferencesSchema);
+module.exports = mongoose.model(
+  'NotificationPreferences',
+  notificationPreferencesSchema
+);

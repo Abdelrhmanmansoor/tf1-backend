@@ -24,6 +24,9 @@ router.delete('/clear-all', notificationController.clearAllNotifications);
 // Notification settings/preferences
 router.get('/settings', notificationController.getNotificationSettings);
 router.put('/settings', notificationController.updateNotificationSettings);
-router.put('/settings/toggle-all', notificationController.toggleAllNotifications);
+router.put(
+  '/settings/toggle-all',
+  notificationController.toggleAllNotifications
+);
 
 module.exports = router;

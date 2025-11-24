@@ -15,7 +15,7 @@ exports.getConversations = async (req, res) => {
     const result = await Conversation.getUserConversations(req.user._id, {
       archived: archived === 'true',
       page: parseInt(page),
-      limit: parseInt(limit)
+      limit: parseInt(limit),
     });
 
     // Add unread count for each conversation
@@ -26,7 +26,7 @@ exports.getConversations = async (req, res) => {
         ...conv.toObject(),
         unreadCount,
         // Remove other users' unread counts for privacy
-        unreadCounts: undefined
+        unreadCounts: undefined,
       };
     });
 
@@ -36,14 +36,14 @@ exports.getConversations = async (req, res) => {
       pagination: {
         page: result.page,
         pages: result.pages,
-        total: result.total
-      }
+        total: result.total,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error fetching conversations',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -54,7 +54,7 @@ exports.getConversationById = async (req, res) => {
     const conversation = await Conversation.findOne({
       _id: req.params.id,
       'participants.userId': req.user._id,
-      isDeleted: false
+      isDeleted: false,
     })
       .populate('participants.userId', 'firstName lastName avatar role')
       .populate('lastMessage.senderId', 'firstName lastName avatar');
@@ -62,25 +62,26 @@ exports.getConversationById = async (req, res) => {
     if (!conversation) {
       return res.status(404).json({
         success: false,
-        message: 'Conversation not found'
+        message: 'Conversation not found',
       });
     }
 
-    const unreadCount = conversation.unreadCounts.get(req.user._id.toString()) || 0;
+    const unreadCount =
+      conversation.unreadCounts.get(req.user._id.toString()) || 0;
 
     res.json({
       success: true,
       conversation: {
         ...conversation.toObject(),
         unreadCount,
-        unreadCounts: undefined
-      }
+        unreadCounts: undefined,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error fetching conversation',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -95,7 +96,7 @@ exports.createConversation = async (req, res) => {
       if (!participantIds || participantIds.length !== 1) {
         return res.status(400).json({
           success: false,
-          message: 'Direct conversation requires exactly one other participant'
+          message: 'Direct conversation requires exactly one other participant',
         });
       }
 
@@ -109,7 +110,7 @@ exports.createConversation = async (req, res) => {
         if (!otherUser) {
           return res.status(404).json({
             success: false,
-            message: 'User not found'
+            message: 'User not found',
           });
         }
         otherUserRole = otherUser.role;
@@ -123,26 +124,29 @@ exports.createConversation = async (req, res) => {
         otherUserRole
       );
 
-      await conversation.populate('participants.userId', 'firstName lastName avatar role');
+      await conversation.populate(
+        'participants.userId',
+        'firstName lastName avatar role'
+      );
 
       return res.status(201).json({
         success: true,
         message: 'Conversation ready',
-        conversation
+        conversation,
       });
     } else if (type === 'group') {
       // Group conversation
       if (!name) {
         return res.status(400).json({
           success: false,
-          message: 'Group name is required'
+          message: 'Group name is required',
         });
       }
 
       if (!participantIds || participantIds.length < 1) {
         return res.status(400).json({
           success: false,
-          message: 'At least one other participant is required'
+          message: 'At least one other participant is required',
         });
       }
 
@@ -154,15 +158,17 @@ exports.createConversation = async (req, res) => {
           joinedAt: new Date(),
           isActive: true,
           lastReadAt: new Date(),
-          isMuted: false
-        }
+          isMuted: false,
+        },
       ];
 
       // If participantRoles not provided, fetch roles from User model
       let roles = participantRoles;
       if (!roles || roles.length !== participantIds.length) {
         const User = require('../modules/shared/models/User');
-        const users = await User.find({ _id: { $in: participantIds } }).select('_id role');
+        const users = await User.find({ _id: { $in: participantIds } }).select(
+          '_id role'
+        );
         roles = participantIds.map(userId => {
           const user = users.find(u => u._id.toString() === userId.toString());
           return user ? user.role : 'player'; // Default to 'player' if not found
@@ -176,7 +182,7 @@ exports.createConversation = async (req, res) => {
           joinedAt: new Date(),
           isActive: true,
           lastReadAt: new Date(),
-          isMuted: false
+          isMuted: false,
         });
       });
 
@@ -186,10 +192,13 @@ exports.createConversation = async (req, res) => {
         nameAr,
         participants,
         createdBy: req.user._id,
-        admins: [req.user._id]
+        admins: [req.user._id],
       });
 
-      await conversation.populate('participants.userId', 'firstName lastName avatar role');
+      await conversation.populate(
+        'participants.userId',
+        'firstName lastName avatar role'
+      );
 
       // Create system message
       await Message.createSystemMessage(
@@ -209,19 +218,19 @@ exports.createConversation = async (req, res) => {
       return res.status(201).json({
         success: true,
         message: 'Group conversation created',
-        conversation
+        conversation,
       });
     } else {
       return res.status(400).json({
         success: false,
-        message: 'Invalid conversation type'
+        message: 'Invalid conversation type',
       });
     }
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error creating conversation',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -234,20 +243,20 @@ exports.updateConversation = async (req, res) => {
     const conversation = await Conversation.findOne({
       _id: req.params.id,
       'participants.userId': req.user._id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!conversation) {
       return res.status(404).json({
         success: false,
-        message: 'Conversation not found'
+        message: 'Conversation not found',
       });
     }
 
     if (conversation.type !== 'group') {
       return res.status(400).json({
         success: false,
-        message: 'Can only update group conversations'
+        message: 'Can only update group conversations',
       });
     }
 
@@ -255,7 +264,7 @@ exports.updateConversation = async (req, res) => {
     if (!conversation.admins.includes(req.user._id)) {
       return res.status(403).json({
         success: false,
-        message: 'Only admins can update group details'
+        message: 'Only admins can update group details',
       });
     }
 
@@ -281,13 +290,13 @@ exports.updateConversation = async (req, res) => {
     res.json({
       success: true,
       message: 'Conversation updated',
-      conversation
+      conversation,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error updating conversation',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -298,13 +307,13 @@ exports.deleteConversation = async (req, res) => {
     const conversation = await Conversation.findOne({
       _id: req.params.id,
       'participants.userId': req.user._id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!conversation) {
       return res.status(404).json({
         success: false,
-        message: 'Conversation not found'
+        message: 'Conversation not found',
       });
     }
 
@@ -327,20 +336,20 @@ exports.deleteConversation = async (req, res) => {
       conversation.participants.forEach(p => {
         io.to(p.userId.toString()).emit('participant_left', {
           conversationId: conversation._id,
-          userId: req.user._id
+          userId: req.user._id,
         });
       });
     }
 
     res.json({
       success: true,
-      message: 'Left conversation successfully'
+      message: 'Left conversation successfully',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error leaving conversation',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -351,30 +360,34 @@ exports.toggleMute = async (req, res) => {
     const conversation = await Conversation.findOne({
       _id: req.params.id,
       'participants.userId': req.user._id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!conversation) {
       return res.status(404).json({
         success: false,
-        message: 'Conversation not found'
+        message: 'Conversation not found',
       });
     }
 
     await conversation.toggleMute(req.user._id);
 
-    const participant = conversation.participants.find(p => p.userId.toString() === req.user._id.toString());
+    const participant = conversation.participants.find(
+      p => p.userId.toString() === req.user._id.toString()
+    );
 
     res.json({
       success: true,
-      message: participant.isMuted ? 'Conversation muted' : 'Conversation unmuted',
-      isMuted: participant.isMuted
+      message: participant.isMuted
+        ? 'Conversation muted'
+        : 'Conversation unmuted',
+      isMuted: participant.isMuted,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error toggling mute',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -385,13 +398,13 @@ exports.archiveConversation = async (req, res) => {
     const conversation = await Conversation.findOne({
       _id: req.params.id,
       'participants.userId': req.user._id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!conversation) {
       return res.status(404).json({
         success: false,
-        message: 'Conversation not found'
+        message: 'Conversation not found',
       });
     }
 
@@ -399,13 +412,13 @@ exports.archiveConversation = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Conversation archived'
+      message: 'Conversation archived',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error archiving conversation',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -415,13 +428,13 @@ exports.unarchiveConversation = async (req, res) => {
   try {
     const conversation = await Conversation.findOne({
       _id: req.params.id,
-      'participants.userId': req.user._id
+      'participants.userId': req.user._id,
     });
 
     if (!conversation) {
       return res.status(404).json({
         success: false,
-        message: 'Conversation not found'
+        message: 'Conversation not found',
       });
     }
 
@@ -429,13 +442,13 @@ exports.unarchiveConversation = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Conversation unarchived'
+      message: 'Conversation unarchived',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error unarchiving conversation',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -449,13 +462,13 @@ exports.addParticipant = async (req, res) => {
       _id: req.params.id,
       'participants.userId': req.user._id,
       isDeleted: false,
-      type: 'group'
+      type: 'group',
     });
 
     if (!conversation) {
       return res.status(404).json({
         success: false,
-        message: 'Group conversation not found'
+        message: 'Group conversation not found',
       });
     }
 
@@ -469,7 +482,10 @@ exports.addParticipant = async (req, res) => {
       `${req.user.firstName} added ${addedUser.firstName} to the group`
     );
 
-    await conversation.populate('participants.userId', 'firstName lastName avatar role');
+    await conversation.populate(
+      'participants.userId',
+      'firstName lastName avatar role'
+    );
 
     // Emit Socket.io event
     const io = req.app.get('io');
@@ -481,21 +497,21 @@ exports.addParticipant = async (req, res) => {
           firstName: addedUser.firstName,
           lastName: addedUser.lastName,
           avatar: addedUser.avatar,
-          role: addedUser.role
-        }
+          role: addedUser.role,
+        },
       });
     });
 
     res.json({
       success: true,
       message: 'Participant added',
-      conversation
+      conversation,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: error.message || 'Error adding participant',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -509,13 +525,13 @@ exports.removeParticipant = async (req, res) => {
       _id: req.params.id,
       'participants.userId': req.user._id,
       isDeleted: false,
-      type: 'group'
+      type: 'group',
     });
 
     if (!conversation) {
       return res.status(404).json({
         success: false,
-        message: 'Group conversation not found'
+        message: 'Group conversation not found',
       });
     }
 
@@ -534,24 +550,24 @@ exports.removeParticipant = async (req, res) => {
     conversation.participants.forEach(p => {
       io.to(p.userId.toString()).emit('participant_removed', {
         conversationId: conversation._id,
-        userId
+        userId,
       });
     });
 
     // Notify removed user
     io.to(userId).emit('removed_from_group', {
-      conversationId: conversation._id
+      conversationId: conversation._id,
     });
 
     res.json({
       success: true,
-      message: 'Participant removed'
+      message: 'Participant removed',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: error.message || 'Error removing participant',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -569,20 +585,20 @@ exports.getMessages = async (req, res) => {
     const conversation = await Conversation.findOne({
       _id: req.params.id,
       'participants.userId': req.user._id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!conversation) {
       return res.status(404).json({
         success: false,
-        message: 'Conversation not found'
+        message: 'Conversation not found',
       });
     }
 
     const result = await Message.getConversationMessages(req.params.id, {
       page: parseInt(page),
       limit: parseInt(limit),
-      before
+      before,
     });
 
     res.json({
@@ -590,13 +606,13 @@ exports.getMessages = async (req, res) => {
       messages: result.messages,
       total: result.total,
       page: result.page,
-      hasMore: result.hasMore
+      hasMore: result.hasMore,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error fetching messages',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -604,19 +620,25 @@ exports.getMessages = async (req, res) => {
 // Send message
 exports.sendMessage = async (req, res) => {
   try {
-    const { content, contentAr, messageType = 'text', attachments, replyTo } = req.body;
+    const {
+      content,
+      contentAr,
+      messageType = 'text',
+      attachments,
+      replyTo,
+    } = req.body;
 
     // Verify user is participant
     const conversation = await Conversation.findOne({
       _id: req.params.id,
       'participants.userId': req.user._id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!conversation) {
       return res.status(404).json({
         success: false,
-        message: 'Conversation not found'
+        message: 'Conversation not found',
       });
     }
 
@@ -630,7 +652,7 @@ exports.sendMessage = async (req, res) => {
       contentAr,
       attachments: attachments || [],
       replyTo,
-      sentAt: new Date()
+      sentAt: new Date(),
     });
 
     await message.populate('senderId', 'firstName lastName avatar role');
@@ -641,8 +663,8 @@ exports.sendMessage = async (req, res) => {
         select: 'content senderId sentAt',
         populate: {
           path: 'senderId',
-          select: 'firstName lastName avatar'
-        }
+          select: 'firstName lastName avatar',
+        },
       });
     }
 
@@ -658,7 +680,7 @@ exports.sendMessage = async (req, res) => {
       if (participant.userId.toString() !== req.user._id.toString()) {
         io.to(participant.userId.toString()).emit('newMessage', {
           conversationId: conversation._id,
-          data: message
+          data: message,
         });
 
         // Check if participant has muted this conversation
@@ -688,13 +710,13 @@ exports.sendMessage = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Message sent',
-      data: message
+      data: message,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error sending message',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -706,13 +728,13 @@ exports.editMessage = async (req, res) => {
 
     const message = await Message.findOne({
       _id: req.params.messageId,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!message) {
       return res.status(404).json({
         success: false,
-        message: 'Message not found'
+        message: 'Message not found',
       });
     }
 
@@ -726,20 +748,20 @@ exports.editMessage = async (req, res) => {
         conversationId: message.conversationId,
         messageId: message._id,
         newContent: content,
-        isEdited: true
+        isEdited: true,
       });
     });
 
     res.json({
       success: true,
       message: 'Message updated',
-      data: message
+      data: message,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: error.message || 'Error editing message',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -749,13 +771,13 @@ exports.deleteMessage = async (req, res) => {
   try {
     const message = await Message.findOne({
       _id: req.params.messageId,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!message) {
       return res.status(404).json({
         success: false,
-        message: 'Message not found'
+        message: 'Message not found',
       });
     }
 
@@ -767,19 +789,19 @@ exports.deleteMessage = async (req, res) => {
     conversation.participants.forEach(p => {
       io.to(p.userId.toString()).emit('message_deleted', {
         conversationId: message.conversationId,
-        messageId: message._id
+        messageId: message._id,
       });
     });
 
     res.json({
       success: true,
-      message: 'Message deleted'
+      message: 'Message deleted',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: error.message || 'Error deleting message',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -791,26 +813,26 @@ exports.addReaction = async (req, res) => {
 
     const message = await Message.findOne({
       _id: req.params.messageId,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!message) {
       return res.status(404).json({
         success: false,
-        message: 'Message not found'
+        message: 'Message not found',
       });
     }
 
     // Verify user is participant of the conversation
     const conversation = await Conversation.findOne({
       _id: message.conversationId,
-      'participants.userId': req.user._id
+      'participants.userId': req.user._id,
     });
 
     if (!conversation) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized'
+        message: 'Not authorized',
       });
     }
 
@@ -824,20 +846,20 @@ exports.addReaction = async (req, res) => {
         messageId: message._id,
         userId: req.user._id,
         emoji,
-        reactions: message.reactions
+        reactions: message.reactions,
       });
     });
 
     res.json({
       success: true,
       message: 'Reaction added',
-      reactions: message.reactions
+      reactions: message.reactions,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error adding reaction',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -847,13 +869,13 @@ exports.removeReaction = async (req, res) => {
   try {
     const message = await Message.findOne({
       _id: req.params.messageId,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!message) {
       return res.status(404).json({
         success: false,
-        message: 'Message not found'
+        message: 'Message not found',
       });
     }
 
@@ -867,20 +889,20 @@ exports.removeReaction = async (req, res) => {
         conversationId: message.conversationId,
         messageId: message._id,
         userId: req.user._id,
-        reactions: message.reactions
+        reactions: message.reactions,
       });
     });
 
     res.json({
       success: true,
       message: 'Reaction removed',
-      reactions: message.reactions
+      reactions: message.reactions,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error removing reaction',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -891,13 +913,13 @@ exports.markAsRead = async (req, res) => {
     const conversation = await Conversation.findOne({
       _id: req.params.id,
       'participants.userId': req.user._id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!conversation) {
       return res.status(404).json({
         success: false,
-        message: 'Conversation not found'
+        message: 'Conversation not found',
       });
     }
 
@@ -908,7 +930,7 @@ exports.markAsRead = async (req, res) => {
     const messages = await Message.find({
       conversationId: req.params.id,
       isDeleted: false,
-      senderId: { $ne: req.user._id }
+      senderId: { $ne: req.user._id },
     });
 
     for (const message of messages) {
@@ -924,20 +946,20 @@ exports.markAsRead = async (req, res) => {
         io.to(p.userId.toString()).emit('messages_read', {
           conversationId: conversation._id,
           readBy: req.user._id,
-          readAt: new Date()
+          readAt: new Date(),
         });
       }
     });
 
     res.json({
       success: true,
-      message: 'Messages marked as read'
+      message: 'Messages marked as read',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error marking as read',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -948,7 +970,7 @@ exports.getUnreadCount = async (req, res) => {
     const conversations = await Conversation.find({
       'participants.userId': req.user._id,
       isDeleted: false,
-      isArchived: false
+      isArchived: false,
     });
 
     let totalUnread = 0;
@@ -959,13 +981,13 @@ exports.getUnreadCount = async (req, res) => {
 
     res.json({
       success: true,
-      unreadCount: totalUnread
+      unreadCount: totalUnread,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error getting unread count',
-      error: error.message
+      error: error.message,
     });
   }
 };

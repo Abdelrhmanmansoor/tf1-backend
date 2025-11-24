@@ -7,7 +7,7 @@
  * Sanitize user input to prevent NoSQL injection
  * Removes any MongoDB operators from user input
  */
-const sanitizeMongoInput = (input) => {
+const sanitizeMongoInput = input => {
   if (typeof input === 'string') {
     // Remove potential MongoDB operators and regex special characters
     return input.replace(/[${}]/g, '');
@@ -36,7 +36,7 @@ const sanitizeMongoInput = (input) => {
  * Escape regex special characters in search queries
  * Prevents regex injection attacks
  */
-const escapeRegex = (string) => {
+const escapeRegex = string => {
   if (typeof string !== 'string') {
     return '';
   }
@@ -47,7 +47,7 @@ const escapeRegex = (string) => {
 /**
  * Sanitize search query for safe MongoDB regex use
  */
-const sanitizeSearchQuery = (query) => {
+const sanitizeSearchQuery = query => {
   if (!query || typeof query !== 'string') {
     return '';
   }
@@ -65,7 +65,7 @@ const sanitizeSearchQuery = (query) => {
 /**
  * Validate and sanitize MongoDB ObjectId
  */
-const sanitizeObjectId = (id) => {
+const sanitizeObjectId = id => {
   if (!id || typeof id !== 'string') {
     return null;
   }
@@ -78,7 +78,7 @@ const sanitizeObjectId = (id) => {
 /**
  * Sanitize file path to prevent path traversal attacks
  */
-const sanitizeFilePath = (filename) => {
+const sanitizeFilePath = filename => {
   if (!filename || typeof filename !== 'string') {
     return null;
   }
@@ -88,7 +88,8 @@ const sanitizeFilePath = (filename) => {
     .replace(/\.\./g, '') // Remove ..
     .replace(/\\/g, '/') // Normalize slashes
     .replace(/^\/+/, '') // Remove leading slashes
-    .split('/').pop(); // Get only the filename
+    .split('/')
+    .pop(); // Get only the filename
 
   // Validate filename (alphanumeric, hyphens, underscores, and dots only)
   const filenamePattern = /^[\w\-. ]+$/;
@@ -100,15 +101,12 @@ const sanitizeFilePath = (filename) => {
  */
 const sanitizePagination = (page, limit, maxLimit = 100) => {
   const sanitizedPage = Math.max(1, parseInt(page) || 1);
-  const sanitizedLimit = Math.min(
-    maxLimit,
-    Math.max(1, parseInt(limit) || 20)
-  );
+  const sanitizedLimit = Math.min(maxLimit, Math.max(1, parseInt(limit) || 20));
 
   return {
     page: sanitizedPage,
     limit: sanitizedLimit,
-    skip: (sanitizedPage - 1) * sanitizedLimit
+    skip: (sanitizedPage - 1) * sanitizedLimit,
   };
 };
 
@@ -117,7 +115,9 @@ const sanitizePagination = (page, limit, maxLimit = 100) => {
  */
 const sanitizeSortParams = (sortBy, sortOrder, allowedFields = []) => {
   // Validate sortBy is in allowed fields
-  const sanitizedSortBy = allowedFields.includes(sortBy) ? sortBy : allowedFields[0] || 'createdAt';
+  const sanitizedSortBy = allowedFields.includes(sortBy)
+    ? sortBy
+    : allowedFields[0] || 'createdAt';
 
   // Validate sortOrder is either 'asc' or 'desc'
   const sanitizedSortOrder = sortOrder === 'desc' ? 'desc' : 'asc';
@@ -125,14 +125,17 @@ const sanitizeSortParams = (sortBy, sortOrder, allowedFields = []) => {
   return {
     sortBy: sanitizedSortBy,
     sortOrder: sanitizedSortOrder,
-    sortValue: sanitizedSortOrder === 'desc' ? -1 : 1
+    sortValue: sanitizedSortOrder === 'desc' ? -1 : 1,
   };
 };
 
 /**
  * Remove sensitive fields from objects before sending to client
  */
-const removeSensitiveFields = (obj, fieldsToRemove = ['password', 'passwordResetToken', 'emailVerificationToken']) => {
+const removeSensitiveFields = (
+  obj,
+  fieldsToRemove = ['password', 'passwordResetToken', 'emailVerificationToken']
+) => {
   if (!obj || typeof obj !== 'object') {
     return obj;
   }
@@ -157,5 +160,5 @@ module.exports = {
   sanitizeFilePath,
   sanitizePagination,
   sanitizeSortParams,
-  removeSensitiveFields
+  removeSensitiveFields,
 };

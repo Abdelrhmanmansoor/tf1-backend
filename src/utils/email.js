@@ -9,8 +9,14 @@ class EmailService {
   initializeTransporter() {
     try {
       // Check if SMTP credentials are configured
-      if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        console.log('⚠️  Email service disabled - SMTP credentials not configured');
+      if (
+        !process.env.SMTP_HOST ||
+        !process.env.SMTP_USER ||
+        !process.env.SMTP_PASS
+      ) {
+        console.log(
+          '⚠️  Email service disabled - SMTP credentials not configured'
+        );
         return;
       }
 
@@ -20,15 +26,15 @@ class EmailService {
         secure: process.env.SMTP_SECURE === 'true',
         auth: {
           user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
+          pass: process.env.SMTP_PASS,
         },
         connectionTimeout: 10000, // 10 seconds
         greetingTimeout: 10000,
         socketTimeout: 10000,
         tls: {
           rejectUnauthorized: false,
-          minVersion: 'TLSv1.2'
-        }
+          minVersion: 'TLSv1.2',
+        },
       });
 
       console.log('✅ Email service initialized');
@@ -39,7 +45,9 @@ class EmailService {
 
   async sendVerificationEmail(user, verificationToken) {
     if (!this.transporter) {
-      console.log('⚠️  Email service not configured - skipping verification email');
+      console.log(
+        '⚠️  Email service not configured - skipping verification email'
+      );
       return false;
     }
 
@@ -115,7 +123,7 @@ class EmailService {
             </p>
           </div>
         </div>
-      `
+      `,
     };
 
     try {
@@ -130,12 +138,13 @@ class EmailService {
 
   async sendPasswordResetEmail(user, resetToken) {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-    
+
     // Get appropriate display name based on user type
-    const displayName = user.role === 'club' 
-      ? user.organizationName || 'Organization'
-      : user.firstName || 'User';
-    
+    const displayName =
+      user.role === 'club'
+        ? user.organizationName || 'Organization'
+        : user.firstName || 'User';
+
     const mailOptions = {
       from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`,
       to: user.email,
@@ -159,7 +168,7 @@ class EmailService {
             If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
           </p>
         </div>
-      `
+      `,
     };
 
     try {

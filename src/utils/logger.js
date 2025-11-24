@@ -7,7 +7,9 @@ const consoleFormat = winston.format.combine(
   winston.format.printf(({ timestamp, level, message, ...meta }) => {
     const ts = `[${timestamp}]`;
     const levelStr = level.toUpperCase().padEnd(5);
-    const metaStr = Object.keys(meta).length ? '\n' + JSON.stringify(meta, null, 2) : '';
+    const metaStr = Object.keys(meta).length
+      ? '\n' + JSON.stringify(meta, null, 2)
+      : '';
     return `${ts} ${levelStr} ${message}${metaStr}`;
   })
 );
@@ -34,7 +36,7 @@ const logger = winston.createLogger({
     new winston.transports.Console({
       format: consoleFormat,
       handleExceptions: true,
-      handleRejections: true
+      handleRejections: true,
     }),
 
     // Error log file
@@ -43,7 +45,7 @@ const logger = winston.createLogger({
       level: 'error',
       format: fileFormat,
       maxsize: 5242880, // 5MB
-      maxFiles: 5
+      maxFiles: 5,
     }),
 
     // Combined log file
@@ -51,9 +53,9 @@ const logger = winston.createLogger({
       filename: path.join(logsDir, 'combined.log'),
       format: fileFormat,
       maxsize: 5242880, // 5MB
-      maxFiles: 5
-    })
-  ]
+      maxFiles: 5,
+    }),
+  ],
 });
 
 module.exports = logger;

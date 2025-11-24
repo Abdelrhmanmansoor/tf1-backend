@@ -13,9 +13,12 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(
+      null,
+      file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname)
+    );
+  },
 });
 
 const fileFilter = (req, file, cb) => {
@@ -23,8 +26,12 @@ const fileFilter = (req, file, cb) => {
   const allowedTypes = {
     image: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
     video: ['video/mp4', 'video/mpeg', 'video/quicktime'],
-    document: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-    audio: ['audio/mpeg', 'audio/wav', 'audio/ogg']
+    document: [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ],
+    audio: ['audio/mpeg', 'audio/wav', 'audio/ogg'],
   };
 
   const allAllowed = Object.values(allowedTypes).flat();
@@ -40,8 +47,8 @@ exports.upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB
-  }
+    fileSize: 100 * 1024 * 1024, // 100MB
+  },
 });
 
 // @desc    Upload image
@@ -52,7 +59,7 @@ exports.uploadImage = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'Please upload a file'
+        message: 'Please upload a file',
       });
     }
 
@@ -68,7 +75,7 @@ exports.uploadImage = async (req, res) => {
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
       caption: req.body.caption,
-      tags: req.body.tags ? req.body.tags.split(',') : []
+      tags: req.body.tags ? req.body.tags.split(',') : [],
     });
 
     res.status(201).json({
@@ -76,16 +83,15 @@ exports.uploadImage = async (req, res) => {
       data: {
         url: media.fileUrl,
         publicId: media.publicId,
-        mediaId: media._id
-      }
+        mediaId: media._id,
+      },
     });
-
   } catch (error) {
     console.error('Error uploading image:', error);
     res.status(500).json({
       success: false,
       message: 'Error uploading image',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -98,7 +104,7 @@ exports.uploadVideo = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'Please upload a file'
+        message: 'Please upload a file',
       });
     }
 
@@ -112,7 +118,7 @@ exports.uploadVideo = async (req, res) => {
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
       caption: req.body.caption,
-      tags: req.body.tags ? req.body.tags.split(',') : []
+      tags: req.body.tags ? req.body.tags.split(',') : [],
     });
 
     res.status(201).json({
@@ -120,16 +126,15 @@ exports.uploadVideo = async (req, res) => {
       data: {
         url: media.fileUrl,
         publicId: media.publicId,
-        mediaId: media._id
-      }
+        mediaId: media._id,
+      },
     });
-
   } catch (error) {
     console.error('Error uploading video:', error);
     res.status(500).json({
       success: false,
       message: 'Error uploading video',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -142,7 +147,7 @@ exports.uploadDocument = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'Please upload a file'
+        message: 'Please upload a file',
       });
     }
 
@@ -154,7 +159,7 @@ exports.uploadDocument = async (req, res) => {
       fileUrl: `/uploads/${req.file.filename}`,
       publicId: req.file.filename,
       fileSize: req.file.size,
-      mimeType: req.file.mimetype
+      mimeType: req.file.mimetype,
     });
 
     res.status(201).json({
@@ -163,16 +168,15 @@ exports.uploadDocument = async (req, res) => {
         url: media.fileUrl,
         publicId: media.publicId,
         fileName: media.originalName,
-        mediaId: media._id
-      }
+        mediaId: media._id,
+      },
     });
-
   } catch (error) {
     console.error('Error uploading document:', error);
     res.status(500).json({
       success: false,
       message: 'Error uploading document',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -189,7 +193,7 @@ exports.getMediaLibrary = async (req, res) => {
       limit: parseInt(limit),
       fileType,
       sortBy,
-      sortOrder
+      sortOrder,
     });
 
     res.status(200).json({
@@ -199,15 +203,14 @@ exports.getMediaLibrary = async (req, res) => {
       page: result.page,
       pages: result.pages,
       hasMore: result.hasMore,
-      data: result.media
+      data: result.media,
     });
-
   } catch (error) {
     console.error('Error fetching media library:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching media library',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -221,15 +224,14 @@ exports.getStorageUsage = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: usage
+      data: usage,
     });
-
   } catch (error) {
     console.error('Error fetching storage usage:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching storage usage',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -242,13 +244,13 @@ exports.deleteMedia = async (req, res) => {
     const media = await Media.findOne({
       _id: req.params.id,
       userId: req.user._id,
-      isDeleted: false
+      isDeleted: false,
     });
 
     if (!media) {
       return res.status(404).json({
         success: false,
-        message: 'Media not found'
+        message: 'Media not found',
       });
     }
 
@@ -256,15 +258,14 @@ exports.deleteMedia = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Media deleted successfully'
+      message: 'Media deleted successfully',
     });
-
   } catch (error) {
     console.error('Error deleting media:', error);
     res.status(500).json({
       success: false,
       message: 'Error deleting media',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -281,7 +282,7 @@ exports.geocodeAddress = async (req, res) => {
     if (!address) {
       return res.status(400).json({
         success: false,
-        message: 'Address is required'
+        message: 'Address is required',
       });
     }
 
@@ -292,16 +293,15 @@ exports.geocodeAddress = async (req, res) => {
       data: {
         lat: 30.0444,
         lng: 31.2357,
-        formatted: address
-      }
+        formatted: address,
+      },
     });
-
   } catch (error) {
     console.error('Error geocoding address:', error);
     res.status(500).json({
       success: false,
       message: 'Error geocoding address',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -316,7 +316,7 @@ exports.reverseGeocode = async (req, res) => {
     if (!lat || !lng) {
       return res.status(400).json({
         success: false,
-        message: 'Latitude and longitude are required'
+        message: 'Latitude and longitude are required',
       });
     }
 
@@ -327,16 +327,15 @@ exports.reverseGeocode = async (req, res) => {
       data: {
         city: 'Cairo',
         country: 'Egypt',
-        formatted: 'Cairo, Egypt'
-      }
+        formatted: 'Cairo, Egypt',
+      },
     });
-
   } catch (error) {
     console.error('Error reverse geocoding:', error);
     res.status(500).json({
       success: false,
       message: 'Error reverse geocoding',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -353,7 +352,7 @@ exports.updateLanguage = async (req, res) => {
     if (!['en', 'ar'].includes(language)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid language. Must be "en" or "ar"'
+        message: 'Invalid language. Must be "en" or "ar"',
       });
     }
 
@@ -364,16 +363,15 @@ exports.updateLanguage = async (req, res) => {
       success: true,
       message: 'Language preference updated',
       data: {
-        language: req.user.language
-      }
+        language: req.user.language,
+      },
     });
-
   } catch (error) {
     console.error('Error updating language:', error);
     res.status(500).json({
       success: false,
       message: 'Error updating language',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -391,7 +389,7 @@ exports.blockUser = async (req, res) => {
     if (userId === req.user._id.toString()) {
       return res.status(400).json({
         success: false,
-        message: 'You cannot block yourself'
+        message: 'You cannot block yourself',
       });
     }
 
@@ -399,7 +397,7 @@ exports.blockUser = async (req, res) => {
     if (!userToBlock) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'User not found',
       });
     }
 
@@ -407,15 +405,14 @@ exports.blockUser = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'User blocked successfully'
+      message: 'User blocked successfully',
     });
-
   } catch (error) {
     console.error('Error blocking user:', error);
     res.status(500).json({
       success: false,
       message: 'Error blocking user',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -431,15 +428,14 @@ exports.unblockUser = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'User unblocked successfully'
+      message: 'User unblocked successfully',
     });
-
   } catch (error) {
     console.error('Error unblocking user:', error);
     res.status(500).json({
       success: false,
       message: 'Error unblocking user',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -454,15 +450,14 @@ exports.getBlockedUsers = async (req, res) => {
     res.status(200).json({
       success: true,
       count: blockedUsers.length,
-      data: blockedUsers
+      data: blockedUsers,
     });
-
   } catch (error) {
     console.error('Error fetching blocked users:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching blocked users',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -477,13 +472,13 @@ exports.reportContent = async (req, res) => {
       reportedEntityId,
       reportedEntityModel,
       reason,
-      details
+      details,
     } = req.body;
 
     if (!reportType || !reportedEntityId || !reportedEntityModel || !reason) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required fields'
+        message: 'Please provide all required fields',
       });
     }
 
@@ -497,7 +492,7 @@ exports.reportContent = async (req, res) => {
     if (alreadyReported) {
       return res.status(400).json({
         success: false,
-        message: 'You have already reported this content'
+        message: 'You have already reported this content',
       });
     }
 
@@ -516,20 +511,19 @@ exports.reportContent = async (req, res) => {
       reportedEntityModel,
       reason,
       details,
-      priority
+      priority,
     });
 
     res.status(201).json({
       success: true,
-      message: 'Report submitted successfully. Our team will review it.'
+      message: 'Report submitted successfully. Our team will review it.',
     });
-
   } catch (error) {
     console.error('Error submitting report:', error);
     res.status(500).json({
       success: false,
       message: 'Error submitting report',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -548,16 +542,15 @@ exports.getProfileViews = async (req, res) => {
         total: 0,
         thisWeek: 0,
         thisMonth: 0,
-        trend: 'stable'
-      }
+        trend: 'stable',
+      },
     });
-
   } catch (error) {
     console.error('Error fetching profile views:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching profile views',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -573,16 +566,15 @@ exports.getSearchAppearances = async (req, res) => {
       data: {
         total: 0,
         thisWeek: 0,
-        thisMonth: 0
-      }
+        thisMonth: 0,
+      },
     });
-
   } catch (error) {
     console.error('Error fetching search appearances:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching search appearances',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -604,19 +596,20 @@ exports.getUniversalProfile = async (req, res) => {
 
     // Try to find the profile in each collection
     // Note: Not specifying select fields in populate to ensure all User fields are included (including null values like avatar)
-    const [playerProfile, coachProfile, specialistProfile, clubProfile] = await Promise.all([
-      PlayerProfile.findById(id).populate('userId'),
-      CoachProfile.findById(id).populate('userId'),
-      SpecialistProfile.findById(id).populate('userId'),
-      ClubProfile.findById(id).populate('userId')
-    ]);
+    const [playerProfile, coachProfile, specialistProfile, clubProfile] =
+      await Promise.all([
+        PlayerProfile.findById(id).populate('userId'),
+        CoachProfile.findById(id).populate('userId'),
+        SpecialistProfile.findById(id).populate('userId'),
+        ClubProfile.findById(id).populate('userId'),
+      ]);
 
     // Determine which profile was found and return it
     if (playerProfile) {
       return res.json({
         success: true,
         role: 'player',
-        profile: playerProfile
+        profile: playerProfile,
       });
     }
 
@@ -624,7 +617,7 @@ exports.getUniversalProfile = async (req, res) => {
       return res.json({
         success: true,
         role: 'coach',
-        profile: coachProfile
+        profile: coachProfile,
       });
     }
 
@@ -632,7 +625,7 @@ exports.getUniversalProfile = async (req, res) => {
       return res.json({
         success: true,
         role: 'specialist',
-        profile: specialistProfile
+        profile: specialistProfile,
       });
     }
 
@@ -640,22 +633,21 @@ exports.getUniversalProfile = async (req, res) => {
       return res.json({
         success: true,
         role: 'club',
-        profile: clubProfile
+        profile: clubProfile,
       });
     }
 
     // Profile not found in any collection
     return res.status(404).json({
       success: false,
-      message: 'Profile not found'
+      message: 'Profile not found',
     });
-
   } catch (error) {
     console.error('Error fetching universal profile:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching profile',
-      error: error.message
+      error: error.message,
     });
   }
 };

@@ -12,16 +12,16 @@ const mongoose = require('mongoose');
  * Save notification to database or memory
  * Returns: { saved: true/false, source: 'mongodb'/'memory' }
  */
-const saveNotification = async (notificationData) => {
+const saveNotification = async notificationData => {
   try {
     // Check if MongoDB is connected
     if (mongoose.connection.readyState === 1) {
       // MongoDB is connected
       const notification = await Notification.create(notificationData);
-      return { 
-        notification, 
-        saved: true, 
-        source: 'mongodb' 
+      return {
+        notification,
+        saved: true,
+        source: 'mongodb',
       };
     } else {
       // MongoDB not connected, use memory
@@ -29,10 +29,10 @@ const saveNotification = async (notificationData) => {
         notificationData.userId,
         notificationData
       );
-      return { 
-        notification, 
-        saved: false, 
-        source: 'memory' 
+      return {
+        notification,
+        saved: false,
+        source: 'memory',
       };
     }
   } catch (error) {
@@ -42,10 +42,10 @@ const saveNotification = async (notificationData) => {
       notificationData.userId,
       notificationData
     );
-    return { 
-      notification, 
-      saved: false, 
-      source: 'memory' 
+    return {
+      notification,
+      saved: false,
+      source: 'memory',
     };
   }
 };
@@ -59,21 +59,27 @@ const getNotifications = async (userId, options = {}) => {
       // Get from MongoDB
       const notifications = await Notification.find({
         userId,
-        isDeleted: false
+        isDeleted: false,
       })
         .sort({ createdAt: -1 })
         .limit(options.limit || 50);
-      
+
       return { notifications, source: 'mongodb' };
     } else {
       // Get from memory
-      const notifications = inMemoryStore.getNotifications(userId, options.filter);
+      const notifications = inMemoryStore.getNotifications(
+        userId,
+        options.filter
+      );
       return { notifications, source: 'memory' };
     }
   } catch (error) {
     console.error('Error fetching notifications:', error);
     // Fallback to memory
-    const notifications = inMemoryStore.getNotifications(userId, options.filter);
+    const notifications = inMemoryStore.getNotifications(
+      userId,
+      options.filter
+    );
     return { notifications, source: 'memory' };
   }
 };
@@ -98,13 +104,13 @@ const markAsRead = async (userId, notificationId) => {
 /**
  * Get unread count
  */
-const getUnreadCount = async (userId) => {
+const getUnreadCount = async userId => {
   try {
     if (mongoose.connection.readyState === 1) {
       const count = await Notification.countDocuments({
         userId,
         isRead: false,
-        isDeleted: false
+        isDeleted: false,
       });
       return count;
     } else {
@@ -125,7 +131,7 @@ const getStorageStatus = () => {
   return {
     primary: isMongoConnected ? 'mongodb' : 'memory',
     mongodb: isMongoConnected,
-    memory: memoryStats
+    memory: memoryStats,
   };
 };
 
@@ -135,5 +141,5 @@ module.exports = {
   markAsRead,
   getUnreadCount,
   getStorageStatus,
-  inMemoryStore
+  inMemoryStore,
 };

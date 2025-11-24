@@ -17,7 +17,7 @@ class InMemoryNotificationStore {
     if (!userId) return null;
 
     const userIdStr = userId.toString();
-    
+
     if (!this.notifications.has(userIdStr)) {
       this.notifications.set(userIdStr, []);
     }
@@ -27,7 +27,7 @@ class InMemoryNotificationStore {
       _id: notification._id || this._generateId(),
       ...notification,
       createdAt: notification.createdAt || new Date(),
-      isRead: notification.isRead || false
+      isRead: notification.isRead || false,
     };
 
     userNotifications.unshift(notif); // Add to beginning
@@ -66,8 +66,10 @@ class InMemoryNotificationStore {
   markAsRead(userId, notificationId) {
     const userIdStr = userId.toString();
     const notifs = this.notifications.get(userIdStr) || [];
-    
-    const notif = notifs.find(n => n._id.toString() === notificationId.toString());
+
+    const notif = notifs.find(
+      n => n._id.toString() === notificationId.toString()
+    );
     if (notif) {
       notif.isRead = true;
       return true;
@@ -81,7 +83,7 @@ class InMemoryNotificationStore {
   markAllAsRead(userId) {
     const userIdStr = userId.toString();
     const notifs = this.notifications.get(userIdStr) || [];
-    notifs.forEach(n => n.isRead = true);
+    notifs.forEach(n => (n.isRead = true));
     return notifs.length;
   }
 
@@ -100,8 +102,10 @@ class InMemoryNotificationStore {
   deleteNotification(userId, notificationId) {
     const userIdStr = userId.toString();
     const notifs = this.notifications.get(userIdStr) || [];
-    
-    const index = notifs.findIndex(n => n._id.toString() === notificationId.toString());
+
+    const index = notifs.findIndex(
+      n => n._id.toString() === notificationId.toString()
+    );
     if (index > -1) {
       notifs.splice(index, 1);
       return true;
@@ -132,7 +136,9 @@ class InMemoryNotificationStore {
    * Generate unique ID
    */
   _generateId() {
-    return 'in-mem-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    return (
+      'in-mem-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9)
+    );
   }
 
   /**
@@ -153,7 +159,7 @@ class InMemoryNotificationStore {
       totalUsers,
       totalNotifications,
       totalUnread,
-      storageType: 'IN-MEMORY'
+      storageType: 'IN-MEMORY',
     };
   }
 }

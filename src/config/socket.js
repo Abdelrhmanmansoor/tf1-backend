@@ -4,11 +4,13 @@ const User = require('../modules/shared/models/User');
 // Store online users
 const onlineUsers = new Map(); // userId -> socketId
 
-module.exports = (io) => {
+module.exports = io => {
   // Authentication middleware for Socket.io
   io.use(async (socket, next) => {
     try {
-      const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+      const token =
+        socket.handshake.auth.token ||
+        socket.handshake.headers.authorization?.split(' ')[1];
 
       if (!token) {
         return next(new Error('Authentication error: Token not provided'));
@@ -36,7 +38,7 @@ module.exports = (io) => {
     }
   });
 
-  io.on('connection', (socket) => {
+  io.on('connection', socket => {
     const userId = socket.user._id.toString();
 
     console.log(`✅ User connected: ${socket.user.firstName} (${userId})`);
@@ -52,7 +54,7 @@ module.exports = (io) => {
       userId,
       firstName: socket.user.firstName,
       lastName: socket.user.lastName,
-      profileImage: socket.user.profileImage
+      profileImage: socket.user.profileImage,
     });
 
     // ===================================
@@ -64,7 +66,7 @@ module.exports = (io) => {
         const Conversation = require('../models/Conversation');
         const conversation = await Conversation.findOne({
           _id: conversationId,
-          'participants.userId': userId
+          'participants.userId': userId,
         });
 
         if (conversation) {
@@ -74,7 +76,7 @@ module.exports = (io) => {
               io.to(p.userId.toString()).emit('user_typing', {
                 conversationId,
                 userId,
-                firstName: socket.user.firstName
+                firstName: socket.user.firstName,
               });
             }
           });
@@ -89,7 +91,7 @@ module.exports = (io) => {
         const Conversation = require('../models/Conversation');
         const conversation = await Conversation.findOne({
           _id: conversationId,
-          'participants.userId': userId
+          'participants.userId': userId,
         });
 
         if (conversation) {
@@ -98,7 +100,7 @@ module.exports = (io) => {
             if (p.userId.toString() !== userId) {
               io.to(p.userId.toString()).emit('user_stopped_typing', {
                 conversationId,
-                userId
+                userId,
               });
             }
           });
@@ -130,7 +132,7 @@ module.exports = (io) => {
         const Conversation = require('../models/Conversation');
         const conversation = await Conversation.findOne({
           _id: conversationId,
-          'participants.userId': userId
+          'participants.userId': userId,
         });
 
         if (conversation) {
@@ -138,11 +140,13 @@ module.exports = (io) => {
           console.log(`User ${userId} joined conversation ${conversationId}`);
 
           // Notify others in conversation
-          socket.to(`conversation_${conversationId}`).emit('user_joined_conversation', {
-            conversationId,
-            userId,
-            firstName: socket.user.firstName
-          });
+          socket
+            .to(`conversation_${conversationId}`)
+            .emit('user_joined_conversation', {
+              conversationId,
+              userId,
+              firstName: socket.user.firstName,
+            });
         }
       } catch (error) {
         console.error('Error joining conversation:', error);
@@ -154,53 +158,58 @@ module.exports = (io) => {
       console.log(`User ${userId} left conversation ${conversationId}`);
 
       // Notify others
-      socket.to(`conversation_${conversationId}`).emit('user_left_conversation', {
-        conversationId,
-        userId
-      });
+      socket
+        .to(`conversation_${conversationId}`)
+        .emit('user_left_conversation', {
+          conversationId,
+          userId,
+        });
     });
 
     // ===================================
     // VOICE/VIDEO CALL SIGNALING
     // ===================================
 
-    socket.on('call_user', async ({ conversationId, targetUserId, signalData, callType }) => {
-      io.to(targetUserId).emit('incoming_call', {
-        conversationId,
-        from: userId,
-        fromUser: {
-          firstName: socket.user.firstName,
-          lastName: socket.user.lastName,
-          profileImage: socket.user.profileImage
-        },
-        signalData,
-        callType // 'voice' or 'video'
-      });
-    });
+    socket.on(
+      'call_user',
+      async ({ conversationId, targetUserId, signalData, callType }) => {
+        io.to(targetUserId).emit('incoming_call', {
+          conversationId,
+          from: userId,
+          fromUser: {
+            firstName: socket.user.firstName,
+            lastName: socket.user.lastName,
+            profileImage: socket.user.profileImage,
+          },
+          signalData,
+          callType, // 'voice' or 'video'
+        });
+      }
+    );
 
     socket.on('answer_call', ({ to, signalData }) => {
       io.to(to).emit('call_answered', {
         from: userId,
-        signalData
+        signalData,
       });
     });
 
     socket.on('reject_call', ({ to }) => {
       io.to(to).emit('call_rejected', {
-        from: userId
+        from: userId,
       });
     });
 
     socket.on('end_call', ({ to }) => {
       io.to(to).emit('call_ended', {
-        from: userId
+        from: userId,
       });
     });
 
     socket.on('ice_candidate', ({ to, candidate }) => {
       io.to(to).emit('ice_candidate', {
         from: userId,
-        candidate
+        candidate,
       });
     });
 
@@ -217,12 +226,12 @@ module.exports = (io) => {
       // Emit offline status
       io.emit('user_offline', {
         userId,
-        lastSeen: new Date()
+        lastSeen: new Date(),
       });
 
       // Update user's last seen
       User.findByIdAndUpdate(userId, {
-        lastSeen: new Date()
+        lastSeen: new Date(),
       }).catch(err => console.error('Error updating last seen:', err));
     });
 
@@ -230,7 +239,7 @@ module.exports = (io) => {
     // ERROR HANDLING
     // ===================================
 
-    socket.on('error', (error) => {
+    socket.on('error', error => {
       console.error('Socket error:', error);
     });
   });
@@ -238,7 +247,7 @@ module.exports = (io) => {
   // Return helper function to get online users
   return {
     getOnlineUsers: () => Array.from(onlineUsers.keys()),
-    isUserOnline: (userId) => onlineUsers.has(userId),
-    getSocketId: (userId) => onlineUsers.get(userId)
+    isUserOnline: userId => onlineUsers.has(userId),
+    getSocketId: userId => onlineUsers.get(userId),
   };
 };

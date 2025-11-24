@@ -1,136 +1,149 @@
 const mongoose = require('mongoose');
 
-const messageSchema = new mongoose.Schema({
-  conversationId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Conversation',
-    required: true,
-    index: true
-  },
+const messageSchema = new mongoose.Schema(
+  {
+    conversationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Conversation',
+      required: true,
+      index: true,
+    },
 
-  senderId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
 
-  senderRole: {
-    type: String,
-    enum: ['player', 'coach', 'club', 'specialist'],
-    required: true
-  },
+    senderRole: {
+      type: String,
+      enum: ['player', 'coach', 'club', 'specialist'],
+      required: true,
+    },
 
-  messageType: {
-    type: String,
-    enum: ['text', 'image', 'video', 'file', 'audio', 'system'],
-    default: 'text',
-    required: true
-  },
+    messageType: {
+      type: String,
+      enum: ['text', 'image', 'video', 'file', 'audio', 'system'],
+      default: 'text',
+      required: true,
+    },
 
-  // Content
-  content: {
-    type: String,
-    trim: true
-  },
-  contentAr: {
-    type: String,
-    trim: true
-  },
+    // Content
+    content: {
+      type: String,
+      trim: true,
+    },
+    contentAr: {
+      type: String,
+      trim: true,
+    },
 
-  // Attachments
-  attachments: [
-    {
-      fileType: {
-        type: String,
-        enum: ['image', 'video', 'audio', 'document']
+    // Attachments
+    attachments: [
+      {
+        fileType: {
+          type: String,
+          enum: ['image', 'video', 'audio', 'document'],
+        },
+        fileName: String,
+        fileUrl: {
+          type: String,
+          required: true,
+        },
+        fileSize: Number,
+        mimeType: String,
+        thumbnail: String, // For videos
       },
-      fileName: String,
-      fileUrl: {
-        type: String,
-        required: true
+    ],
+
+    // Read tracking
+    readBy: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        readAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
-      fileSize: Number,
-      mimeType: String,
-      thumbnail: String // For videos
-    }
-  ],
+    ],
 
-  // Read tracking
-  readBy: [
-    {
-      userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+    // Reactions
+    reactions: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        emoji: {
+          type: String,
+          required: true,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
-      readAt: {
-        type: Date,
-        default: Date.now
-      }
-    }
-  ],
+    ],
 
-  // Reactions
-  reactions: [
-    {
-      userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+    // Reply/thread
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Message',
+    },
+
+    // Edit/delete
+    isEdited: {
+      type: Boolean,
+      default: false,
+    },
+    editHistory: [
+      {
+        content: String,
+        editedAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
-      emoji: {
-        type: String,
-        required: true
-      },
-      createdAt: {
-        type: Date,
-        default: Date.now
-      }
-    }
-  ],
+    ],
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: Date,
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
 
-  // Reply/thread
-  replyTo: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Message'
-  },
+    // System messages
+    systemMessageType: {
+      type: String,
+      enum: [
+        'user_joined',
+        'user_left',
+        'session_booked',
+        'payment_received',
+        'session_rescheduled',
+        'session_cancelled',
+        'group_created',
+        'participant_added',
+        'participant_removed',
+      ],
+    },
 
-  // Edit/delete
-  isEdited: {
-    type: Boolean,
-    default: false
+    sentAt: {
+      type: Date,
+      default: Date.now,
+      index: true,
+    },
   },
-  editHistory: [
-    {
-      content: String,
-      editedAt: {
-        type: Date,
-        default: Date.now
-      }
-    }
-  ],
-  isDeleted: {
-    type: Boolean,
-    default: false
-  },
-  deletedAt: Date,
-  deletedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-
-  // System messages
-  systemMessageType: {
-    type: String,
-    enum: ['user_joined', 'user_left', 'session_booked', 'payment_received', 'session_rescheduled', 'session_cancelled', 'group_created', 'participant_added', 'participant_removed']
-  },
-
-  sentAt: {
-    type: Date,
-    default: Date.now,
-    index: true
+  {
+    timestamps: true,
   }
-}, {
-  timestamps: true
-});
+);
 
 // Indexes
 messageSchema.index({ conversationId: 1, sentAt: -1 });
@@ -143,18 +156,21 @@ messageSchema.virtual('replyToMessage', {
   ref: 'Message',
   localField: 'replyTo',
   foreignField: '_id',
-  justOne: true
+  justOne: true,
 });
 
 // Statics
 
 // Get messages for a conversation
-messageSchema.statics.getConversationMessages = async function(conversationId, options = {}) {
+messageSchema.statics.getConversationMessages = async function (
+  conversationId,
+  options = {}
+) {
   const { page = 1, limit = 50, before } = options;
 
   const query = {
     conversationId,
-    isDeleted: false
+    isDeleted: false,
   };
 
   // Pagination: load messages before a certain timestamp (for infinite scroll)
@@ -169,8 +185,8 @@ messageSchema.statics.getConversationMessages = async function(conversationId, o
       select: 'content senderId sentAt',
       populate: {
         path: 'senderId',
-        select: 'firstName lastName avatar'
-      }
+        select: 'firstName lastName avatar',
+      },
     })
     .sort({ sentAt: -1 })
     .limit(limit)
@@ -182,12 +198,16 @@ messageSchema.statics.getConversationMessages = async function(conversationId, o
     messages: messages.reverse(), // Reverse to show oldest first
     total,
     page,
-    hasMore: total > page * limit
+    hasMore: total > page * limit,
   };
 };
 
 // Create system message
-messageSchema.statics.createSystemMessage = async function(conversationId, systemMessageType, content) {
+messageSchema.statics.createSystemMessage = async function (
+  conversationId,
+  systemMessageType,
+  content
+) {
   const message = await this.create({
     conversationId,
     senderId: null,
@@ -195,7 +215,7 @@ messageSchema.statics.createSystemMessage = async function(conversationId, syste
     messageType: 'system',
     systemMessageType,
     content,
-    sentAt: new Date()
+    sentAt: new Date(),
   });
 
   // Update conversation's last message
@@ -205,8 +225,8 @@ messageSchema.statics.createSystemMessage = async function(conversationId, syste
       content,
       senderId: null,
       sentAt: message.sentAt,
-      messageType: 'system'
-    }
+      messageType: 'system',
+    },
   });
 
   return message;
@@ -215,14 +235,16 @@ messageSchema.statics.createSystemMessage = async function(conversationId, syste
 // Methods
 
 // Mark as read by a user
-messageSchema.methods.markAsRead = function(userId) {
+messageSchema.methods.markAsRead = function (userId) {
   // Check if already read by this user
-  const alreadyRead = this.readBy.some(r => r.userId.toString() === userId.toString());
+  const alreadyRead = this.readBy.some(
+    r => r.userId.toString() === userId.toString()
+  );
 
   if (!alreadyRead) {
     this.readBy.push({
       userId,
-      readAt: new Date()
+      readAt: new Date(),
     });
   }
 
@@ -230,9 +252,11 @@ messageSchema.methods.markAsRead = function(userId) {
 };
 
 // Add reaction
-messageSchema.methods.addReaction = function(userId, emoji) {
+messageSchema.methods.addReaction = function (userId, emoji) {
   // Check if user already reacted
-  const existingReaction = this.reactions.find(r => r.userId.toString() === userId.toString());
+  const existingReaction = this.reactions.find(
+    r => r.userId.toString() === userId.toString()
+  );
 
   if (existingReaction) {
     // Update emoji if different
@@ -245,7 +269,7 @@ messageSchema.methods.addReaction = function(userId, emoji) {
     this.reactions.push({
       userId,
       emoji,
-      createdAt: new Date()
+      createdAt: new Date(),
     });
   }
 
@@ -253,13 +277,15 @@ messageSchema.methods.addReaction = function(userId, emoji) {
 };
 
 // Remove reaction
-messageSchema.methods.removeReaction = function(userId) {
-  this.reactions = this.reactions.filter(r => r.userId.toString() !== userId.toString());
+messageSchema.methods.removeReaction = function (userId) {
+  this.reactions = this.reactions.filter(
+    r => r.userId.toString() !== userId.toString()
+  );
   return this.save();
 };
 
 // Edit message
-messageSchema.methods.editMessage = function(newContent, userId) {
+messageSchema.methods.editMessage = function (newContent, userId) {
   // Only sender can edit
   if (this.senderId.toString() !== userId.toString()) {
     throw new Error('Only the sender can edit this message');
@@ -273,7 +299,7 @@ messageSchema.methods.editMessage = function(newContent, userId) {
   // Store edit history
   this.editHistory.push({
     content: this.content,
-    editedAt: new Date()
+    editedAt: new Date(),
   });
 
   this.content = newContent;
@@ -283,7 +309,7 @@ messageSchema.methods.editMessage = function(newContent, userId) {
 };
 
 // Soft delete message
-messageSchema.methods.softDelete = function(userId) {
+messageSchema.methods.softDelete = function (userId) {
   // Only sender can delete
   if (this.senderId && this.senderId.toString() !== userId.toString()) {
     throw new Error('Only the sender can delete this message');
@@ -298,12 +324,12 @@ messageSchema.methods.softDelete = function(userId) {
 };
 
 // Check if message is read by a specific user
-messageSchema.methods.isReadBy = function(userId) {
+messageSchema.methods.isReadBy = function (userId) {
   return this.readBy.some(r => r.userId.toString() === userId.toString());
 };
 
 // Pre-save hook to validate
-messageSchema.pre('save', function(next) {
+messageSchema.pre('save', function (next) {
   // System messages don't need a senderId
   if (this.messageType === 'system') {
     this.senderId = null;
@@ -315,7 +341,11 @@ messageSchema.pre('save', function(next) {
   }
 
   // Attachment messages must have attachments
-  if (['image', 'video', 'file', 'audio'].includes(this.messageType) && this.attachments.length === 0 && !this.isDeleted) {
+  if (
+    ['image', 'video', 'file', 'audio'].includes(this.messageType) &&
+    this.attachments.length === 0 &&
+    !this.isDeleted
+  ) {
     return next(new Error('Attachment messages must have attachments'));
   }
 

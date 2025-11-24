@@ -32,7 +32,7 @@ const sanitizeRequest = (req, res, next) => {
     res.status(400).json({
       success: false,
       message: 'Invalid request data',
-      code: 'INVALID_REQUEST_DATA'
+      code: 'INVALID_REQUEST_DATA',
     });
   }
 };
@@ -41,7 +41,17 @@ const sanitizeRequest = (req, res, next) => {
  * Detect and block suspicious MongoDB operators in requests
  */
 const blockMongoOperators = (req, res, next) => {
-  const suspiciousPatterns = ['$where', '$regex', '$ne', '$gt', '$lt', '$gte', '$lte', '$in', '$nin'];
+  const suspiciousPatterns = [
+    '$where',
+    '$regex',
+    '$ne',
+    '$gt',
+    '$lt',
+    '$gte',
+    '$lte',
+    '$in',
+    '$nin',
+  ];
 
   const checkForOperators = (obj, path = '') => {
     if (typeof obj === 'string') {
@@ -55,10 +65,17 @@ const blockMongoOperators = (req, res, next) => {
     if (typeof obj === 'object' && obj !== null) {
       for (const key in obj) {
         if (key.startsWith('$')) {
-          return { found: true, operator: key, path: path ? `${path}.${key}` : key };
+          return {
+            found: true,
+            operator: key,
+            path: path ? `${path}.${key}` : key,
+          };
         }
 
-        const result = checkForOperators(obj[key], path ? `${path}.${key}` : key);
+        const result = checkForOperators(
+          obj[key],
+          path ? `${path}.${key}` : key
+        );
         if (result.found) {
           return result;
         }
@@ -71,32 +88,38 @@ const blockMongoOperators = (req, res, next) => {
   // Check body
   const bodyCheck = checkForOperators(req.body);
   if (bodyCheck.found) {
-    logger.warn(`Blocked request with MongoDB operator in body: ${bodyCheck.operator} at ${bodyCheck.path}`, {
-      ip: req.ip,
-      path: req.path,
-      method: req.method
-    });
+    logger.warn(
+      `Blocked request with MongoDB operator in body: ${bodyCheck.operator} at ${bodyCheck.path}`,
+      {
+        ip: req.ip,
+        path: req.path,
+        method: req.method,
+      }
+    );
 
     return res.status(400).json({
       success: false,
       message: 'Invalid request: suspicious operators detected',
-      code: 'SUSPICIOUS_REQUEST'
+      code: 'SUSPICIOUS_REQUEST',
     });
   }
 
   // Check query
   const queryCheck = checkForOperators(req.query);
   if (queryCheck.found) {
-    logger.warn(`Blocked request with MongoDB operator in query: ${queryCheck.operator} at ${queryCheck.path}`, {
-      ip: req.ip,
-      path: req.path,
-      method: req.method
-    });
+    logger.warn(
+      `Blocked request with MongoDB operator in query: ${queryCheck.operator} at ${queryCheck.path}`,
+      {
+        ip: req.ip,
+        path: req.path,
+        method: req.method,
+      }
+    );
 
     return res.status(400).json({
       success: false,
       message: 'Invalid request: suspicious operators detected',
-      code: 'SUSPICIOUS_REQUEST'
+      code: 'SUSPICIOUS_REQUEST',
     });
   }
 
@@ -105,5 +128,5 @@ const blockMongoOperators = (req, res, next) => {
 
 module.exports = {
   sanitizeRequest,
-  blockMongoOperators
+  blockMongoOperators,
 };

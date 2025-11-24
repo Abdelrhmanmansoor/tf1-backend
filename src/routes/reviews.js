@@ -18,7 +18,11 @@ router.put('/:id', authenticate, reviewController.updateReview);
 router.delete('/:id', authenticate, reviewController.deleteReview);
 router.post('/:id/response', authenticate, reviewController.addResponse);
 router.post('/:id/helpful', authenticate, reviewController.markAsHelpful);
-router.post('/:id/not-helpful', authenticate, reviewController.markAsNotHelpful);
+router.post(
+  '/:id/not-helpful',
+  authenticate,
+  reviewController.markAsNotHelpful
+);
 router.post('/:id/report', authenticate, reviewController.reportReview);
 
 module.exports = router;
