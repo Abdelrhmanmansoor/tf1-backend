@@ -6,6 +6,7 @@ const Team = require('../models/Team');
 const Event = require('../models/Event');
 const FacilityBooking = require('../models/FacilityBooking');
 const User = require('../../shared/models/User');
+const Notification = require('../../../models/Notification');
 
 // ============================================
 // PROFILE MANAGEMENT
@@ -782,7 +783,7 @@ exports.reviewApplication = async (req, res) => {
     const application = await JobApplication.findOne({
       _id: req.params.applicationId,
       clubId: req.user._id
-    });
+    }).populate('applicantId jobId clubId');
 
     if (!application) {
       return res.status(404).json({
@@ -792,6 +793,28 @@ exports.reviewApplication = async (req, res) => {
     }
 
     await application.moveToReview(req.user._id);
+
+    // Send notification to applicant
+    try {
+      await Notification.create({
+        userId: application.applicantId._id,
+        userRole: 'player',
+        type: 'job_application',
+        title: 'Application Under Review',
+        titleAr: 'طلبك قيد المراجعة',
+        message: `Your application for ${application.jobId.title} at ${application.clubId.clubName} is now under review. We will contact you soon with updates.`,
+        messageAr: `تم البدء بمراجعة طلبك للوظيفة ${application.jobId.titleAr || application.jobId.title} في ${application.clubId.clubName}. سنتواصل معك قريباً بالتحديثات.`,
+        relatedTo: {
+          entityType: 'job_application',
+          entityId: application._id
+        },
+        actionUrl: `/jobs/${application.jobId._id}/application/${application._id}`,
+        priority: 'high'
+      });
+    } catch (notificationError) {
+      console.error('Error sending notification:', notificationError);
+      // Don't fail the request if notification fails
+    }
 
     res.json({
       success: true,
