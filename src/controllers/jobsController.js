@@ -2,6 +2,8 @@ const Job = require('../modules/club/models/Job');
 const JobApplication = require('../modules/club/models/JobApplication');
 const User = require('../modules/shared/models/User');
 const { uploadDocument } = require('../config/cloudinary');
+const https = require('https');
+const http = require('http');
 
 // ==================== JOB BROWSING ====================
 
