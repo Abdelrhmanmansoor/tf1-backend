@@ -123,6 +123,31 @@ const jobApplicationSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     }],
+    // NEW: Interview coordinator/responsible person
+    coordinator: {
+      name: String,
+      nameAr: String,
+      email: String,
+      phone: String,
+      title: String,
+      titleAr: String
+    },
+    // NEW: Company/club details
+    companyName: String,
+    companyNameAr: String,
+    // NEW: Reminders and notifications
+    reminders: [{
+      type: {
+        type: String,
+        enum: ['email', 'sms', 'notification']
+      },
+      beforeMinutes: Number, // e.g., 1440 for 24 hours
+      sent: {
+        type: Boolean,
+        default: false
+      },
+      sentAt: Date
+    }],
     status: {
       type: String,
       enum: ['pending', 'confirmed', 'completed', 'cancelled', 'no_show']
