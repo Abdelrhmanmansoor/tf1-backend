@@ -22,6 +22,7 @@ router.get('/:id', jobsController.getJobById);
  */
 router.post('/:id/apply',
   authenticate,
+  jobsController.checkExistingApplication,
   uploadResume,
   handleUploadError,
   jobsController.applyToJob

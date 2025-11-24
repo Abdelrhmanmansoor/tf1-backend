@@ -91,6 +91,43 @@ exports.getJobById = async (req, res) => {
 // ==================== JOB APPLICATIONS ====================
 
 /**
+ * @route   Check existing application before file upload
+ * @desc    Validate duplicate application before multer processes file
+ * @access  Private
+ */
+exports.checkExistingApplication = async (req, res, next) => {
+  try {
+    const { id: jobId } = req.params;
+    const applicantId = req.user._id;
+
+    // Check if already applied (before file upload)
+    const existingApplication = await JobApplication.findOne({
+      jobId,
+      applicantId,
+      isDeleted: false
+    });
+
+    if (existingApplication) {
+      return res.status(409).json({
+        success: false,
+        message: 'You have already applied to this job',
+        code: 'ALREADY_APPLIED'
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Check existing application error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking application status',
+      error: error.message,
+      code: 'CHECK_APPLICATION_ERROR'
+    });
+  }
+};
+
+/**
  * @route   POST /api/v1/jobs/:id/apply
  * @desc    Apply to a job (LinkedIn-style easy apply)
  * @access  Private (player, coach, specialist)
@@ -130,21 +167,6 @@ exports.applyToJob = async (req, res) => {
         success: false,
         message: 'Application deadline has passed',
         code: 'DEADLINE_PASSED'
-      });
-    }
-
-    // 3. Check if already applied
-    const existingApplication = await JobApplication.findOne({
-      jobId,
-      applicantId,
-      isDeleted: false
-    });
-
-    if (existingApplication) {
-      return res.status(409).json({
-        success: false,
-        message: 'You have already applied to this job',
-        code: 'ALREADY_APPLIED'
       });
     }
 
