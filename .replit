@@ -11,8 +11,36 @@ channel = "stable-25_05"
 JWT_ACCESS_SECRET = "0c46c785b4ed7fc7cdaac2e4b2c773a6cd9128e64315f0cd91aaf0d7008fdb51263949f37956f76e16bec4a6bf6c91708dfb9c386706ffbcc5c408efa424ef15"
 JWT_REFRESH_SECRET = "3cee4d83c2a7e157bff3335abce147c8aef95ff795535468a2ca366764e247d769fb36b0a588219dcfe715f38a6e0c1a70f8da0d0e9fe9a0476a60ec5f273216"
 NODE_ENV = "development"
-PORT = "4000"
+PORT = "3000"
 API_VERSION = "v1"
 RATE_LIMIT_WINDOW_MS = "900000"
 RATE_LIMIT_MAX_REQUESTS = "100"
 ALLOWED_ORIGINS = "*"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Backend Server"
+
+[[workflows.workflow]]
+name = "Backend Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 3000
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
