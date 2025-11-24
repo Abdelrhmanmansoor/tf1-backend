@@ -3,9 +3,9 @@ const router = express.Router();
 const jobsController = require('../controllers/jobsController');
 const { authenticate } = require('../middleware/auth');
 const {
-  uploadResume,
-  handleUploadError,
-} = require('../middleware/cloudinaryUpload');
+  uploadResumeLocal,
+  handleLocalUploadError,
+} = require('../middleware/localFileUpload');
 
 // ==================== JOB APPLICATIONS (REQUIRES AUTH) - MUST BE BEFORE /:id ====================
 
@@ -45,8 +45,8 @@ router.post(
   '/:id/apply',
   authenticate,
   jobsController.checkExistingApplication,
-  uploadResume,
-  handleUploadError,
+  uploadResumeLocal,
+  handleLocalUploadError,
   jobsController.applyToJob
 );
 

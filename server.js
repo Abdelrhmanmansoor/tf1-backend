@@ -100,6 +100,10 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
+// ==================== STATIC FILES (UPLOADS) ====================
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // ==================== REQUEST LOGGING ====================
 morgan.token('colored-status', (req, res) => {
   const status = res.statusCode;

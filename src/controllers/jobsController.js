@@ -4,6 +4,8 @@ const User = require('../modules/shared/models/User');
 const { uploadDocument } = require('../config/cloudinary');
 const https = require('https');
 const http = require('http');
+const path = require('path');
+const fs = require('fs');
 
 // ==================== JOB BROWSING ====================
 
@@ -172,30 +174,27 @@ exports.applyToJob = async (req, res) => {
       });
     }
 
-    // 4. Handle resume upload if provided
+    // 4. Handle resume upload if provided (LOCAL STORAGE)
     let resumeAttachment = null;
     if (req.file) {
       try {
-        const uploadResult = await uploadDocument(
-          req.file.buffer,
-          applicantId.toString(),
-          'resume',
-          req.file.originalname
-        );
+        const fileUrl = `/uploads/resumes/${req.file.filename}`;
+        const fileExt = path.extname(req.file.originalname).toLowerCase();
 
         resumeAttachment = {
           type: 'resume',
           name: req.file.originalname,
           originalName: req.file.originalname,
           mimeType: req.file.mimetype,
-          format: uploadResult.originalFormat,
-          url: uploadResult.url,
-          publicId: uploadResult.publicId,
+          format: fileExt.replace('.', ''),
+          url: fileUrl,
+          localPath: req.file.path,
+          size: req.file.size,
           uploadedAt: new Date(),
         };
 
         console.log(
-          `📄 Resume uploaded: ${req.file.originalname} (${uploadResult.originalFormat})`
+          `📄 Resume uploaded locally: ${req.file.originalname} (${req.file.size} bytes) -> ${fileUrl}`
         );
       } catch (uploadError) {
         console.error('Resume upload error:', uploadError);
@@ -699,26 +698,24 @@ exports.downloadAttachment = async (req, res) => {
       });
     }
 
-    // Download file from Cloudinary
-    const protocolModule = attachment.url.startsWith('https') ? https : http;
-    
-    protocolModule.get(attachment.url, (fileStream) => {
-      // Set proper headers for download
-      const filename = attachment.originalName || attachment.name || 'document';
-      const mimeType = attachment.mimeType || 'application/octet-stream';
+    const filename = attachment.originalName || attachment.name || 'document';
+    const mimeType = attachment.mimeType || 'application/octet-stream';
+
+    // Check if file is stored locally
+    if (attachment.localPath && fs.existsSync(attachment.localPath)) {
+      // LOCAL FILE - Direct file download
+      console.log(`📥 Downloading local file: ${filename} from ${attachment.localPath}`);
       
       res.setHeader('Content-Type', mimeType);
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
       
-      console.log(`📥 Downloading file: ${filename} (${mimeType})`);
-      
-      // Pipe the file stream to response
+      const fileStream = fs.createReadStream(attachment.localPath);
       fileStream.pipe(res);
       
       fileStream.on('error', (error) => {
-        console.error('Error streaming file:', error);
+        console.error('Error streaming local file:', error);
         if (!res.headersSent) {
           res.status(500).json({
             success: false,
@@ -727,16 +724,47 @@ exports.downloadAttachment = async (req, res) => {
           });
         }
       });
-    }).on('error', (error) => {
-      console.error('Error fetching file from Cloudinary:', error);
-      if (!res.headersSent) {
-        res.status(500).json({
-          success: false,
-          message: 'Error fetching file',
-          code: 'FETCH_ERROR',
+    } else if (attachment.url) {
+      // CLOUDINARY/REMOTE FILE - Download from URL
+      console.log(`📥 Downloading remote file: ${filename} from ${attachment.url}`);
+      
+      const protocolModule = attachment.url.startsWith('https') ? https : http;
+      
+      protocolModule.get(attachment.url, (fileStream) => {
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+        
+        fileStream.pipe(res);
+        
+        fileStream.on('error', (error) => {
+          console.error('Error streaming remote file:', error);
+          if (!res.headersSent) {
+            res.status(500).json({
+              success: false,
+              message: 'Error downloading file',
+              code: 'DOWNLOAD_ERROR',
+            });
+          }
         });
-      }
-    });
+      }).on('error', (error) => {
+        console.error('Error fetching remote file:', error);
+        if (!res.headersSent) {
+          res.status(500).json({
+            success: false,
+            message: 'Error fetching file',
+            code: 'FETCH_ERROR',
+          });
+        }
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: 'File not found',
+        code: 'FILE_NOT_FOUND',
+      });
+    }
 
   } catch (error) {
     console.error('Download attachment error:', error);
