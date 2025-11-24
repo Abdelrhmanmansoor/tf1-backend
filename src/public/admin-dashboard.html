@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SportX Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .admin-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .login-btn {
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        
+        .login-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .login-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        .error {
+            color: #e74c3c;
+            background: #fee;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .success {
+            color: #27ae60;
+            background: #eaf8ee;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .dashboard-content {
+            display: none;
+        }
+        
+        .dashboard-content.active {
+            display: block;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .logout-btn {
+            background: #e74c3c;
+            padding: 10px 20px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+        
+        .logout-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-form">
+            <h1>🔐 SportX Admin</h1>
+            <p class="subtitle">Dashboard Control Panel</p>
+            
+            <div class="error" id="errorMsg"></div>
+            <div class="success" id="successMsg"></div>
+            
+            <form class="admin-form" id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="admin@sportx.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" placeholder="Your password" required>
+                </div>
+                <button type="submit" class="login-btn" id="loginBtn">Login</button>
+            </form>
+        </div>
+        
+        <div class="dashboard-content" id="dashboardContent">
+            <h1>📊 Admin Dashboard</h1>
+            <p class="subtitle" id="userName">Welcome, Admin!</p>
+            
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Users</div>
+                    <div class="stat-value" id="totalUsers">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Articles</div>
+                    <div class="stat-value" id="totalArticles">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Published</div>
+                    <div class="stat-value" id="publishedArticles">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Drafts</div>
+                    <div class="stat-value" id="draftArticles">-</div>
+                </div>
+            </div>
+            
+            <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = '/api/v1';
+        let token = localStorage.getItem('adminToken');
+        
+        // Check if already logged in
+        if (token) {
+            showDashboard();
+            loadDashboardData();
+        }
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const btn = document.getElementById('loginBtn');
+            
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+            errorMsg.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'Login failed');
+                }
+                
+                if (data.data.user.role !== 'admin') {
+                    throw new Error('Admin access required');
+                }
+                
+                token = data.data.accessToken;
+                localStorage.setItem('adminToken', token);
+                localStorage.setItem('adminUser', JSON.stringify(data.data.user));
+                
+                showDashboard();
+                loadDashboardData();
+            } catch (error) {
+                errorMsg.textContent = '❌ ' + error.message;
+                errorMsg.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Login';
+            }
+        });
+        
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            token = null;
+            document.querySelector('.login-form').style.display = 'block';
+            document.getElementById('dashboardContent').classList.remove('active');
+            document.getElementById('loginForm').reset();
+        });
+        
+        function showDashboard() {
+            document.querySelector('.login-form').style.display = 'none';
+            document.getElementById('dashboardContent').classList.add('active');
+            const user = JSON.parse(localStorage.getItem('adminUser') || '{}');
+            document.getElementById('userName').textContent = `Welcome, ${user.firstName} ${user.lastName}!`;
+        }
+        
+        async function loadDashboardData() {
+            try {
+                const [statsRes, analyticsRes] = await Promise.all([
+                    fetch(`${API_URL}/admin/dashboard`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch(`${API_URL}/admin/analytics`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                ]);
+                
+                const stats = await statsRes.json();
+                const analytics = await analyticsRes.json();
+                
+                if (stats.success) {
+                    document.getElementById('totalArticles').textContent = stats.data.totalArticles;
+                    document.getElementById('publishedArticles').textContent = stats.data.publishedArticles;
+                    document.getElementById('draftArticles').textContent = stats.data.draftArticles;
+                }
+                
+                if (analytics.success) {
+                    document.getElementById('totalUsers').textContent = analytics.data.totalUsers;
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -166,6 +166,14 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ==================== STATIC FILES ====================
+app.use(express.static('src/public'));
+
+// Admin Dashboard Page
+app.get('/dashboard/admin', (req, res) => {
+  res.sendFile(`${__dirname}/src/public/admin-dashboard.html`);
+});
+
 // ==================== API ROUTES ====================
 app.use(`/api/${API_VERSION}`, routes);
 app.use(`/api/${API_VERSION}/blog`, blogRoutes);
