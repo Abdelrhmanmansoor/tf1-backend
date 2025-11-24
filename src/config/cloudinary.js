@@ -400,7 +400,12 @@ const validateImageFile = file => {
 };
 
 // Upload document (PDF, DOC, DOCX) to Cloudinary
-const uploadDocument = async (buffer, userId, documentType = 'resume') => {
+const uploadDocument = async (
+  buffer,
+  userId,
+  documentType = 'resume',
+  originalFilename = ''
+) => {
   try {
     return new Promise((resolve, reject) => {
       const options = {
@@ -416,12 +421,21 @@ const uploadDocument = async (buffer, userId, documentType = 'resume') => {
             console.error('Cloudinary document upload error:', error);
             reject(error);
           } else {
+            // Extract original file extension
+            const fileExtension = originalFilename
+              ? originalFilename.split('.').pop()
+              : result.format;
+
             resolve({
               url: result.secure_url,
               publicId: result.public_id,
               format: result.format,
+              originalFormat: fileExtension,
               bytes: result.bytes,
               resourceType: result.resource_type,
+              originalFilename:
+                originalFilename ||
+                `${documentType}_${userId}.${fileExtension}`,
             });
           }
         })

@@ -1,6 +1,9 @@
 const Notification = require('../models/Notification');
 const NotificationPreferences = require('../models/NotificationPreferences');
-const { getNotifications, inMemoryStore } = require('../middleware/notificationHandler');
+const {
+  getNotifications,
+  inMemoryStore,
+} = require('../middleware/notificationHandler');
 
 // @desc    Get all notifications for authenticated user
 // @route   GET /api/v1/notifications
@@ -16,14 +19,16 @@ exports.getNotifications = async (req, res) => {
     } = req.query;
 
     const userId = req.user._id.toString();
-    
+
     // Get from handler (MongoDB or memory)
     const { notifications, source } = await getNotifications(userId, {
       limit: parseInt(limit),
-      filter: { unreadOnly, priority, type }
+      filter: { unreadOnly, priority, type },
     });
 
-    console.log(`📬 Retrieved ${notifications.length} notifications from ${source}`);
+    console.log(
+      `📬 Retrieved ${notifications.length} notifications from ${source}`
+    );
 
     // Format notifications
     const language = req.user.language || 'en';
@@ -47,7 +52,7 @@ exports.getNotifications = async (req, res) => {
       pages: Math.ceil(formattedNotifications.length / parseInt(limit)),
       hasMore: false,
       data: formattedNotifications,
-      source
+      source,
     });
   } catch (error) {
     console.error('Error fetching notifications:', error);
@@ -69,7 +74,7 @@ exports.getUnreadNotifications = async (req, res) => {
 
     const { notifications, source } = await getNotifications(userId, {
       limit: parseInt(limit),
-      filter: { unreadOnly: true }
+      filter: { unreadOnly: true },
     });
 
     const language = req.user.language || 'en';

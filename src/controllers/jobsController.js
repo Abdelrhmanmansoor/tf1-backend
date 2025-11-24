@@ -177,15 +177,24 @@ exports.applyToJob = async (req, res) => {
         const uploadResult = await uploadDocument(
           req.file.buffer,
           applicantId.toString(),
-          'resume'
+          'resume',
+          req.file.originalname
         );
 
         resumeAttachment = {
           type: 'resume',
           name: req.file.originalname,
+          originalName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          format: uploadResult.originalFormat,
           url: uploadResult.url,
+          publicId: uploadResult.publicId,
           uploadedAt: new Date(),
         };
+
+        console.log(
+          `📄 Resume uploaded: ${req.file.originalname} (${uploadResult.originalFormat})`
+        );
       } catch (uploadError) {
         console.error('Resume upload error:', uploadError);
         return res.status(500).json({
