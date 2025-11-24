@@ -178,6 +178,10 @@ app.get('/admin-panel', (req, res) => {
   res.sendFile(`${__dirname}/src/public/admin-dashboard.html`);
 });
 
+app.get('/control', (req, res) => {
+  res.sendFile(`${__dirname}/src/public/admin-dashboard.html`);
+});
+
 // ==================== API ROUTES ====================
 app.use(`/api/${API_VERSION}`, routes);
 app.use(`/api/${API_VERSION}/blog`, blogRoutes);
