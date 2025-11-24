@@ -213,21 +213,19 @@ exports.applyToJob = async (req, res) => {
     // 6. Update job application statistics
     await job.updateApplicationStats();
 
-    // 7. Send notification to club (safe with null-guards)
+    // 7. Send notification to club (works with or without MongoDB)
     try {
-      // Get applicant details
+      const { saveNotification } = require('../middleware/notificationHandler');
       const User = require('../modules/shared/models/User');
       const applicant = await User.findById(applicantId).select('firstName lastName email');
       const applicantName = applicant ? `${applicant.firstName} ${applicant.lastName}` : 'Applicant';
 
-      // Get club profile if available
       const ClubProfile = require('../modules/club/models/ClubProfile');
       const clubProfile = await ClubProfile.findOne({ userId: job.clubId._id });
       const clubName = clubProfile?.clubName || 'Club';
 
-      // Create notification
-      const Notification = require('../models/Notification');
-      const notification = await Notification.create({
+      // Save notification (MongoDB if connected, memory if not)
+      const { notification, source } = await saveNotification({
         userId: job.clubId._id,
         userRole: 'club',
         type: 'new_application',
@@ -243,7 +241,9 @@ exports.applyToJob = async (req, res) => {
         priority: 'normal'
       });
 
-      // Send real-time notification via Socket.io
+      console.log(`📢 Notification saved to ${source} for club ${job.clubId._id}`);
+
+      // Send real-time via Socket.io
       const io = req.app.get('io');
       if (io) {
         io.to(job.clubId._id.toString()).emit('job:notification', {
@@ -260,12 +260,12 @@ exports.applyToJob = async (req, res) => {
           userId: job.clubId._id,
           status: 'new',
           priority: 'normal',
-          createdAt: notification.createdAt
+          createdAt: notification.createdAt,
+          storedIn: source
         });
       }
     } catch (notificationError) {
       console.error('Error sending notification to club:', notificationError);
-      // Continue even if notification fails
     }
 
     res.status(201).json({
