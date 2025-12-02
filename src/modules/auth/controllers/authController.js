@@ -195,17 +195,6 @@ class AuthController {
         });
       }
 
-      // Check if email is verified
-      if (!user.isVerified) {
-        return res.status(200).json({
-          success: true,
-          message: 'Login successful, but email verification required',
-          user: user.toSafeObject(),
-          requiresVerification: true,
-          code: 'EMAIL_NOT_VERIFIED'
-        });
-      }
-
       user.lastLogin = new Date();
       await user.save();
 
@@ -213,15 +202,17 @@ class AuthController {
 
       const userObject = user.toSafeObject(true); // Include email in response
 
+      // Allow login even if email not verified, but include flag
       res.status(200).json({
         success: true,
-        message: 'Login successful',
+        message: user.isVerified ? 'Login successful' : 'Login successful, please verify your email',
         user: {
           ...userObject,
           permissions: getUserPermissions(user.role)
         },
         accessToken,
-        refreshToken
+        refreshToken,
+        requiresVerification: !user.isVerified
       });
 
     } catch (error) {
