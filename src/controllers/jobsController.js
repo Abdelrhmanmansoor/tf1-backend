@@ -856,3 +856,189 @@ exports.downloadAttachment = async (req, res) => {
     });
   }
 };
+
+// ==================== JOB EVENTS (TICKER & LIVE UPDATES) ====================
+
+/**
+ * @route   GET /api/v1/jobs/events/ticker
+ * @desc    Get live jobs ticker for display
+ * @access  Public
+ */
+exports.getJobsTicker = async (req, res) => {
+  try {
+    const { limit = 20 } = req.query;
+    const { JobEvent } = require('../models/admin');
+
+    const events = await JobEvent.find({ isDeleted: false })
+      .populate('jobId', 'title titleAr')
+      .populate('clubId', 'firstName lastName')
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .lean();
+
+    const formattedEvents = events.map(event => ({
+      id: event._id,
+      jobId: event.jobId?._id,
+      jobTitle: event.jobTitle || event.jobId?.title,
+      jobTitleAr: event.jobTitleAr || event.jobId?.titleAr,
+      organization: event.organization,
+      eventType: event.eventType,
+      isUrgent: event.isUrgent,
+      category: event.category,
+      sport: event.sport,
+      timestamp: event.createdAt,
+      applicantsCount: event.applicantsCount
+    }));
+
+    res.json({
+      success: true,
+      data: formattedEvents
+    });
+  } catch (error) {
+    console.error('Get jobs ticker error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب أخبار الوظائف',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route   GET /api/v1/jobs/events
+ * @desc    Get job events with filters
+ * @access  Public
+ */
+exports.getJobEvents = async (req, res) => {
+  try {
+    const { 
+      page = 1, 
+      limit = 50,
+      eventType,
+      category,
+      sport,
+      isUrgent,
+      region,
+      city
+    } = req.query;
+
+    const { JobEvent } = require('../models/admin');
+
+    const query = { isDeleted: false };
+    if (eventType) query.eventType = eventType;
+    if (category) query.category = category;
+    if (sport) query.sport = sport;
+    if (region) query.region = region;
+    if (city) query.city = city;
+    if (isUrgent === 'true') query.isUrgent = true;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [events, total] = await Promise.all([
+      JobEvent.find(query)
+        .populate('jobId', 'title titleAr')
+        .populate('clubId', 'firstName lastName')
+        .sort({ isUrgent: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      JobEvent.countDocuments(query)
+    ]);
+
+    const formattedEvents = events.map(event => ({
+      id: event._id,
+      jobId: event.jobId?._id,
+      jobTitle: event.jobTitle || event.jobId?.title,
+      jobTitleAr: event.jobTitleAr || event.jobId?.titleAr,
+      organization: event.organization,
+      description: event.description,
+      descriptionAr: event.descriptionAr,
+      eventType: event.eventType,
+      isUrgent: event.isUrgent,
+      category: event.category,
+      sport: event.sport,
+      region: event.region,
+      city: event.city,
+      timestamp: event.createdAt,
+      applicantsCount: event.applicantsCount,
+      expiresAt: event.expiresAt
+    }));
+
+    res.json({
+      success: true,
+      data: formattedEvents,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / parseInt(limit)),
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get job events error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب أحداث الوظائف',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route   POST /api/v1/jobs/:id/create-event
+ * @desc    Create event when job is posted/updated
+ * @access  Private (club)
+ */
+exports.createJobEvent = async (req, res) => {
+  try {
+    const { id: jobId } = req.params;
+    const { eventType = 'job_posted', isUrgent = false } = req.body;
+    const { JobEvent } = require('../models/admin');
+    const ClubProfile = require('../modules/club/models/ClubProfile');
+
+    const job = await Job.findById(jobId);
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    const clubProfile = await ClubProfile.findOne({ userId: job.clubId });
+
+    const event = await JobEvent.create({
+      jobId,
+      jobTitle: job.title,
+      jobTitleAr: job.titleAr,
+      clubId: job.clubId,
+      organization: clubProfile?.clubName || 'نادي',
+      eventType,
+      isUrgent,
+      description: job.description?.substring(0, 100),
+      descriptionAr: job.descriptionAr?.substring(0, 100),
+      category: job.category,
+      sport: job.sport,
+      region: job.requirements?.location?.region,
+      city: job.requirements?.location?.city
+    });
+
+    // Emit WebSocket event
+    const io = require('../config/socket').getIO();
+    if (io) {
+      io.emit('job_event', {
+        type: eventType,
+        event: event.toObject()
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Job event created',
+      data: { event }
+    });
+  } catch (error) {
+    console.error('Create job event error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في إنشاء حدث الوظيفة',
+      error: error.message
+    });
+  }
+};

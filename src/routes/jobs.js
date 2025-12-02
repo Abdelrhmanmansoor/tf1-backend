@@ -7,6 +7,22 @@ const {
   handleLocalUploadError,
 } = require('../middleware/localFileUpload');
 
+// ==================== JOB EVENTS (TICKER & LIVE) ====================
+
+/**
+ * @route   GET /api/v1/jobs/events/ticker
+ * @desc    Get live jobs ticker
+ * @access  Public
+ */
+router.get('/events/ticker', jobsController.getJobsTicker);
+
+/**
+ * @route   GET /api/v1/jobs/events
+ * @desc    Get job events with filters
+ * @access  Public
+ */
+router.get('/events', jobsController.getJobEvents);
+
 // ==================== LIST ALL JOBS (PUBLIC) ====================
 
 /**
@@ -44,6 +60,17 @@ router.put(
  * @access  Public
  */
 router.get('/:id', jobsController.getJobById);
+
+/**
+ * @route   POST /api/v1/jobs/:id/create-event
+ * @desc    Create job event when posted/updated
+ * @access  Private (club)
+ */
+router.post(
+  '/:id/create-event',
+  authenticate,
+  jobsController.createJobEvent
+);
 
 /**
  * @route   POST /api/v1/jobs/:id/apply

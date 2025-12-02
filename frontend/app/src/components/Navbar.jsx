@@ -40,7 +40,7 @@ const Navbar = () => {
               )}
               {['admin', 'administrator'].includes(user.role) && (
                 <Link to="/admin-dashboard" className="nav-link admin-dashboard-link">
-                  🏛️ لوحة التحكم
+                  ⚙️ Admin
                 </Link>
               )}
               <NotificationBell />
