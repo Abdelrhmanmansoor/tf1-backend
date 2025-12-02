@@ -214,6 +214,20 @@ module.exports = io => {
     });
 
     // ===================================
+    // JOB EVENTS (LIVE UPDATES)
+    // ===================================
+
+    socket.on('subscribe_job_events', () => {
+      socket.join('job_events_channel');
+      console.log(`👤 ${socket.user.firstName} subscribed to job events`);
+    });
+
+    socket.on('unsubscribe_job_events', () => {
+      socket.leave('job_events_channel');
+      console.log(`👤 ${socket.user.firstName} unsubscribed from job events`);
+    });
+
+    // ===================================
     // DISCONNECT
     // ===================================
 
@@ -244,10 +258,18 @@ module.exports = io => {
     });
   });
 
-  // Return helper function to get online users
+  // Return helper functions
   return {
     getOnlineUsers: () => Array.from(onlineUsers.keys()),
     isUserOnline: userId => onlineUsers.has(userId),
     getSocketId: userId => onlineUsers.get(userId),
+    getIO: () => io,
+    emitJobEvent: (eventType, event) => {
+      io.to('job_events_channel').emit('job_event', {
+        type: eventType,
+        data: event,
+        timestamp: new Date()
+      });
+    }
   };
 };
