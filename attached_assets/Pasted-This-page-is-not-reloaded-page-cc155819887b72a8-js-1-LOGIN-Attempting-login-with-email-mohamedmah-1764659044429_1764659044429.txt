@@ -1,0 +1,68 @@
+This page is not reloaded
+page-cc155819887b72a8.js:1 [LOGIN] Attempting login with email: mohamedmahgoub@powerscrews.com
+page-cc155819887b72a8.js:1 [LOGIN] Success: Object
+tf1-backend.onrender.com/api/v1/age-group-supervisor/groups:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+page-232862f5011e6975.js:1 Error creating age group: $
+_ @ page-232862f5011e6975.js:1Understand this error
+tf1-backend.onrender.com/api/v1/age-group-supervisor/groups:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+page-232862f5011e6975.js:1 Error creating age group: $
+_ @ page-232862f5011e6975.js:1Understand this error
+page-d5d0032c8389c58c.js:1 [Dashboard] User role from localStorage: age-group-supervisor
+tf1-backend.onrender.com/api/v1/age-group-supervisor/groups:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+page-232862f5011e6975.js:1 Error creating age group: $
+_ @ page-232862f5011e6975.js:1Understand this error
+tf1-backend.onrender.com/api/v1/age-group-supervisor/groups:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+page-232862f5011e6975.js:1 Error creating age group: $
+_ @ page-232862f5011e6975.js:1Understand this error
+5125-a51407a3721216f6.js:1  POST https://tf1-backend.onrender.com/api/v1/age-group-supervisor/groups 500 (Internal Server Error)
+(anonymous) @ 5125-a51407a3721216f6.js:1
+xhr @ 5125-a51407a3721216f6.js:1
+e8 @ 5125-a51407a3721216f6.js:1
+Promise.then
+_request @ 5125-a51407a3721216f6.js:1
+request @ 5125-a51407a3721216f6.js:1
+(anonymous) @ 5125-a51407a3721216f6.js:1
+(anonymous) @ 5125-a51407a3721216f6.js:1
+createAgeGroup @ 3696-ab92b093e89acdb9.js:1
+_ @ page-232862f5011e6975.js:1
+i8 @ 4bd1b696-100b9d70ed4e49c1.js:1
+(anonymous) @ 4bd1b696-100b9d70ed4e49c1.js:1
+nz @ 4bd1b696-100b9d70ed4e49c1.js:1
+sn @ 4bd1b696-100b9d70ed4e49c1.js:1
+cc @ 4bd1b696-100b9d70ed4e49c1.js:1
+ci @ 4bd1b696-100b9d70ed4e49c1.js:1Understand this error
+page-232862f5011e6975.js:1 Error creating age group: $ {message: 'Request failed with status code 500', name: 'AxiosError', code: 'ERR_BAD_RESPONSE', config: {…}, request: XMLHttpRequest, …}
+_ @ page-232862f5011e6975.js:1
+await in _
+i8 @ 4bd1b696-100b9d70ed4e49c1.js:1
+(anonymous) @ 4bd1b696-100b9d70ed4e49c1.js:1
+nz @ 4bd1b696-100b9d70ed4e49c1.js:1
+sn @ 4bd1b696-100b9d70ed4e49c1.js:1
+cc @ 4bd1b696-100b9d70ed4e49c1.js:1
+ci @ 4bd1b696-100b9d70ed4e49c1.js:1Understand this error
+5125-a51407a3721216f6.js:1  POST https://tf1-backend.onrender.com/api/v1/age-group-supervisor/groups 500 (Internal Server Error)
+(anonymous) @ 5125-a51407a3721216f6.js:1
+xhr @ 5125-a51407a3721216f6.js:1
+e8 @ 5125-a51407a3721216f6.js:1
+Promise.then
+_request @ 5125-a51407a3721216f6.js:1
+request @ 5125-a51407a3721216f6.js:1
+(anonymous) @ 5125-a51407a3721216f6.js:1
+(anonymous) @ 5125-a51407a3721216f6.js:1
+createAgeGroup @ 3696-ab92b093e89acdb9.js:1
+_ @ page-232862f5011e6975.js:1
+i8 @ 4bd1b696-100b9d70ed4e49c1.js:1
+(anonymous) @ 4bd1b696-100b9d70ed4e49c1.js:1
+nz @ 4bd1b696-100b9d70ed4e49c1.js:1
+sn @ 4bd1b696-100b9d70ed4e49c1.js:1
+cc @ 4bd1b696-100b9d70ed4e49c1.js:1
+ci @ 4bd1b696-100b9d70ed4e49c1.js:1Understand this error
+page-232862f5011e6975.js:1 Error creating age group: $ {message: 'Request failed with status code 500', name: 'AxiosError', code: 'ERR_BAD_RESPONSE', config: {…}, request: XMLHttpRequest, …}
+_ @ page-232862f5011e6975.js:1
+await in _
+i8 @ 4bd1b696-100b9d70ed4e49c1.js:1
+(anonymous) @ 4bd1b696-100b9d70ed4e49c1.js:1
+nz @ 4bd1b696-100b9d70ed4e49c1.js:1
+sn @ 4bd1b696-100b9d70ed4e49c1.js:1
+cc @ 4bd1b696-100b9d70ed4e49c1.js:1
+ci @ 4bd1b696-100b9d70ed4e49c1.js:1Understand this error

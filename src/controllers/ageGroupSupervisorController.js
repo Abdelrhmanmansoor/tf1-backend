@@ -99,10 +99,33 @@ exports.getAgeGroups = async (req, res) => {
 exports.createAgeGroup = async (req, res) => {
   try {
     const clubId = req.user.clubId || req.user._id;
+    const { name, nameAr, ageRange, status = 'active', sport = 'football' } = req.body;
+
+    // Validate required fields
+    if (!name || !nameAr || !ageRange || !ageRange.min || !ageRange.max) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Name, nameAr, and age range are required',
+          messageAr: 'الاسم والاسم بالعربية ونطاق العمر مطلوبان'
+        }
+      });
+    }
+
     const groupData = {
-      ...req.body,
+      name: name.trim(),
+      nameAr: nameAr.trim(),
+      ageRange: {
+        min: parseInt(ageRange.min),
+        max: parseInt(ageRange.max)
+      },
+      status: status || 'active',
+      sport: sport || 'football',
       clubId,
-      createdBy: req.user._id
+      createdBy: req.user._id,
+      playersCount: 0,
+      maxPlayers: 30
     };
 
     const group = await AgeGroup.create(groupData);
@@ -119,8 +142,8 @@ exports.createAgeGroup = async (req, res) => {
       success: false,
       error: {
         code: 'CREATE_GROUP_ERROR',
-        message: 'Error creating age group',
-        messageAr: 'خطأ في إنشاء الفئة العمرية'
+        message: 'Error creating age group: ' + error.message,
+        messageAr: 'خطأ في إنشاء الفئة العمرية: ' + error.message
       }
     });
   }
