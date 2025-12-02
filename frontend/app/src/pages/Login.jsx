@@ -15,12 +15,20 @@ const Login = () => {
     setError('');
     setLoading(true);
 
-    const result = await login(email, password);
+    console.log('Attempting login with:', email);
     
-    if (result.success) {
-      navigate('/matches');
-    } else {
-      setError(result.error);
+    try {
+      const result = await login(email, password);
+      console.log('Login result:', result);
+      
+      if (result.success) {
+        navigate('/matches');
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      console.error('Login exception:', err);
+      setError('حدث خطأ في الاتصال');
     }
     
     setLoading(false);

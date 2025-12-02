@@ -17,13 +17,17 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log('AuthContext: Calling login API...');
       const response = await authService.login(email, password);
+      console.log('AuthContext: API Response:', response.data);
+      
       const { user, accessToken, requiresVerification } = response.data;
       
       if (accessToken) {
         localStorage.setItem('token', accessToken);
         localStorage.setItem('user', JSON.stringify(user));
         setUser(user);
+        console.log('AuthContext: Token saved, user set');
       }
       
       return { 
@@ -32,6 +36,9 @@ export const AuthProvider = ({ children }) => {
         requiresVerification 
       };
     } catch (error) {
+      console.error('AuthContext: Login error:', error);
+      console.error('AuthContext: Error response:', error.response?.data);
+      
       const errorData = error.response?.data;
       let errorMessage = 'فشل تسجيل الدخول';
       
