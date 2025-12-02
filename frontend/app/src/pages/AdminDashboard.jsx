@@ -131,7 +131,7 @@ const AdminDashboard = () => {
     }
   };
 
-  if (!user || !['admin', 'administrator', 'club'].includes(user.role)) {
+  if (!user || !['admin', 'administrator', 'club', 'leader'].includes(user.role)) {
     return (
       <div className="admin-dashboard-container">
         <div className="error-message">
