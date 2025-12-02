@@ -259,12 +259,12 @@ class AuthController {
         });
       }
 
-      // Check if user is still verified
-      if (!user.isVerified) {
+      // Check if user is active (allow unverified emails to refresh tokens)
+      if (!user.isActive) {
         return res.status(403).json({
           success: false,
-          message: 'Account email is not verified',
-          code: 'EMAIL_NOT_VERIFIED'
+          message: 'Account is deactivated',
+          code: 'ACCOUNT_DEACTIVATED'
         });
       }
 
