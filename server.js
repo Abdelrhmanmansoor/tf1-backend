@@ -14,6 +14,11 @@ const database = require('./src/config/database');
 const routes = require('./src/routes');
 const blogRoutes = require('./src/modules/blog/routes');
 const adminRoutes = require('./src/routes/admin');
+const administratorRoutes = require('./src/routes/administrator');
+const ageGroupSupervisorRoutes = require('./src/routes/ageGroupSupervisor');
+const sportsDirectorRoutes = require('./src/routes/sportsDirector');
+const executiveDirectorRoutes = require('./src/routes/executiveDirector');
+const secretaryRoutes = require('./src/routes/secretary');
 const { createSearchIndexes } = require('./src/config/searchIndexes');
 const configureSocket = require('./src/config/socket');
 const logger = require('./src/utils/logger');
@@ -190,6 +195,13 @@ app.get('/control', (req, res) => {
 app.use(`/api/${API_VERSION}`, routes);
 app.use(`/api/${API_VERSION}/blog`, blogRoutes);
 app.use(`/api/${API_VERSION}/admin`, adminRoutes);
+
+// New Admin Roles Routes
+app.use(`/api/${API_VERSION}/administrator`, administratorRoutes);
+app.use(`/api/${API_VERSION}/age-group-supervisor`, ageGroupSupervisorRoutes);
+app.use(`/api/${API_VERSION}/sports-director`, sportsDirectorRoutes);
+app.use(`/api/${API_VERSION}/executive-director`, executiveDirectorRoutes);
+app.use(`/api/${API_VERSION}/secretary`, secretaryRoutes);
 
 // ==================== ERROR HANDLING ====================
 app.use((err, req, res, next) => {
