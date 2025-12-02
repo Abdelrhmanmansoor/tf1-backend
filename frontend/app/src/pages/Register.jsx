@@ -95,7 +95,13 @@ const Register = () => {
     { value: 'player', label: 'لاعب' },
     { value: 'coach', label: 'مدرب' },
     { value: 'club', label: 'نادي / مؤسسة' },
-    { value: 'specialist', label: 'أخصائي' }
+    { value: 'specialist', label: 'أخصائي' },
+    { value: 'admin', label: 'مدير النظام' },
+    { value: 'administrator', label: 'إداري' },
+    { value: 'age-group-supervisor', label: 'مشرف فئة عمرية' },
+    { value: 'sports-director', label: 'مدير رياضي' },
+    { value: 'executive-director', label: 'مدير تنفيذي' },
+    { value: 'secretary', label: 'سكرتير' }
   ];
 
   const organizationTypes = [
