@@ -34,18 +34,41 @@ router.get('/', (req, res) => {
     version: process.env.API_VERSION || 'v1',
     timestamp: new Date().toISOString(),
     endpoints: {
-      auth: '/auth',
-      players: '/players',
-      coaches: '/coaches',
-      clubs: '/clubs',
-      specialists: '/specialists',
-      messages: '/messages',
-      search: '/search',
-      notifications: '/notifications',
-      reviews: '/reviews',
-      global: '/global',
-      jobs: '/jobs',
-      health: '/health',
+      userEndpoints: {
+        auth: '/auth',
+        players: '/players',
+        coaches: '/coaches',
+        clubs: '/clubs',
+        specialists: '/specialists',
+        messages: '/messages',
+        search: '/search',
+        notifications: '/notifications',
+        reviews: '/reviews',
+        global: '/global',
+        jobs: '/jobs',
+        matches: '/matches',
+        profile: '/profile'
+      },
+      leadershipEndpoints: {
+        description: 'Separate leadership control panel - not for regular users',
+        descriptionAr: 'لوحة تحكم القيادة المنفصلة - ليست للمستخدمين العاديين',
+        leader: '/leader',
+        team: '/team',
+        settings: '/settings',
+        administrativeOfficer: '/administrative-officer'
+      },
+      adminEndpoints: {
+        admin: '/admin',
+        administrator: '/administrator',
+        ageGroupSupervisor: '/age-group-supervisor',
+        sportsDirector: '/sports-director',
+        executiveDirector: '/executive-director',
+        secretary: '/secretary'
+      },
+      system: {
+        health: '/health',
+        settingsPublic: '/settings/public'
+      }
     },
     features: [
       'Role-based authentication (Player, Coach, Club, Specialist)',
