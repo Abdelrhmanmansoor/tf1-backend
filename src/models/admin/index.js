@@ -16,6 +16,7 @@ const AuditLog = require('./AuditLog');
 const Permission = require('./Permission');
 const SiteSettings = require('./SiteSettings');
 const PlayerRegistration = require('./PlayerRegistration');
+const JobEvent = require('./JobEvent');
 
 module.exports = {
   AgeGroup,
@@ -36,5 +37,6 @@ module.exports = {
   AuditLog,
   Permission,
   SiteSettings,
-  PlayerRegistration
+  PlayerRegistration,
+  JobEvent
 };
