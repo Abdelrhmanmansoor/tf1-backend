@@ -11,6 +11,7 @@ const Register = () => {
     password: '',
     phone: '',
     role: 'player',
+    registrationCode: '',
     organizationName: '',
     establishedDate: '',
     businessRegistrationNumber: '',
@@ -96,10 +97,16 @@ const Register = () => {
 
     setLoading(true);
 
+    if (!formData.registrationCode.trim()) {
+      setError('شفرة التسجيل مطلوبة');
+      return;
+    }
+
     const dataToSend = {
       email: formData.email,
       password: formData.password,
-      role: formData.role
+      role: formData.role,
+      registrationCode: formData.registrationCode.trim()
     };
 
     if (formData.phone && formData.phone.trim()) {
@@ -219,6 +226,21 @@ const Register = () => {
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>شفرة التسجيل *</label>
+            <input
+              type="text"
+              value={formData.registrationCode}
+              onChange={(e) => handleChange('registrationCode', e.target.value.toUpperCase())}
+              placeholder="أدخل شفرة التسجيل"
+              required
+              style={{ direction: 'ltr', textAlign: 'right', letterSpacing: '2px', fontWeight: 'bold' }}
+            />
+            <small style={{ color: '#f44336', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+              ⚠️ شفرة التسجيل إلزامية للوصول إلى التسجيل
+            </small>
+          </div>
+
           <div className="form-group">
             <label>نوع الحساب *</label>
             <select
