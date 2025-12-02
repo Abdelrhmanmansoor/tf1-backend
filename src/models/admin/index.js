@@ -11,6 +11,9 @@ const Meeting = require('./Meeting');
 const Document = require('./Document');
 const Task = require('./Task');
 const Alert = require('./Alert');
+const LeaderTeam = require('./LeaderTeam');
+const AuditLog = require('./AuditLog');
+const Permission = require('./Permission');
 
 module.exports = {
   AgeGroup,
@@ -26,5 +29,8 @@ module.exports = {
   Meeting,
   Document,
   Task,
-  Alert
+  Alert,
+  LeaderTeam,
+  AuditLog,
+  Permission
 };
