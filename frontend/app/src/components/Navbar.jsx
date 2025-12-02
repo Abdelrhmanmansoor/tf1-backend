@@ -38,6 +38,11 @@ const Navbar = () => {
                   👥 إدارة الفئات
                 </Link>
               )}
+              {['admin', 'administrator'].includes(user.role) && (
+                <Link to="/admin-dashboard" className="nav-link admin-dashboard-link">
+                  🏛️ لوحة التحكم
+                </Link>
+              )}
               <NotificationBell />
               <button onClick={handleLogout} className="logout-btn">
                 خروج

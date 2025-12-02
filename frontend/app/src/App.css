@@ -692,3 +692,14 @@ body {
     width: 280px;
   }
 }
+
+.admin-dashboard-link {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.admin-dashboard-link:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
