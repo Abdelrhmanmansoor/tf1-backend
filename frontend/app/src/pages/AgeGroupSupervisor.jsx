@@ -42,37 +42,50 @@ const AgeGroupSupervisor = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    console.log('🔍 Form Data:', formData);
+    console.log('🔍 SUBMIT TRIGGERED - Form Data:', formData);
+    console.log('Name:', formData.name, 'NameAr:', formData.nameAr);
+    console.log('Age Range:', formData.ageRange);
     
+    // Validate
     if (!formData.name || !formData.nameAr) {
+      console.warn('❌ Validation failed: Missing name or nameAr');
       setError('جميع الحقول مطلوبة');
       return;
     }
 
     if (formData.ageRange.min >= formData.ageRange.max) {
+      console.warn('❌ Validation failed: min >= max');
       setError('يجب أن تكون السن الصغرى أقل من السن الكبرى');
       return;
     }
 
     try {
-      console.log('📤 Sending request...');
-      const endpoint = editingId 
-        ? `/age-group-supervisor/groups/${editingId}` 
-        : '/age-group-supervisor/groups';
+      console.log('📤 Sending request to backend...');
       
-      const method = editingId ? 'patch' : 'post';
-      console.log(`${method.toUpperCase()} ${endpoint}`, formData);
+      const payload = {
+        name: formData.name.trim(),
+        nameAr: formData.nameAr.trim(),
+        ageRange: {
+          min: parseInt(formData.ageRange.min),
+          max: parseInt(formData.ageRange.max)
+        },
+        status: formData.status
+      };
+      
+      console.log('Payload:', payload);
       
       let response;
       if (editingId) {
-        response = await api.patch(endpoint, formData);
+        console.log(`PATCH /age-group-supervisor/groups/${editingId}`);
+        response = await api.patch(`/age-group-supervisor/groups/${editingId}`, payload);
         setSuccess('✅ تم تحديث الفئة العمرية بنجاح');
       } else {
-        response = await api.post(endpoint, formData);
+        console.log('POST /age-group-supervisor/groups');
+        response = await api.post('/age-group-supervisor/groups', payload);
         setSuccess('✅ تم إضافة الفئة العمرية بنجاح');
       }
       
-      console.log('✅ Response:', response.data);
+      console.log('✅ SUCCESS Response:', response.data);
       
       setFormData({ name: '', nameAr: '', ageRange: { min: 8, max: 10 }, status: 'active' });
       setEditingId(null);
@@ -84,8 +97,13 @@ const AgeGroupSupervisor = () => {
         fetchGroups();
       }, 2000);
     } catch (err) {
-      console.error('❌ Error:', err);
-      console.error('Response:', err.response?.data);
+      console.error('❌ ERROR Details:', {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data,
+        config: err.config?.url
+      });
+      
       const errorMsg = err.response?.data?.error?.messageAr || 
                       err.response?.data?.message ||
                       err.message || 
@@ -224,7 +242,15 @@ const AgeGroupSupervisor = () => {
             </div>
 
             <div className="form-buttons">
-              <button type="submit" className="btn-save" disabled={!formData.name || !formData.nameAr}>
+              <button 
+                type="submit" 
+                className="btn-save"
+                onClick={(e) => {
+                  console.log('🔘 BUTTON CLICKED');
+                  e.preventDefault();
+                  handleSubmit(e);
+                }}
+              >
                 💾 حفظ
               </button>
               <button type="button" className="btn-cancel" onClick={handleCancel}>❌ إلغاء</button>
