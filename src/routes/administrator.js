@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const administratorController = require('../controllers/administratorController');
-const { protect, authorize } = require('../middleware/auth');
+const { authenticate, authorize } = require('../middleware/auth');
 
-router.use(protect);
+router.use(authenticate);
 router.use(authorize('admin', 'administrator'));
 
 router.get('/dashboard', administratorController.getDashboard);

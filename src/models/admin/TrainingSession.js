@@ -75,4 +75,4 @@ trainingSessionSchema.index({ ageGroupId: 1, date: 1 });
 trainingSessionSchema.index({ clubId: 1, status: 1 });
 trainingSessionSchema.index({ coachId: 1, date: 1 });
 
-module.exports = mongoose.model('TrainingSession', trainingSessionSchema);
+module.exports = mongoose.model('AdminTrainingSession', trainingSessionSchema);

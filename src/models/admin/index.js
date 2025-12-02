@@ -1,5 +1,5 @@
 const AgeGroup = require('./AgeGroup');
-const TrainingSession = require('./TrainingSession');
+const AdminTrainingSession = require('./TrainingSession');
 const Match = require('./Match');
 const Program = require('./Program');
 const CoachEvaluation = require('./CoachEvaluation');
@@ -14,7 +14,7 @@ const Alert = require('./Alert');
 
 module.exports = {
   AgeGroup,
-  TrainingSession,
+  TrainingSession: AdminTrainingSession,
   Match,
   Program,
   CoachEvaluation,
