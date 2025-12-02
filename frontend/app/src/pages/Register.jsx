@@ -9,6 +9,7 @@ const Register = () => {
     lastName: '',
     email: '',
     password: '',
+    phone: '',
     role: 'player',
     organizationName: '',
     establishedDate: '',
@@ -18,6 +19,8 @@ const Register = () => {
   const [options, setOptions] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -65,25 +68,61 @@ const Register = () => {
       return;
     }
 
+    const isClub = formData.role === 'club';
+
+    if (isClub) {
+      if (!formData.organizationName.trim()) {
+        setError('اسم المؤسسة مطلوب');
+        return;
+      }
+      if (!formData.establishedDate) {
+        setError('تاريخ التأسيس مطلوب');
+        return;
+      }
+      if (!formData.businessRegistrationNumber.trim()) {
+        setError('رقم السجل التجاري مطلوب');
+        return;
+      }
+    } else {
+      if (!formData.firstName.trim()) {
+        setError('الاسم الأول مطلوب');
+        return;
+      }
+      if (!formData.lastName.trim()) {
+        setError('الاسم الأخير مطلوب');
+        return;
+      }
+    }
+
     setLoading(true);
 
-    const dataToSend = { ...formData };
-    
-    if (formData.role !== 'club') {
-      delete dataToSend.organizationName;
-      delete dataToSend.establishedDate;
-      delete dataToSend.businessRegistrationNumber;
-      delete dataToSend.organizationType;
-    } else {
-      delete dataToSend.firstName;
-      delete dataToSend.lastName;
+    const dataToSend = {
+      email: formData.email,
+      password: formData.password,
+      role: formData.role
+    };
+
+    if (formData.phone && formData.phone.trim()) {
+      dataToSend.phone = formData.phone.trim();
     }
+
+    if (isClub) {
+      dataToSend.organizationName = formData.organizationName.trim();
+      dataToSend.establishedDate = formData.establishedDate;
+      dataToSend.businessRegistrationNumber = formData.businessRegistrationNumber.trim();
+      dataToSend.organizationType = formData.organizationType;
+    } else {
+      dataToSend.firstName = formData.firstName.trim();
+      dataToSend.lastName = formData.lastName.trim();
+    }
+
+    console.log('Sending registration data:', dataToSend);
 
     const result = await register(dataToSend);
     
     if (result.success) {
-      alert('تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول');
-      navigate('/login');
+      setRegisteredEmail(formData.email);
+      setRegistrationSuccess(true);
     } else {
       setError(result.error);
     }
@@ -96,7 +135,6 @@ const Register = () => {
     { value: 'coach', label: 'مدرب' },
     { value: 'club', label: 'نادي / مؤسسة' },
     { value: 'specialist', label: 'أخصائي' },
-    { value: 'admin', label: 'مدير النظام' },
     { value: 'administrator', label: 'إداري' },
     { value: 'age-group-supervisor', label: 'مشرف فئة عمرية' },
     { value: 'sports-director', label: 'مدير رياضي' },
@@ -106,26 +144,86 @@ const Register = () => {
 
   const organizationTypes = [
     { value: 'club', label: 'نادي رياضي' },
-    { value: 'academy', label: 'أكاديمية' },
-    { value: 'federation', label: 'اتحاد' },
+    { value: 'academy', label: 'أكاديمية رياضية' },
+    { value: 'federation', label: 'اتحاد رياضي' },
     { value: 'sports-center', label: 'مركز رياضي' }
   ];
 
   const isClub = formData.role === 'club';
 
+  if (registrationSuccess) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📧</div>
+          <h2 style={{ color: '#34a853', marginBottom: '1rem' }}>تم التسجيل بنجاح!</h2>
+          <div style={{ 
+            background: '#e8f5e9', 
+            padding: '1.5rem', 
+            borderRadius: '10px',
+            marginBottom: '1.5rem'
+          }}>
+            <p style={{ color: '#2e7d32', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+              تم إرسال رابط التأكيد إلى:
+            </p>
+            <p style={{ color: '#1a73e8', fontSize: '1.1rem', fontWeight: 'bold' }}>
+              {registeredEmail}
+            </p>
+          </div>
+          <div style={{ 
+            background: '#fff3e0', 
+            padding: '1rem', 
+            borderRadius: '10px',
+            marginBottom: '1.5rem'
+          }}>
+            <p style={{ color: '#e65100', fontSize: '0.9rem' }}>
+              ⚠️ يرجى التحقق من بريدك الإلكتروني وتأكيد حسابك للاستفادة من جميع الميزات
+            </p>
+          </div>
+          <button 
+            onClick={() => navigate('/login')}
+            className="submit-btn"
+            style={{ marginTop: '0.5rem' }}
+          >
+            الذهاب لتسجيل الدخول
+          </button>
+          <p style={{ marginTop: '1rem', color: '#666', fontSize: '0.9rem' }}>
+            لم تستلم البريد؟{' '}
+            <button 
+              onClick={() => {
+                alert('سيتم إرسال رابط التأكيد مرة أخرى');
+              }}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: '#1a73e8', 
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                textDecoration: 'underline'
+              }}
+            >
+              إعادة الإرسال
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="auth-page">
-      <div className="auth-card" style={{ maxWidth: isClub ? '500px' : '400px' }}>
+      <div className="auth-card" style={{ maxWidth: isClub ? '520px' : '420px' }}>
         <h1>📝 تسجيل جديد</h1>
         
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>نوع الحساب</label>
+            <label>نوع الحساب *</label>
             <select
               value={formData.role}
               onChange={(e) => handleChange('role', e.target.value)}
+              required
             >
               {roles.map(role => (
                 <option key={role.value} value={role.value}>
@@ -163,27 +261,28 @@ const Register = () => {
                 </select>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>تاريخ التأسيس *</label>
-                  <input
-                    type="date"
-                    value={formData.establishedDate}
-                    onChange={(e) => handleChange('establishedDate', e.target.value)}
-                    required
-                  />
-                </div>
+              <div className="form-group">
+                <label>تاريخ التأسيس *</label>
+                <input
+                  type="date"
+                  value={formData.establishedDate}
+                  onChange={(e) => handleChange('establishedDate', e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  required
+                  style={{ direction: 'ltr', textAlign: 'right' }}
+                />
+              </div>
 
-                <div className="form-group">
-                  <label>رقم السجل التجاري *</label>
-                  <input
-                    type="text"
-                    value={formData.businessRegistrationNumber}
-                    onChange={(e) => handleChange('businessRegistrationNumber', e.target.value)}
-                    placeholder="1234567890"
-                    required
-                  />
-                </div>
+              <div className="form-group">
+                <label>رقم السجل التجاري *</label>
+                <input
+                  type="text"
+                  value={formData.businessRegistrationNumber}
+                  onChange={(e) => handleChange('businessRegistrationNumber', e.target.value)}
+                  placeholder="مثال: 1234567890"
+                  required
+                  style={{ direction: 'ltr', textAlign: 'right' }}
+                />
               </div>
             </>
           ) : (
@@ -194,6 +293,7 @@ const Register = () => {
                   type="text"
                   value={formData.firstName}
                   onChange={(e) => handleChange('firstName', e.target.value)}
+                  placeholder="أحمد"
                   required
                 />
               </div>
@@ -204,6 +304,7 @@ const Register = () => {
                   type="text"
                   value={formData.lastName}
                   onChange={(e) => handleChange('lastName', e.target.value)}
+                  placeholder="محمد"
                   required
                 />
               </div>
@@ -218,6 +319,18 @@ const Register = () => {
               onChange={(e) => handleChange('email', e.target.value)}
               placeholder="example@email.com"
               required
+              style={{ direction: 'ltr', textAlign: 'right' }}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>رقم الجوال (اختياري)</label>
+            <input
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => handleChange('phone', e.target.value)}
+              placeholder="+966 5XX XXX XXXX"
+              style={{ direction: 'ltr', textAlign: 'right' }}
             />
           </div>
 
@@ -227,7 +340,7 @@ const Register = () => {
               type="password"
               value={formData.password}
               onChange={(e) => handleChange('password', e.target.value)}
-              placeholder="مثال: Ahmed123"
+              placeholder="••••••••"
               minLength={8}
               required
             />
