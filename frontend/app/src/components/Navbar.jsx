@@ -38,7 +38,12 @@ const Navbar = () => {
                   👥 إدارة الفئات
                 </Link>
               )}
-              {['admin', 'administrator', 'leader'].includes(user.role) && (
+              {user.role === 'leader' && (
+                <Link to="/dashboard/leader" className="nav-link admin-dashboard-link">
+                  👨‍💼 لوحة القيادة
+                </Link>
+              )}
+              {['admin', 'administrator'].includes(user.role) && (
                 <Link to="/admin-dashboard" className="nav-link admin-dashboard-link">
                   ⚙️ Admin
                 </Link>
