@@ -332,7 +332,7 @@ const requireLeader = async (req, res, next) => {
       });
     }
 
-    if (user.role === 'admin') {
+    if (user.role === 'admin' || user.role === 'leader' || user.role === 'administrator') {
       req.isLeader = true;
       req.hasFullAccess = true;
       return next();
