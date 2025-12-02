@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const SpecialistProfile = require('../models/SpecialistProfile');
 const SpecialistAvailability = require('../models/SpecialistAvailability');
 const ConsultationRequest = require('../models/ConsultationRequest');
@@ -1864,6 +1865,361 @@ exports.deleteBanner = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error deleting banner',
+      error: error.message
+    });
+  }
+};
+
+// ============================================
+// CERTIFICATIONS MANAGEMENT
+// ============================================
+
+// Get all certifications
+exports.getCertifications = async (req, res) => {
+  try {
+    const profile = await SpecialistProfile.findOne({ userId: req.user._id, isDeleted: false });
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Specialist profile not found',
+        messageAr: 'لم يتم العثور على ملف المختص'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        certifications: profile.certifications || []
+      }
+    });
+  } catch (error) {
+    console.error('Get certifications error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching certifications',
+      messageAr: 'خطأ في جلب الشهادات',
+      error: error.message
+    });
+  }
+};
+
+// Add certification
+exports.addCertification = async (req, res) => {
+  try {
+    const { name, nameAr, issuingOrganization, issueDate, expiryDate, certificateUrl, credentialId } = req.body;
+
+    if (!name || !issuingOrganization) {
+      return res.status(400).json({
+        success: false,
+        message: 'Certification name and issuing organization are required',
+        messageAr: 'اسم الشهادة والجهة المانحة مطلوبان'
+      });
+    }
+
+    const profile = await SpecialistProfile.findOne({ userId: req.user._id, isDeleted: false });
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Specialist profile not found',
+        messageAr: 'لم يتم العثور على ملف المختص'
+      });
+    }
+
+    const newCertification = {
+      _id: new mongoose.Types.ObjectId(),
+      name,
+      nameAr: nameAr || name,
+      issuingOrganization,
+      issuedBy: issuingOrganization,
+      issueDate: issueDate ? new Date(issueDate) : null,
+      issuedDate: issueDate ? new Date(issueDate) : null,
+      expiryDate: expiryDate ? new Date(expiryDate) : null,
+      certificateUrl: certificateUrl || '',
+      credentialId: credentialId || '',
+      licenseNumber: credentialId || ''
+    };
+
+    if (!profile.certifications) {
+      profile.certifications = [];
+    }
+    profile.certifications.push(newCertification);
+    await profile.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Certification added successfully',
+      messageAr: 'تمت إضافة الشهادة بنجاح',
+      data: {
+        certification: newCertification
+      }
+    });
+  } catch (error) {
+    console.error('Add certification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error adding certification',
+      messageAr: 'خطأ في إضافة الشهادة',
+      error: error.message
+    });
+  }
+};
+
+// Update certification
+exports.updateCertification = async (req, res) => {
+  try {
+    const { certificationId } = req.params;
+    const updateData = req.body;
+
+    const profile = await SpecialistProfile.findOne({ userId: req.user._id, isDeleted: false });
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Specialist profile not found',
+        messageAr: 'لم يتم العثور على ملف المختص'
+      });
+    }
+
+    const certIndex = profile.certifications.findIndex(
+      c => c._id.toString() === certificationId
+    );
+
+    if (certIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Certification not found',
+        messageAr: 'لم يتم العثور على الشهادة'
+      });
+    }
+
+    // Update fields
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] !== undefined) {
+        if (key === 'issueDate' || key === 'expiryDate') {
+          profile.certifications[certIndex][key] = updateData[key] ? new Date(updateData[key]) : null;
+          if (key === 'issueDate') {
+            profile.certifications[certIndex].issuedDate = updateData[key] ? new Date(updateData[key]) : null;
+          }
+        } else if (key === 'issuingOrganization') {
+          profile.certifications[certIndex].issuingOrganization = updateData[key];
+          profile.certifications[certIndex].issuedBy = updateData[key];
+        } else if (key === 'credentialId') {
+          profile.certifications[certIndex].credentialId = updateData[key];
+          profile.certifications[certIndex].licenseNumber = updateData[key];
+        } else {
+          profile.certifications[certIndex][key] = updateData[key];
+        }
+      }
+    });
+
+    await profile.save();
+
+    res.json({
+      success: true,
+      message: 'Certification updated successfully',
+      messageAr: 'تم تحديث الشهادة بنجاح',
+      data: {
+        certification: profile.certifications[certIndex]
+      }
+    });
+  } catch (error) {
+    console.error('Update certification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating certification',
+      messageAr: 'خطأ في تحديث الشهادة',
+      error: error.message
+    });
+  }
+};
+
+// Delete certification
+exports.deleteCertification = async (req, res) => {
+  try {
+    const { certificationId } = req.params;
+
+    const profile = await SpecialistProfile.findOne({ userId: req.user._id, isDeleted: false });
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Specialist profile not found',
+        messageAr: 'لم يتم العثور على ملف المختص'
+      });
+    }
+
+    const certIndex = profile.certifications.findIndex(
+      c => c._id.toString() === certificationId
+    );
+
+    if (certIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Certification not found',
+        messageAr: 'لم يتم العثور على الشهادة'
+      });
+    }
+
+    profile.certifications.splice(certIndex, 1);
+    await profile.save();
+
+    res.json({
+      success: true,
+      message: 'Certification deleted successfully',
+      messageAr: 'تم حذف الشهادة بنجاح'
+    });
+  } catch (error) {
+    console.error('Delete certification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting certification',
+      messageAr: 'خطأ في حذف الشهادة',
+      error: error.message
+    });
+  }
+};
+
+// Get session by ID (public for clients)
+exports.getSessionById = async (req, res) => {
+  try {
+    const session = await ConsultationSession.findById(req.params.sessionId)
+      .populate('specialistId', 'fullName profilePicture email')
+      .populate('clientId', 'fullName profilePicture email');
+
+    if (!session || session.isDeleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found',
+        messageAr: 'لم يتم العثور على الجلسة'
+      });
+    }
+
+    // Check if user is authorized to view this session
+    const userId = req.user._id.toString();
+    if (session.specialistId._id.toString() !== userId && 
+        session.clientId._id.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to view this session',
+        messageAr: 'غير مصرح لك بعرض هذه الجلسة'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { session }
+    });
+  } catch (error) {
+    console.error('Get session by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching session',
+      messageAr: 'خطأ في جلب الجلسة',
+      error: error.message
+    });
+  }
+};
+
+// Get students (alias for clients for TF1 frontend compatibility)
+exports.getStudents = async (req, res) => {
+  try {
+    const { status, search, page = 1, limit = 20 } = req.query;
+
+    const query = {
+      specialistId: req.user._id,
+      isDeleted: false
+    };
+
+    if (status) query.status = status;
+
+    const clients = await SpecialistClient.find(query)
+      .populate('clientId', 'fullName firstName lastName email phoneNumber profilePicture')
+      .sort({ lastSessionDate: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    const total = await SpecialistClient.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: {
+        students: clients.map(c => ({
+          id: c._id,
+          clientId: c.clientId?._id,
+          name: c.clientId?.fullName || `${c.clientId?.firstName} ${c.clientId?.lastName}`,
+          email: c.clientId?.email,
+          phone: c.clientId?.phoneNumber,
+          avatar: c.clientId?.profilePicture,
+          status: c.status,
+          totalSessions: c.sessionHistory?.length || 0,
+          lastSession: c.lastSessionDate,
+          joinedAt: c.createdAt
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get students error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching students',
+      messageAr: 'خطأ في جلب الطلاب',
+      error: error.message
+    });
+  }
+};
+
+// Get student by ID (alias for client)
+exports.getStudentById = async (req, res) => {
+  try {
+    const client = await SpecialistClient.findOne({
+      _id: req.params.studentId,
+      specialistId: req.user._id,
+      isDeleted: false
+    }).populate('clientId', 'fullName firstName lastName email phoneNumber profilePicture');
+
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found',
+        messageAr: 'لم يتم العثور على الطالب'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        student: {
+          id: client._id,
+          clientId: client.clientId?._id,
+          name: client.clientId?.fullName || `${client.clientId?.firstName} ${client.clientId?.lastName}`,
+          email: client.clientId?.email,
+          phone: client.clientId?.phoneNumber,
+          avatar: client.clientId?.profilePicture,
+          status: client.status,
+          sessionHistory: client.sessionHistory,
+          notes: client.notes,
+          measurements: client.measurements,
+          goals: client.goals,
+          totalSessions: client.sessionHistory?.length || 0,
+          lastSession: client.lastSessionDate,
+          joinedAt: client.createdAt
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get student by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching student',
+      messageAr: 'خطأ في جلب الطالب',
       error: error.message
     });
   }

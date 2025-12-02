@@ -390,6 +390,56 @@ router.put('/settings/privacy', authenticate, authorize('specialist'), specialis
 router.put('/settings/notifications', authenticate, authorize('specialist'), specialistController.updateNotificationSettings);
 
 // ===================================
+// CERTIFICATIONS MANAGEMENT
+// ===================================
+
+/**
+ * @route   GET /api/specialist/certifications
+ * @desc    Get all certifications
+ * @access  Private (Specialist)
+ */
+router.get('/certifications', authenticate, authorize('specialist'), specialistController.getCertifications);
+
+/**
+ * @route   POST /api/specialist/certifications
+ * @desc    Add a new certification
+ * @access  Private (Specialist)
+ */
+router.post('/certifications', authenticate, authorize('specialist'), specialistController.addCertification);
+
+/**
+ * @route   PATCH /api/specialist/certifications/:certificationId
+ * @desc    Update a certification
+ * @access  Private (Specialist)
+ */
+router.patch('/certifications/:certificationId', authenticate, authorize('specialist'), specialistController.updateCertification);
+
+/**
+ * @route   DELETE /api/specialist/certifications/:certificationId
+ * @desc    Delete a certification
+ * @access  Private (Specialist)
+ */
+router.delete('/certifications/:certificationId', authenticate, authorize('specialist'), specialistController.deleteCertification);
+
+// ===================================
+// STUDENTS (Alias for Clients - TF1 compatibility)
+// ===================================
+
+/**
+ * @route   GET /api/specialist/students
+ * @desc    Get all students (clients)
+ * @access  Private (Specialist)
+ */
+router.get('/students', authenticate, authorize('specialist'), specialistController.getStudents);
+
+/**
+ * @route   GET /api/specialist/students/:studentId
+ * @desc    Get student by ID
+ * @access  Private (Specialist)
+ */
+router.get('/students/:studentId', authenticate, authorize('specialist'), specialistController.getStudentById);
+
+// ===================================
 // IMAGE UPLOADS
 // ===================================
 
