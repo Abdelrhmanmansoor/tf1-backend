@@ -7,6 +7,15 @@ const {
   handleLocalUploadError,
 } = require('../middleware/localFileUpload');
 
+// ==================== LIST ALL JOBS (PUBLIC) ====================
+
+/**
+ * @route   GET /api/v1/jobs
+ * @desc    Get all active jobs with filters
+ * @access  Public
+ */
+router.get('/', jobsController.getJobs);
+
 // ==================== JOB APPLICATIONS (REQUIRES AUTH) - MUST BE BEFORE /:id ====================
 
 /**

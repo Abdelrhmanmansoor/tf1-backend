@@ -19,6 +19,9 @@ const ageGroupSupervisorRoutes = require('./src/routes/ageGroupSupervisor');
 const sportsDirectorRoutes = require('./src/routes/sportsDirector');
 const executiveDirectorRoutes = require('./src/routes/executiveDirector');
 const secretaryRoutes = require('./src/routes/secretary');
+const matchHubRoutes = require('./src/routes/matchHub');
+const profileRoutes = require('./src/routes/profile');
+const jobsRoutes = require('./src/routes/jobs');
 const { createSearchIndexes } = require('./src/config/searchIndexes');
 const configureSocket = require('./src/config/socket');
 const logger = require('./src/utils/logger');
@@ -210,6 +213,11 @@ app.use(`/api/${API_VERSION}/age-group-supervisor`, ageGroupSupervisorRoutes);
 app.use(`/api/${API_VERSION}/sports-director`, sportsDirectorRoutes);
 app.use(`/api/${API_VERSION}/executive-director`, executiveDirectorRoutes);
 app.use(`/api/${API_VERSION}/secretary`, secretaryRoutes);
+
+// Match Hub & Profile Routes
+app.use(`/api/${API_VERSION}/matches`, matchHubRoutes);
+app.use(`/api/${API_VERSION}/profile`, profileRoutes);
+app.use(`/api/${API_VERSION}/jobs`, jobsRoutes);
 
 // ==================== ERROR HANDLING ====================
 app.use((err, req, res, next) => {

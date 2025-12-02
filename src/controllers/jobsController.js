@@ -10,6 +10,86 @@ const fs = require('fs');
 // ==================== JOB BROWSING ====================
 
 /**
+ * @route   GET /api/v1/jobs
+ * @desc    Get all active jobs with filters
+ * @access  Public
+ */
+exports.getJobs = async (req, res) => {
+  try {
+    const { 
+      page = 1, 
+      limit = 20,
+      region,
+      city,
+      sport,
+      jobType,
+      category
+    } = req.query;
+
+    const query = { 
+      isDeleted: false,
+      status: 'active'
+    };
+
+    if (region) query['requirements.location.region'] = region;
+    if (city) query['requirements.location.city'] = city;
+    if (sport) query.sport = sport;
+    if (jobType) query.jobType = jobType;
+    if (category) query.category = category;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [jobs, total] = await Promise.all([
+      Job.find(query)
+        .populate('clubId', 'firstName lastName')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      Job.countDocuments(query)
+    ]);
+
+    const ClubProfile = require('../modules/club/models/ClubProfile');
+
+    const formattedJobs = await Promise.all(jobs.map(async (job) => {
+      const clubProfile = await ClubProfile.findOne({ userId: job.clubId?._id });
+      return {
+        _id: job._id,
+        title: job.title,
+        description: job.description?.substring(0, 150) + '...',
+        jobType: job.jobType,
+        sport: job.sport || 'عامة',
+        location: clubProfile?.location?.city || 'غير محدد',
+        salaryRange: job.requirements?.salary,
+        postedAt: job.createdAt,
+        club: {
+          name: clubProfile?.clubName || 'نادي',
+          logo: clubProfile?.logo
+        }
+      };
+    }));
+
+    res.status(200).json({
+      success: true,
+      jobs: formattedJobs,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / parseInt(limit)),
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get jobs error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب الوظائف',
+      error: error.message
+    });
+  }
+};
+
+/**
  * @route   GET /api/v1/jobs/:id
  * @desc    Get job details by ID
  * @access  Public

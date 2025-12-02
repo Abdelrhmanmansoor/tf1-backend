@@ -11,7 +11,7 @@ const notificationSchema = new mongoose.Schema(
 
     userRole: {
       type: String,
-      enum: ['player', 'coach', 'club', 'specialist'],
+      enum: ['player', 'coach', 'club', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary'],
       required: true,
     },
 
@@ -42,6 +42,17 @@ const notificationSchema = new mongoose.Schema(
         'membership_request',
         'job_application',
         'facility_booking',
+        // Match notifications
+        'match_joined',
+        'match_left',
+        'match_cancelled',
+        'match_reminder',
+        'new_player_joined',
+        'player_left_match',
+        // Job application notifications
+        'new_application',
+        'application_received',
+        'application_reviewed',
         // Common notifications
         'new_follower',
         'profile_verified',
@@ -88,6 +99,8 @@ const notificationSchema = new mongoose.Schema(
           'facility_booking',
           'user',
           'system',
+          'match',
+          'public_match',
         ],
       },
       entityId: mongoose.Schema.Types.ObjectId,
