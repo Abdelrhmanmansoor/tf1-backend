@@ -109,12 +109,36 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    // Skip rate limiting for health checks and email verification
     return req.path === '/health' || req.path.includes('/auth/verify-email');
   }
 });
 
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: {
+    success: false,
+    message: 'Too many authentication attempts. Please try again after 15 minutes.',
+    code: 'AUTH_RATE_LIMIT_EXCEEDED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const notificationsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: {
+    success: false,
+    message: 'Too many notification requests. Please slow down.',
+    code: 'NOTIFICATIONS_RATE_LIMIT'
+  }
+});
+
 app.use('/api/', limiter);
+app.use('/api/v1/auth/login', authLimiter);
+app.use('/api/v1/auth/register', authLimiter);
+app.use('/api/v1/notifications', notificationsLimiter);
 
 // ==================== STATIC FILES (UPLOADS) ====================
 const path = require('path');
