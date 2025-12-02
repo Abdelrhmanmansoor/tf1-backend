@@ -16,19 +16,21 @@ SportX Platform is a comprehensive "LinkedIn for Sports" platform in the Middle 
 - Activity Logging System
 - User Management & Analytics
 - Blog Publishing System
-- **Match Hub System** - Public matches with filters
+- **Match Hub System** - Public matches with filters & notifications
+- **Jobs System** - Job posting with application notifications
 - **Profile Management** - Dropdown-only forms
 - **Real-time Notifications** via Socket.io
-- CORS Configured for Production (tf1one.com)
+- **Enhanced Security** - Helmet, Rate Limiters, Sanitization
+- CORS Configured for Development & Production
 
 ### Frontend (Port 5000)
 - Match Hub - Browse/Join/Create matches
 - Player Profile - Dropdown-only form
 - Coach Profile - Dropdown-only form
-- Jobs Board - View job listings
+- Jobs Board - View job listings & apply
 - Notification Bell - Real-time updates
 - Login/Register - Authentication UI
-- Saudi Arabia Regional Data - Full coverage
+- Saudi Arabia Regional Data - 13 regions coverage
 
 ## Quick Start
 
@@ -42,7 +44,13 @@ npm run dev  # Runs on port 3000
 cd frontend/app && npm run dev  # Runs on port 5000
 ```
 
-## New Features (December 2025)
+## Features (December 2025)
+
+### Authentication System
+- 10 user roles: player, coach, club, specialist, admin, administrator, age-group-supervisor, sports-director, executive-director, secretary
+- Role-specific registration validation
+- JWT with access & refresh tokens
+- Password: min 8 chars with uppercase, lowercase, number
 
 ### Match Hub
 - Browse public matches with filters
@@ -50,20 +58,35 @@ cd frontend/app && npm run dev  # Runs on port 5000
 - Join/Leave matches with notifications
 - Create new matches (authenticated users)
 - Real-time player count updates
+- Notifications for organizer when players join/leave
 
-### Cascading Dropdown System
-- Saudi Arabia regions (8 regions)
-- Cities per region
-- Neighborhoods per city
-- All sports leagues (روشن، يلو، etc.)
-- Player positions, levels, foot preference
+### Jobs System
+- Browse active job listings
+- Apply to jobs with resume upload
+- Application notifications to both club & applicant
+- Track application status
+
+### Saudi Arabia Data (13 Regions)
+- الرياض، مكة المكرمة، المدينة المنورة، القصيم
+- المنطقة الشرقية، عسير، تبوك، حائل
+- الحدود الشمالية، جازان، نجران، الباحة، الجوف
+- Cities & neighborhoods per region
+- All leagues: روشن، يلو، الدرجة الثانية/الثالثة، المناطق
 
 ### Profile Forms (Dropdown-Only)
-- **Player Profile**: position, league, region, city, neighborhood, level, experience
-- **Coach Profile**: certificates, coaching type, age group, experience
+- **Player Profile**: position, league, region, city, neighborhood, level, experience, preferred foot
+- **Coach Profile**: certificates (C/B/A/PRO), coaching type, age group, experience
 - Only phone number allows manual text input
 
 ### API Endpoints
+
+#### Authentication
+```
+POST /api/v1/auth/register    - Register new user
+POST /api/v1/auth/login       - Login user
+POST /api/v1/auth/refresh     - Refresh access token
+POST /api/v1/auth/logout      - Logout user
+```
 
 #### Match Hub
 ```
@@ -76,12 +99,29 @@ GET  /api/v1/matches/my-matches - Get user's matches
 GET  /api/v1/matches/regions   - Get all dropdown options
 ```
 
+#### Jobs
+```
+GET  /api/v1/jobs              - List active jobs
+GET  /api/v1/jobs/:id          - Get job details
+POST /api/v1/jobs/:id/apply    - Apply to job (auth required)
+GET  /api/v1/jobs/applications/me - Get my applications
+```
+
 #### Profile Options
 ```
 GET /api/v1/profile/options    - Get all dropdown data
   - regions, cities, neighborhoods
   - leagues, positions, levels
   - certificates, coachingTypes, ageGroups
+  - sports, specializations, jobTypes
+```
+
+#### Notifications
+```
+GET  /api/v1/notifications       - Get notifications
+GET  /api/v1/notifications/unread/count - Get unread count
+PUT  /api/v1/notifications/:id/read - Mark as read
+PUT  /api/v1/notifications/read-all - Mark all as read
 ```
 
 ## Project Structure
@@ -90,23 +130,34 @@ GET /api/v1/profile/options    - Get all dropdown data
 /
 ├── server.js                    # Main backend entry
 ├── src/
-│   ├── config/                  # Database, Socket.io
-│   ├── models/                  # Mongoose models
+│   ├── config/
+│   │   ├── database.js          # MongoDB connection
+│   │   └── socket.js            # Socket.io config
+│   ├── models/
 │   │   ├── PublicMatch.js       # Match Hub model
 │   │   └── Notification.js      # Notifications model
-│   ├── controllers/             # API controllers
-│   │   └── matchHubController.js
-│   ├── routes/                  # API routes
+│   ├── controllers/
+│   │   ├── matchHubController.js
+│   │   ├── jobsController.js
+│   │   ├── profileController.js
+│   │   └── notificationController.js
+│   ├── routes/
 │   │   ├── matchHub.js          # Match routes
-│   │   └── profile.js           # Profile routes
+│   │   ├── jobs.js              # Jobs routes
+│   │   ├── profile.js           # Profile routes
+│   │   └── notifications.js     # Notification routes
+│   ├── middleware/
+│   │   ├── auth.js              # JWT authentication
+│   │   ├── sanitize.js          # NoSQL injection prevention
+│   │   └── validation.js        # Input validation
 │   └── data/
-│       └── saudiRegions.json    # Saudi regional data
+│       └── saudiRegions.json    # Saudi regional data (13 regions)
 │
 └── frontend/
     └── app/
         ├── src/
         │   ├── App.jsx          # Main app
-        │   ├── config/api.js    # API client
+        │   ├── config/api.js    # API client (uses /api/v1 proxy)
         │   ├── context/         # Auth context
         │   ├── components/
         │   │   ├── Navbar.jsx
@@ -120,6 +171,7 @@ GET /api/v1/profile/options    - Get all dropdown data
         │       ├── Login.jsx
         │       └── Register.jsx
         └── vite.config.js
+
 ```
 
 ## Tech Stack
@@ -131,6 +183,7 @@ GET /api/v1/profile/options    - Get all dropdown data
 - Socket.io (real-time)
 - JWT authentication
 - Helmet, CORS, bcrypt
+- express-rate-limit
 
 ### Frontend
 - React 18
@@ -139,31 +192,24 @@ GET /api/v1/profile/options    - Get all dropdown data
 - Axios
 - Socket.io Client
 
-## Saudi Arabia Regional Data
+## Security Enhancements
 
-8 regions with full city/neighborhood coverage:
-1. الرياض (Riyadh) - 4 cities
-2. مكة المكرمة (Makkah) - 4 cities
-3. المدينة المنورة (Madinah) - 4 cities
-4. الإحساء (Al-Ahsa) - 4 cities
-5. الدمام (Dammam) - 4 cities
-6. عسير (Asir) - 4 cities
-7. تبوك (Tabuk) - 4 cities
-8. الحدود الشمالية (Northern Borders) - 4 cities
+### Rate Limiting
+- General API: 100 requests per 15 minutes
+- Auth endpoints (login/register): 10 requests per 15 minutes
+- Notifications: 30 requests per minute
 
-All leagues supported:
-- دوري روشن (Roshn League)
-- دوري يلو (Yelo League)
-- دوري الدرجة الثانية
-- دوري الدرجة الثالثة
-- دوري المناطق
-- الأندية الخاصة والأكاديميات
+### Protection
+- Helmet (HTTP headers)
+- NoSQL injection prevention (sanitizeRequest middleware)
+- Request sanitization
+- Trust proxy for production
 
 ## Environment Variables
 
 ### Required
 - `MONGODB_URI` - MongoDB connection string
-- `JWT_ACCESS_SECRET` - JWT secret key
+- `JWT_ACCESS_SECRET` - JWT access secret
 - `JWT_REFRESH_SECRET` - Refresh token secret
 
 ### Optional
@@ -173,7 +219,7 @@ All leagues supported:
 
 ## Testing
 
-### Test Match Hub
+### Test Endpoints
 ```bash
 # Get regions data
 curl http://localhost:3000/api/v1/matches/regions
@@ -181,8 +227,15 @@ curl http://localhost:3000/api/v1/matches/regions
 # Get profile options
 curl http://localhost:3000/api/v1/profile/options
 
-# Get matches with filters
-curl "http://localhost:3000/api/v1/matches?region=الرياض&sport=كرة القدم"
+# Register new user
+curl -X POST http://localhost:3000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"Test123456","role":"player","firstName":"أحمد","lastName":"محمد"}'
+
+# Login
+curl -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"Test123456"}'
 ```
 
 ### Admin Login
@@ -191,15 +244,40 @@ Email: admin@sportx.com
 Password: admin123
 ```
 
-## Next Steps
+## ENUMs Reference
 
-1. Add more notification types for match events
-2. Implement match chat feature
-3. Add player rating system
-4. Build club dashboard
-5. Add job application tracking
+### Leagues (الدوري)
+- دوري روشن
+- دوري يلو
+- دوري الدرجة الثانية
+- دوري الدرجة الثالثة
+- دوري المناطق
+- الأندية الخاصة والأكاديميات
+
+### Coach Certificates (شهادات المدربين)
+- شهادة C
+- شهادة B
+- شهادة A
+- شهادة PRO
+- شهادات أخرى
+
+### Player Positions (المراكز)
+- حارس مرمى
+- مدافع أيمن/أيسر
+- قلب دفاع
+- ظهير أيمن/أيسر
+- وسط دفاعي/ملعب/مهاجم
+- جناح أيمن/أيسر
+- مهاجم
+- رأس حربة
+
+### Levels (المستويات)
+- مبتدئ
+- متوسط
+- متقدم
+- احترافي
 
 ---
 
 **Last Updated:** December 02, 2025
-**Version:** 2.0.0 (Match Hub + Dropdown Forms)
+**Version:** 3.0.0 (Enhanced Backend + Security)
