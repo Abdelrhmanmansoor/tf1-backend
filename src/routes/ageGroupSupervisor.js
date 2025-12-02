@@ -29,4 +29,10 @@ router.patch('/matches/:id', controller.updateMatch);
 router.get('/registrations', controller.getRegistrations);
 router.patch('/registrations/:id', controller.handleRegistration);
 
+// Reports Routes
+router.get('/reports/players', controller.reportPlayers);
+router.get('/reports/attendance', controller.reportAttendance);
+router.get('/reports/performance', controller.reportPerformance);
+router.get('/reports/registrations', controller.reportRegistrations);
+
 module.exports = router;

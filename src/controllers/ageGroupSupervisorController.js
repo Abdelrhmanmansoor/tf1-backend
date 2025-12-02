@@ -610,3 +610,191 @@ exports.handleRegistration = async (req, res) => {
     });
   }
 };
+
+// ============= REPORTS ENDPOINTS =============
+
+exports.reportPlayers = async (req, res) => {
+  try {
+    const clubId = req.user.clubId || req.user._id;
+
+    const groups = await AgeGroup.find({ clubId, isDeleted: { $ne: true } })
+      .lean()
+      .exec();
+
+    const totalPlayers = groups.reduce((sum, g) => sum + (g.playersCount || 0), 0);
+    
+    const byAgeGroup = groups.map(g => ({
+      id: g._id,
+      name: g.name,
+      nameAr: g.nameAr,
+      ageRange: `${g.ageRange.min}-${g.ageRange.max}`,
+      playersCount: g.playersCount || 0,
+      maxCapacity: g.maxPlayers || 30,
+      occupancyRate: Math.round(((g.playersCount || 0) / (g.maxPlayers || 30)) * 100)
+    }));
+
+    const byStatus = {
+      active: groups.filter(g => g.status === 'active').length,
+      inactive: groups.filter(g => g.status === 'inactive').length
+    };
+
+    res.json({
+      success: true,
+      data: {
+        totalPlayers,
+        totalGroups: groups.length,
+        byAgeGroup,
+        byStatus
+      }
+    });
+  } catch (error) {
+    console.error('Report players error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REPORT_ERROR',
+        message: 'Error generating players report',
+        messageAr: 'خطأ في إنشاء تقرير اللاعبين'
+      }
+    });
+  }
+};
+
+exports.reportAttendance = async (req, res) => {
+  try {
+    const clubId = req.user.clubId || req.user._id;
+
+    const trainingData = await TrainingSession.aggregate([
+      { $match: { clubId, isDeleted: { $ne: true } } },
+      { $group: {
+        _id: null,
+        totalSessions: { $sum: 1 },
+        attendedSessions: { $sum: { $cond: [{ $gt: ['$attendanceCount', 0] }, 1, 0] } },
+        totalAttendance: { $sum: '$attendanceCount' }
+      }}
+    ]);
+
+    const byWeek = [];
+    const byAgeGroup = [];
+
+    const data = trainingData[0] || { totalSessions: 0, attendedSessions: 0, totalAttendance: 0 };
+    const averageAttendance = data.totalSessions > 0 
+      ? Math.round((data.totalAttendance / data.totalSessions) * 100) / 100 
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        averageAttendance,
+        totalSessions: data.totalSessions,
+        attendedSessions: data.attendedSessions,
+        byWeek,
+        byAgeGroup
+      }
+    });
+  } catch (error) {
+    console.error('Report attendance error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REPORT_ERROR',
+        message: 'Error generating attendance report',
+        messageAr: 'خطأ في إنشاء تقرير الحضور'
+      }
+    });
+  }
+};
+
+exports.reportPerformance = async (req, res) => {
+  try {
+    const clubId = req.user.clubId || req.user._id;
+
+    const groups = await AgeGroup.find({ clubId, isDeleted: { $ne: true } })
+      .populate('coachId', 'firstName lastName email')
+      .lean()
+      .exec();
+
+    const topPlayers = groups
+      .sort((a, b) => (b.playersCount || 0) - (a.playersCount || 0))
+      .slice(0, 5)
+      .map(g => ({
+        id: g._id,
+        name: g.name,
+        coach: g.coachId ? `${g.coachId.firstName} ${g.coachId.lastName}` : 'Not assigned',
+        playersCount: g.playersCount || 0,
+        capacity: g.maxPlayers || 30
+      }));
+
+    const improvements = [];
+    const metrics = {
+      totalGroups: groups.length,
+      totalCapacity: groups.reduce((sum, g) => sum + (g.maxPlayers || 30), 0),
+      totalEnrolled: groups.reduce((sum, g) => sum + (g.playersCount || 0), 0),
+      averageOccupancy: Math.round(
+        (groups.reduce((sum, g) => sum + (g.playersCount || 0), 0) / 
+         groups.reduce((sum, g) => sum + (g.maxPlayers || 30), 0)) * 100
+      ) || 0
+    };
+
+    res.json({
+      success: true,
+      data: {
+        topPlayers,
+        improvements,
+        metrics
+      }
+    });
+  } catch (error) {
+    console.error('Report performance error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REPORT_ERROR',
+        message: 'Error generating performance report',
+        messageAr: 'خطأ في إنشاء تقرير الأداء'
+      }
+    });
+  }
+};
+
+exports.reportRegistrations = async (req, res) => {
+  try {
+    const clubId = req.user.clubId || req.user._id;
+
+    const groups = await AgeGroup.find({ clubId, isDeleted: { $ne: true } })
+      .lean()
+      .exec();
+
+    const total = groups.length;
+    const active = groups.filter(g => g.status === 'active').length;
+    const inactive = groups.filter(g => g.status === 'inactive').length;
+    const pending = 0;
+    const approved = active;
+    const rejected = inactive;
+
+    const byMonth = [];
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        active,
+        inactive,
+        pending,
+        approved,
+        rejected,
+        byMonth
+      }
+    });
+  } catch (error) {
+    console.error('Report registrations error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REPORT_ERROR',
+        message: 'Error generating registrations report',
+        messageAr: 'خطأ في إنشاء تقرير التسجيلات'
+      }
+    });
+  }
+};
