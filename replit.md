@@ -241,8 +241,10 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 ### Admin Login
 ```
 Email: admin@sportx.com
-Password: admin123
+Password: Admin123456
 ```
+
+**ملاحظة:** كلمة المرور القديمة `admin123` لم تعد تعمل بسبب متطلبات كلمة المرور الجديدة.
 
 ## ENUMs Reference
 
