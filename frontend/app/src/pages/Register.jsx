@@ -136,6 +136,7 @@ const Register = () => {
     { value: 'club', label: 'نادي / مؤسسة' },
     { value: 'specialist', label: 'أخصائي' },
     { value: 'administrator', label: 'إداري' },
+    { value: 'leader', label: 'قائد / مدير' },
     { value: 'age-group-supervisor', label: 'مشرف فئة عمرية' },
     { value: 'sports-director', label: 'مدير رياضي' },
     { value: 'executive-director', label: 'مدير تنفيذي' },
