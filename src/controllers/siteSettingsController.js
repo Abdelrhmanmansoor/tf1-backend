@@ -1140,12 +1140,603 @@ const resetToDefaults = async (req, res) => {
   }
 };
 
+const updateTypography = async (req, res) => {
+  try {
+    const { typography } = req.body;
+    
+    if (!typography) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_DATA',
+          message: 'Typography data is required',
+          messageAr: 'يجب تقديم بيانات الخطوط'
+        }
+      });
+    }
+    
+    const settings = await SiteSettings.getSettings();
+    settings.branding.typography = { ...settings.branding.typography.toObject(), ...typography };
+    settings.lastUpdatedBy = req.user._id;
+    settings.version += 1;
+    await settings.save();
+    
+    await AuditLog.log({
+      userId: req.user._id,
+      userEmail: req.user.email,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      userType: req.isLeader ? 'leader' : 'team',
+      action: 'update_typography',
+      module: 'settings',
+      description: 'Updated typography settings',
+      descriptionAr: 'تم تحديث إعدادات الخطوط',
+      route: req.originalUrl,
+      method: req.method,
+      isSuccess: true,
+      newValues: typography,
+      severity: 'info'
+    });
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('settings:update', { type: 'typography', data: settings.branding.typography });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Typography updated successfully',
+      messageAr: 'تم تحديث الخطوط بنجاح',
+      data: { typography: settings.branding.typography }
+    });
+  } catch (error) {
+    console.error('Update typography error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'UPDATE_ERROR',
+        message: 'Failed to update typography',
+        messageAr: 'فشل في تحديث الخطوط'
+      }
+    });
+  }
+};
+
+const updateLayout = async (req, res) => {
+  try {
+    const { layout } = req.body;
+    
+    if (!layout) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_DATA',
+          message: 'Layout data is required',
+          messageAr: 'يجب تقديم بيانات التخطيط'
+        }
+      });
+    }
+    
+    const settings = await SiteSettings.getSettings();
+    settings.branding.layout = { ...settings.branding.layout.toObject(), ...layout };
+    settings.lastUpdatedBy = req.user._id;
+    settings.version += 1;
+    await settings.save();
+    
+    await AuditLog.log({
+      userId: req.user._id,
+      userEmail: req.user.email,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      userType: req.isLeader ? 'leader' : 'team',
+      action: 'update_layout',
+      module: 'settings',
+      description: 'Updated layout settings',
+      descriptionAr: 'تم تحديث إعدادات التخطيط',
+      route: req.originalUrl,
+      method: req.method,
+      isSuccess: true,
+      newValues: layout,
+      severity: 'info'
+    });
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('settings:update', { type: 'layout', data: settings.branding.layout });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Layout updated successfully',
+      messageAr: 'تم تحديث التخطيط بنجاح',
+      data: { layout: settings.branding.layout }
+    });
+  } catch (error) {
+    console.error('Update layout error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'UPDATE_ERROR',
+        message: 'Failed to update layout',
+        messageAr: 'فشل في تحديث التخطيط'
+      }
+    });
+  }
+};
+
+const updatePages = async (req, res) => {
+  try {
+    const { pages } = req.body;
+    
+    if (!pages) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_DATA',
+          message: 'Pages data is required',
+          messageAr: 'يجب تقديم بيانات الصفحات'
+        }
+      });
+    }
+    
+    const settings = await SiteSettings.getSettings();
+    
+    Object.keys(pages).forEach(key => {
+      if (settings.content.pages[key]) {
+        settings.content.pages[key] = { 
+          ...settings.content.pages[key].toObject?.() || settings.content.pages[key], 
+          ...pages[key] 
+        };
+      }
+    });
+    
+    settings.lastUpdatedBy = req.user._id;
+    settings.version += 1;
+    await settings.save();
+    
+    await AuditLog.log({
+      userId: req.user._id,
+      userEmail: req.user.email,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      userType: req.isLeader ? 'leader' : 'team',
+      action: 'update_pages',
+      module: 'settings',
+      description: 'Updated pages content',
+      descriptionAr: 'تم تحديث محتوى الصفحات',
+      route: req.originalUrl,
+      method: req.method,
+      isSuccess: true,
+      severity: 'info'
+    });
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('settings:update', { type: 'pages', data: settings.content.pages });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Pages updated successfully',
+      messageAr: 'تم تحديث الصفحات بنجاح',
+      data: { pages: settings.content.pages }
+    });
+  } catch (error) {
+    console.error('Update pages error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'UPDATE_ERROR',
+        message: 'Failed to update pages',
+        messageAr: 'فشل في تحديث الصفحات'
+      }
+    });
+  }
+};
+
+const updateAnnouncement = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    const settings = await SiteSettings.getSettings();
+    const announcementIndex = settings.content.announcements.findIndex(a => a.id === id);
+    
+    if (announcementIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Announcement not found',
+          messageAr: 'الإعلان غير موجود'
+        }
+      });
+    }
+    
+    settings.content.announcements[announcementIndex] = {
+      ...settings.content.announcements[announcementIndex].toObject?.() || settings.content.announcements[announcementIndex],
+      ...updates
+    };
+    
+    settings.lastUpdatedBy = req.user._id;
+    settings.version += 1;
+    await settings.save();
+    
+    await AuditLog.log({
+      userId: req.user._id,
+      userEmail: req.user.email,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      userType: req.isLeader ? 'leader' : 'team',
+      action: 'update_announcement',
+      module: 'content',
+      description: `Updated announcement: ${updates.titleAr || updates.title || id}`,
+      descriptionAr: `تم تحديث الإعلان: ${updates.titleAr || updates.title || id}`,
+      route: req.originalUrl,
+      method: req.method,
+      isSuccess: true,
+      newValues: updates,
+      severity: 'info'
+    });
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('settings:update', { type: 'announcements', data: settings.content.announcements });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Announcement updated successfully',
+      messageAr: 'تم تحديث الإعلان بنجاح',
+      data: { announcement: settings.content.announcements[announcementIndex] }
+    });
+  } catch (error) {
+    console.error('Update announcement error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'UPDATE_ERROR',
+        message: 'Failed to update announcement',
+        messageAr: 'فشل في تحديث الإعلان'
+      }
+    });
+  }
+};
+
+const deleteAnnouncement = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const settings = await SiteSettings.getSettings();
+    const announcementIndex = settings.content.announcements.findIndex(a => a.id === id);
+    
+    if (announcementIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Announcement not found',
+          messageAr: 'الإعلان غير موجود'
+        }
+      });
+    }
+    
+    const deletedAnnouncement = settings.content.announcements.splice(announcementIndex, 1)[0];
+    
+    settings.lastUpdatedBy = req.user._id;
+    settings.version += 1;
+    await settings.save();
+    
+    await AuditLog.log({
+      userId: req.user._id,
+      userEmail: req.user.email,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      userType: req.isLeader ? 'leader' : 'team',
+      action: 'delete_announcement',
+      module: 'content',
+      description: `Deleted announcement: ${deletedAnnouncement.titleAr || deletedAnnouncement.title}`,
+      descriptionAr: `تم حذف الإعلان: ${deletedAnnouncement.titleAr || deletedAnnouncement.title}`,
+      route: req.originalUrl,
+      method: req.method,
+      isSuccess: true,
+      previousValues: deletedAnnouncement,
+      severity: 'warning'
+    });
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('settings:update', { type: 'announcements', data: settings.content.announcements });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Announcement deleted successfully',
+      messageAr: 'تم حذف الإعلان بنجاح'
+    });
+  } catch (error) {
+    console.error('Delete announcement error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'DELETE_ERROR',
+        message: 'Failed to delete announcement',
+        messageAr: 'فشل في حذف الإعلان'
+      }
+    });
+  }
+};
+
+const updateBanner = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    const settings = await SiteSettings.getSettings();
+    const bannerIndex = settings.content.banners.findIndex(b => b.id === id);
+    
+    if (bannerIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Banner not found',
+          messageAr: 'البانر غير موجود'
+        }
+      });
+    }
+    
+    settings.content.banners[bannerIndex] = {
+      ...settings.content.banners[bannerIndex].toObject?.() || settings.content.banners[bannerIndex],
+      ...updates
+    };
+    
+    settings.lastUpdatedBy = req.user._id;
+    settings.version += 1;
+    await settings.save();
+    
+    await AuditLog.log({
+      userId: req.user._id,
+      userEmail: req.user.email,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      userType: req.isLeader ? 'leader' : 'team',
+      action: 'update_banner',
+      module: 'content',
+      description: `Updated banner: ${updates.titleAr || updates.title || id}`,
+      descriptionAr: `تم تحديث البانر: ${updates.titleAr || updates.title || id}`,
+      route: req.originalUrl,
+      method: req.method,
+      isSuccess: true,
+      newValues: updates,
+      severity: 'info'
+    });
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('settings:update', { type: 'banners', data: settings.content.banners });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Banner updated successfully',
+      messageAr: 'تم تحديث البانر بنجاح',
+      data: { banner: settings.content.banners[bannerIndex] }
+    });
+  } catch (error) {
+    console.error('Update banner error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'UPDATE_ERROR',
+        message: 'Failed to update banner',
+        messageAr: 'فشل في تحديث البانر'
+      }
+    });
+  }
+};
+
+const deleteBanner = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const settings = await SiteSettings.getSettings();
+    const bannerIndex = settings.content.banners.findIndex(b => b.id === id);
+    
+    if (bannerIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Banner not found',
+          messageAr: 'البانر غير موجود'
+        }
+      });
+    }
+    
+    const deletedBanner = settings.content.banners.splice(bannerIndex, 1)[0];
+    
+    settings.lastUpdatedBy = req.user._id;
+    settings.version += 1;
+    await settings.save();
+    
+    await AuditLog.log({
+      userId: req.user._id,
+      userEmail: req.user.email,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      userType: req.isLeader ? 'leader' : 'team',
+      action: 'delete_banner',
+      module: 'content',
+      description: `Deleted banner: ${deletedBanner.titleAr || deletedBanner.title}`,
+      descriptionAr: `تم حذف البانر: ${deletedBanner.titleAr || deletedBanner.title}`,
+      route: req.originalUrl,
+      method: req.method,
+      isSuccess: true,
+      previousValues: deletedBanner,
+      severity: 'warning'
+    });
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('settings:update', { type: 'banners', data: settings.content.banners });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Banner deleted successfully',
+      messageAr: 'تم حذف البانر بنجاح'
+    });
+  } catch (error) {
+    console.error('Delete banner error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'DELETE_ERROR',
+        message: 'Failed to delete banner',
+        messageAr: 'فشل في حذف البانر'
+      }
+    });
+  }
+};
+
+const updateEmailTemplates = async (req, res) => {
+  try {
+    const { emailTemplates } = req.body;
+    
+    if (!emailTemplates) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_DATA',
+          message: 'Email templates data is required',
+          messageAr: 'يجب تقديم بيانات قوالب البريد'
+        }
+      });
+    }
+    
+    const settings = await SiteSettings.getSettings();
+    
+    Object.keys(emailTemplates).forEach(key => {
+      if (settings.content.emailTemplates[key]) {
+        settings.content.emailTemplates[key] = { 
+          ...settings.content.emailTemplates[key].toObject?.() || settings.content.emailTemplates[key], 
+          ...emailTemplates[key] 
+        };
+      }
+    });
+    
+    settings.lastUpdatedBy = req.user._id;
+    settings.version += 1;
+    await settings.save();
+    
+    await AuditLog.log({
+      userId: req.user._id,
+      userEmail: req.user.email,
+      userName: `${req.user.firstName} ${req.user.lastName}`,
+      userRole: req.user.role,
+      userType: req.isLeader ? 'leader' : 'team',
+      action: 'update_email_templates',
+      module: 'settings',
+      description: 'Updated email templates',
+      descriptionAr: 'تم تحديث قوالب البريد',
+      route: req.originalUrl,
+      method: req.method,
+      isSuccess: true,
+      severity: 'info'
+    });
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('settings:update', { type: 'emailTemplates', data: settings.content.emailTemplates });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Email templates updated successfully',
+      messageAr: 'تم تحديث قوالب البريد بنجاح',
+      data: { emailTemplates: settings.content.emailTemplates }
+    });
+  } catch (error) {
+    console.error('Update email templates error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'UPDATE_ERROR',
+        message: 'Failed to update email templates',
+        messageAr: 'فشل في تحديث قوالب البريد'
+      }
+    });
+  }
+};
+
+const getVersionHistory = async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    
+    const logs = await AuditLog.find({ 
+      module: 'settings',
+      action: { $regex: /^update_|^reset_|^add_|^delete_/ }
+    })
+      .sort({ createdAt: -1 })
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .limit(parseInt(limit))
+      .populate('userId', 'firstName lastName email')
+      .lean();
+    
+    const total = await AuditLog.countDocuments({ 
+      module: 'settings',
+      action: { $regex: /^update_|^reset_|^add_|^delete_/ }
+    });
+    
+    res.json({
+      success: true,
+      data: {
+        history: logs.map(log => ({
+          id: log._id,
+          action: log.action,
+          description: log.description,
+          descriptionAr: log.descriptionAr,
+          user: log.userId ? {
+            id: log.userId._id,
+            name: `${log.userId.firstName} ${log.userId.lastName}`,
+            email: log.userId.email
+          } : null,
+          userType: log.userType,
+          previousValues: log.previousValues,
+          newValues: log.newValues,
+          createdAt: log.createdAt
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get version history error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'FETCH_ERROR',
+        message: 'Failed to get version history',
+        messageAr: 'فشل في جلب سجل الإصدارات'
+      }
+    });
+  }
+};
+
 module.exports = {
   getFullSettings,
   updateBranding,
   updateColors,
   updateLogo,
+  updateTypography,
+  updateLayout,
   updateContent,
+  updatePages,
   updateContactInfo,
   updateSocialMedia,
   updateFeatures,
@@ -1156,8 +1747,14 @@ module.exports = {
   updateSecurity,
   updateLimits,
   addAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
   addBanner,
+  updateBanner,
+  deleteBanner,
+  updateEmailTemplates,
   toggleMaintenance,
   getPublicSettings,
-  resetToDefaults
+  resetToDefaults,
+  getVersionHistory
 };

@@ -1,405 +1,53 @@
 # SportX Platform - Full Stack Sports Platform
 
 ## Overview
-SportX Platform is a comprehensive "LinkedIn for Sports" platform in the Middle East. It connects players, coaches, clubs, and specialists (physiotherapists, nutritionists, fitness trainers, sports psychologists). Built with Node.js/Express/MongoDB backend and React/Vite frontend.
+SportX Platform is a comprehensive "LinkedIn for Sports" platform designed for the Middle East, specifically Saudi Arabia. It facilitates connections between players, coaches, clubs, and specialists (physiotherapists, nutritionists, fitness trainers, sports psychologists). The platform features robust user management with 11 distinct roles, a sophisticated Leader/Team Dashboard system for enterprise-grade management, and a granular Role-Based Access Control (RBAC) permission system. Key capabilities include a Match Hub for organizing and joining sports matches, a Jobs System for sports-related employment, and extensive site customization through a new Site Settings System. The platform aims to be a central hub for the sports community in the region.
 
-## Project Type
-**Full Stack Application**
-- Backend: Node.js, Express.js, MongoDB
-- Frontend: React, Vite, React Router
+## User Preferences
+I prefer clear and concise explanations. When suggesting code changes, please provide examples and explain the rationale. I value iterative development and prefer to be consulted before major architectural decisions or significant code refactoring. Focus on maintaining a clean and modular codebase. Do not make changes to files or folders unless explicitly requested or if they are directly related to the task at hand.
 
-## Current Status
+## System Architecture
+The SportX Platform is built as a full-stack application with a clear separation of concerns.
 
-### Backend (Port 3000)
-- Admin Dashboard with 13+ Endpoints
-- Settings Management (Colors, Site Config)
-- Activity Logging System
-- User Management & Analytics
-- Blog Publishing System
-- **Match Hub System** - Public matches with filters & notifications
-- **Jobs System** - Job posting with application notifications
-- **Profile Management** - Dropdown-only forms
-- **Real-time Notifications** via Socket.io
-- **Enhanced Security** - Helmet, Rate Limiters, Sanitization
-- **Leader/Team Dashboard System** - Enterprise-grade dual-dashboard
-- **RBAC Permission System** - Granular permission control
-- **Audit Logging** - Complete action tracking
-- CORS Configured for Development & Production
+**UI/UX Decisions:**
+- The frontend is developed using React with Vite for a fast development experience.
+- Saudi Arabia's regional data (13 regions, cities, and neighborhoods) is deeply integrated into the UI for location-based filtering and profile creation.
+- Profile forms are primarily dropdown-only to ensure data consistency and ease of input, minimizing free-text fields.
+- The UI adapts dynamically based on user permissions, especially within the dual Leader/Team Dashboard system.
+- Comprehensive site customization is available via the Site Settings System, allowing leaders to manage branding (logos, colors, typography), content (pages, announcements, banners, email templates), configuration (contact info, social media, feature toggles, SEO, navigation, localization), and security.
 
-### Frontend (Port 5000)
-- Match Hub - Browse/Join/Create matches
-- Player Profile - Dropdown-only form
-- Coach Profile - Dropdown-only form
-- Jobs Board - View job listings & apply
-- Notification Bell - Real-time updates
-- Login/Register - Authentication UI
-- Saudi Arabia Regional Data - 13 regions coverage
+**Technical Implementations:**
+- **Authentication System:** Supports 11 distinct user roles, JWT-based access and refresh tokens, and strict password policies. Features automatic token refresh.
+- **Leader/Team Dashboard System:** Provides a dual-dashboard architecture. The Leader Dashboard offers full administrative control, including team management, audit log access, and global settings configuration. The Team Dashboard provides role-based limited access with dynamic navigation and activity tracking.
+- **RBAC Permission System:** Implements granular, permission-by-permission control categorized by modules like Dashboard, Users, Jobs, Matches, Content, Settings, Reports, and System.
+- **Audit Logging System:** Tracks all user actions, including IP, user-agent, previous/new values for changes, and severity levels, ensuring a comprehensive action history.
+- **Match Hub:** Allows authenticated users to create, join, or browse public matches with advanced filtering capabilities (region, city, sport, level, date). Real-time updates for player counts and notifications for organizers.
+- **Jobs System:** Enables browsing job listings, applying with resume uploads, and receiving application notifications.
+- **Real-time Notifications:** Implemented using Socket.io for instant updates across the platform.
 
-## Quick Start
+**System Design Choices:**
+- **Backend:** Node.js with Express.js for RESTful APIs. MongoDB with Mongoose for data persistence.
+- **Security:** Enhanced with Helmet for HTTP headers, express-rate-limit for API flood prevention, NoSQL injection prevention, request sanitization, and a robust RBAC system with audit logging.
+- **Modularity:** The project structure is organized into `config`, `models`, `controllers`, `routes`, and `middleware` for clear separation of concerns and maintainability.
+- **Data:** Extensive use of static JSON data (`saudiRegions.json`) for regional and sports-specific dropdown options.
 
-### Backend Server
-```bash
-npm run dev  # Runs on port 3000
-```
+## External Dependencies
 
-### Frontend App
-```bash
-cd frontend/app && npm run dev  # Runs on port 5000
-```
+**Backend:**
+- **Node.js**: Server-side JavaScript runtime.
+- **Express.js**: Web application framework for Node.js.
+- **MongoDB**: NoSQL database.
+- **Mongoose**: MongoDB object data modeling (ODM) library.
+- **Socket.io**: Library for real-time, bidirectional, event-based communication.
+- **jsonwebtoken (JWT)**: For secure authentication and authorization.
+- **bcrypt**: For password hashing.
+- **helmet**: Helps secure Express apps by setting various HTTP headers.
+- **cors**: Middleware for enabling Cross-Origin Resource Sharing.
+- **express-rate-limit**: Basic rate-limiting middleware for Express.
 
-## Features (December 2025)
-
-### Authentication System
-- 11 user roles: player, coach, club, specialist, admin, administrator, administrative-officer, age-group-supervisor, sports-director, executive-director, secretary
-- Role-specific registration validation
-- JWT with access & refresh tokens
-- Password: min 8 chars with uppercase, lowercase, number
-
-### Leader/Team Dashboard System (NEW)
-Enterprise-grade dual-dashboard architecture:
-
-**Leader Dashboard** (Full Administrative Control):
-- Manage team members with granular permissions
-- View and export audit logs
-- Configure team settings
-- Full access to all modules
-
-**Team Dashboard** (Role-Based Limited Permissions):
-- Access only permitted modules
-- Dynamic navigation based on permissions
-- Activity tracking per member
-- Safe redirect system (no 404s or unexpected logout)
-
-### RBAC Permission System
-Permission-by-permission control with categories:
-- Dashboard: view, analytics
-- Users: view, create, edit, delete, block
-- Jobs: view, create, edit, delete, applications
-- Matches: view, create, edit, delete
-- Content: view, create, edit, delete, publish
-- Settings: view, edit
-- Reports: view, export
-- System: notifications, logs
-
-### Audit Logging System
-Complete action tracking:
-- All user actions logged
-- IP, User-Agent, browser info
-- Success/failure status
-- Previous/new values for changes
-- Severity levels (info, warning, error, critical)
-
-### Match Hub
-- Browse public matches with filters
-- Filter by: region, city, neighborhood, sport, level, date
-- Join/Leave matches with notifications
-- Create new matches (authenticated users)
-- Real-time player count updates
-- Notifications for organizer when players join/leave
-
-### Jobs System
-- Browse active job listings
-- Apply to jobs with resume upload
-- Application notifications to both club & applicant
-- Track application status
-
-### Saudi Arabia Data (13 Regions)
-- الرياض، مكة المكرمة، المدينة المنورة، القصيم
-- المنطقة الشرقية، عسير، تبوك، حائل
-- الحدود الشمالية، جازان، نجران، الباحة، الجوف
-- Cities & neighborhoods per region
-- All leagues: روشن، يلو، الدرجة الثانية/الثالثة، المناطق
-
-### Profile Forms (Dropdown-Only)
-- **Player Profile**: position, league, region, city, neighborhood, level, experience, preferred foot
-- **Coach Profile**: certificates (C/B/A/PRO), coaching type, age group, experience
-- Only phone number allows manual text input
-
-### API Endpoints
-
-#### Authentication
-```
-POST /api/v1/auth/register    - Register new user
-POST /api/v1/auth/login       - Login user
-POST /api/v1/auth/refresh     - Refresh access token
-POST /api/v1/auth/logout      - Logout user
-```
-
-#### Leader Dashboard (Admin Only)
-```
-GET  /api/v1/leader/dashboard           - Get leader dashboard
-GET  /api/v1/leader/team                - Get team members
-POST /api/v1/leader/team                - Add team member
-PATCH /api/v1/leader/team/:memberId/permissions - Update permissions
-DELETE /api/v1/leader/team/:memberId    - Remove team member
-GET  /api/v1/leader/permissions         - Get available permissions
-GET  /api/v1/leader/audit-logs          - Get audit logs
-PATCH /api/v1/leader/settings           - Update team settings
-```
-
-#### Team Dashboard
-```
-GET  /api/v1/team/dashboard             - Get team member dashboard
-GET  /api/v1/team/permissions           - Get my permissions
-GET  /api/v1/team/check-access/:module  - Check module access
-GET  /api/v1/team/my-activity           - Get my activity log
-```
-
-#### Administrative Officer (Sports Field)
-```
-GET  /api/v1/administrative-officer/dashboard  - Get dashboard
-GET  /api/v1/administrative-officer/reports    - Get field reports
-GET  /api/v1/administrative-officer/schedule   - Get schedule
-GET  /api/v1/administrative-officer/facilities - Get facilities
-```
-
-#### Match Hub
-```
-GET  /api/v1/matches           - List matches with filters
-GET  /api/v1/matches/:id       - Get match details
-POST /api/v1/matches           - Create match (auth required)
-POST /api/v1/matches/:id/join  - Join match (auth required)
-POST /api/v1/matches/:id/leave - Leave match (auth required)
-GET  /api/v1/matches/my-matches - Get user's matches
-GET  /api/v1/matches/regions   - Get all dropdown options
-```
-
-#### Jobs
-```
-GET  /api/v1/jobs              - List active jobs
-GET  /api/v1/jobs/:id          - Get job details
-POST /api/v1/jobs/:id/apply    - Apply to job (auth required)
-GET  /api/v1/jobs/applications/me - Get my applications
-```
-
-#### Profile Options
-```
-GET /api/v1/profile/options    - Get all dropdown data
-  - regions, cities, neighborhoods
-  - leagues, positions, levels
-  - certificates, coachingTypes, ageGroups
-  - sports, specializations, jobTypes
-```
-
-#### Notifications
-```
-GET  /api/v1/notifications       - Get notifications
-GET  /api/v1/notifications/unread/count - Get unread count
-PUT  /api/v1/notifications/:id/read - Mark as read
-PUT  /api/v1/notifications/read-all - Mark all as read
-```
-
-## Project Structure
-
-```
-/
-├── server.js                    # Main backend entry
-├── src/
-│   ├── config/
-│   │   ├── database.js          # MongoDB connection
-│   │   └── socket.js            # Socket.io config
-│   ├── models/
-│   │   ├── admin/
-│   │   │   ├── LeaderTeam.js    # Leader/Team management
-│   │   │   ├── AuditLog.js      # Audit logging
-│   │   │   ├── Permission.js    # Permission definitions
-│   │   │   └── index.js         # Admin models export
-│   │   ├── PublicMatch.js       # Match Hub model
-│   │   └── Notification.js      # Notifications model
-│   ├── controllers/
-│   │   ├── leaderDashboardController.js  # Leader dashboard
-│   │   ├── teamDashboardController.js    # Team dashboard
-│   │   ├── matchHubController.js
-│   │   ├── jobsController.js
-│   │   ├── profileController.js
-│   │   └── notificationController.js
-│   ├── routes/
-│   │   ├── leaderDashboard.js   # Leader routes
-│   │   ├── teamDashboard.js     # Team routes
-│   │   ├── administrativeOfficer.js  # Admin officer routes
-│   │   ├── matchHub.js          # Match routes
-│   │   ├── jobs.js              # Jobs routes
-│   │   ├── profile.js           # Profile routes
-│   │   └── notifications.js     # Notification routes
-│   ├── middleware/
-│   │   ├── auth.js              # JWT authentication
-│   │   ├── rbac.js              # RBAC & permission checks
-│   │   ├── sanitize.js          # NoSQL injection prevention
-│   │   └── validation.js        # Input validation
-│   └── data/
-│       └── saudiRegions.json    # Saudi regional data (13 regions)
-│
-└── frontend/
-    └── app/
-        ├── src/
-        │   ├── App.jsx          # Main app
-        │   ├── config/api.js    # API client (uses /api/v1 proxy)
-        │   ├── context/         # Auth context
-        │   ├── components/
-        │   │   ├── Navbar.jsx
-        │   │   ├── NotificationBell.jsx
-        │   │   └── CascadingSelect.jsx
-        │   └── pages/
-        │       ├── MatchHub.jsx
-        │       ├── PlayerProfile.jsx
-        │       ├── CoachProfile.jsx
-        │       ├── Jobs.jsx
-        │       ├── Login.jsx
-        │       └── Register.jsx
-        └── vite.config.js
-
-```
-
-## Tech Stack
-
-### Backend
-- Node.js v18+
-- Express.js v5
-- MongoDB + Mongoose
-- Socket.io (real-time)
-- JWT authentication
-- Helmet, CORS, bcrypt
-- express-rate-limit
-
-### Frontend
-- React 18
-- Vite
-- React Router v6
-- Axios
-- Socket.io Client
-
-## Security Enhancements
-
-### Rate Limiting
-- General API: 100 requests per 15 minutes
-- Auth endpoints (login/register): 10 requests per 15 minutes
-- Notifications: 30 requests per minute
-
-### Protection
-- Helmet (HTTP headers)
-- NoSQL injection prevention (sanitizeRequest middleware)
-- Request sanitization
-- Trust proxy for production
-- RBAC with audit logging
-
-## Environment Variables
-
-### Required
-- `MONGODB_URI` - MongoDB connection string
-- `JWT_ACCESS_SECRET` - JWT access secret
-- `JWT_REFRESH_SECRET` - Refresh token secret
-
-### Optional
-- `PORT` - Server port (default: 3000)
-- `NODE_ENV` - Environment (development/production)
-- `ALLOWED_ORIGINS` - CORS origins
-
-## Testing
-
-### Test Endpoints
-```bash
-# Get regions data
-curl http://localhost:3000/api/v1/matches/regions
-
-# Get profile options
-curl http://localhost:3000/api/v1/profile/options
-
-# Register new user
-curl -X POST http://localhost:3000/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@test.com","password":"Test123456","role":"player","firstName":"أحمد","lastName":"محمد"}'
-
-# Login
-curl -X POST http://localhost:3000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@test.com","password":"Test123456"}'
-```
-
-### Admin Login
-```
-Email: admin@sportx.com
-Password: Admin123456
-```
-
-**ملاحظة:** كلمة المرور القديمة `admin123` لم تعد تعمل بسبب متطلبات كلمة المرور الجديدة.
-
-## User Roles
-
-### Primary Roles (المستخدمين الأساسيين)
-- **player** - لاعب
-- **coach** - مدرب
-- **club** - نادي
-- **specialist** - أخصائي
-
-### Administrative Roles (الأدوار الإدارية)
-- **admin** - مدير النظام (Full Access)
-- **administrator** - إداري
-- **administrative-officer** - موظف إداري (الميدان الرياضي)
-- **age-group-supervisor** - مشرف فئة عمرية
-- **sports-director** - المدير الرياضي
-- **executive-director** - المدير التنفيذي
-- **secretary** - أمين السر
-
-## Token Management
-
-### Access Token
-- **مدة الصلاحية:** ساعة واحدة (1h)
-- يُستخدم في كل الطلبات المحمية
-- يُخزن في localStorage
-
-### Refresh Token  
-- **مدة الصلاحية:** 7 أيام (7d)
-- يُستخدم لتجديد Access Token تلقائياً
-- لا يتطلب تأكيد البريد الإلكتروني
-
-### آلية التجديد التلقائي
-- عند انتهاء صلاحية Access Token، يتم تجديده تلقائياً باستخدام Refresh Token
-- إذا فشل التجديد، يتم توجيه المستخدم لتسجيل الدخول
-
-## ENUMs Reference
-
-### Leagues (الدوري)
-- دوري روشن
-- دوري يلو
-- دوري الدرجة الثانية
-- دوري الدرجة الثالثة
-- دوري المناطق
-- الأندية الخاصة والأكاديميات
-
-### Coach Certificates (شهادات المدربين)
-- شهادة C
-- شهادة B
-- شهادة A
-- شهادة PRO
-- شهادات أخرى
-
-### Player Positions (المراكز)
-- حارس مرمى
-- مدافع أيمن/أيسر
-- قلب دفاع
-- ظهير أيمن/أيسر
-- وسط دفاعي/ملعب/مهاجم
-- جناح أيمن/أيسر
-- مهاجم
-- رأس حربة
-
-### Levels (المستويات)
-- مبتدئ
-- متوسط
-- متقدم
-- احترافي
-
-### Permission Categories (فئات الصلاحيات)
-- dashboard - لوحة التحكم
-- users - المستخدمين
-- jobs - الوظائف
-- matches - المباريات
-- content - المحتوى
-- settings - الإعدادات
-- reports - التقارير
-- system - النظام
-
----
-
-**Last Updated:** December 02, 2025
-**Version:** 4.0.0 (Leader/Team Dashboard + RBAC + Audit Logging)
+**Frontend:**
+- **React**: JavaScript library for building user interfaces.
+- **Vite**: Next-generation frontend tooling.
+- **React Router**: For declarative routing in React applications.
+- **Axios**: Promise-based HTTP client for the browser and Node.js.
+- **Socket.io Client**: Client-side library for Socket.io.
