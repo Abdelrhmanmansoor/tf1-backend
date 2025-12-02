@@ -25,11 +25,14 @@ const AgeGroupSupervisor = () => {
   const fetchGroups = async () => {
     try {
       setLoading(true);
+      console.log('📥 Fetching age groups...');
       const response = await api.get('/age-group-supervisor/groups');
+      console.log('✅ Groups fetched:', response.data);
       setGroups(response.data.data.groups || []);
       setError('');
     } catch (err) {
-      console.error('Error fetching groups:', err);
+      console.error('❌ Error fetching groups:', err);
+      console.error('Response:', err.response?.data);
       setError('خطأ في جلب الفئات العمرية');
     } finally {
       setLoading(false);
@@ -38,6 +41,8 @@ const AgeGroupSupervisor = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    console.log('🔍 Form Data:', formData);
     
     if (!formData.name || !formData.nameAr) {
       setError('جميع الحقول مطلوبة');
@@ -50,13 +55,24 @@ const AgeGroupSupervisor = () => {
     }
 
     try {
+      console.log('📤 Sending request...');
+      const endpoint = editingId 
+        ? `/age-group-supervisor/groups/${editingId}` 
+        : '/age-group-supervisor/groups';
+      
+      const method = editingId ? 'patch' : 'post';
+      console.log(`${method.toUpperCase()} ${endpoint}`, formData);
+      
+      let response;
       if (editingId) {
-        await api.patch(`/age-group-supervisor/groups/${editingId}`, formData);
-        setSuccess('تم تحديث الفئة العمرية بنجاح');
+        response = await api.patch(endpoint, formData);
+        setSuccess('✅ تم تحديث الفئة العمرية بنجاح');
       } else {
-        await api.post('/age-group-supervisor/groups', formData);
-        setSuccess('تم إضافة الفئة العمرية بنجاح');
+        response = await api.post(endpoint, formData);
+        setSuccess('✅ تم إضافة الفئة العمرية بنجاح');
       }
+      
+      console.log('✅ Response:', response.data);
       
       setFormData({ name: '', nameAr: '', ageRange: { min: 8, max: 10 }, status: 'active' });
       setEditingId(null);
@@ -66,9 +82,15 @@ const AgeGroupSupervisor = () => {
       setTimeout(() => {
         setSuccess('');
         fetchGroups();
-      }, 1500);
+      }, 2000);
     } catch (err) {
-      setError(err.response?.data?.error?.messageAr || 'حدث خطأ ما');
+      console.error('❌ Error:', err);
+      console.error('Response:', err.response?.data);
+      const errorMsg = err.response?.data?.error?.messageAr || 
+                      err.response?.data?.message ||
+                      err.message || 
+                      'حدث خطأ ما';
+      setError(errorMsg);
       setSuccess('');
     }
   };
@@ -202,7 +224,9 @@ const AgeGroupSupervisor = () => {
             </div>
 
             <div className="form-buttons">
-              <button type="submit" className="btn-save">💾 حفظ</button>
+              <button type="submit" className="btn-save" disabled={!formData.name || !formData.nameAr}>
+                💾 حفظ
+              </button>
               <button type="button" className="btn-cancel" onClick={handleCancel}>❌ إلغاء</button>
             </div>
           </form>
