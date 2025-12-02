@@ -21,10 +21,13 @@ export const AuthProvider = ({ children }) => {
       const response = await authService.login(email, password);
       console.log('AuthContext: API Response:', response.data);
       
-      const { user, accessToken, requiresVerification } = response.data;
+      const { user, accessToken, refreshToken, requiresVerification } = response.data;
       
       if (accessToken) {
         localStorage.setItem('token', accessToken);
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        }
         localStorage.setItem('user', JSON.stringify(user));
         setUser(user);
         console.log('AuthContext: Token saved, user set');
@@ -71,7 +74,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    authService.logout();
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
     setUser(null);
   };
 
