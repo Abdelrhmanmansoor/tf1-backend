@@ -1,4 +1,4 @@
-const { AgeGroup, TrainingSession, Match } = require('../models/admin');
+const { AgeGroup, TrainingSession, Match, PlayerRegistration } = require('../models/admin');
 const User = require('../modules/shared/models/User');
 
 exports.getDashboard = async (req, res) => {
@@ -652,9 +652,65 @@ exports.getGroupPlayers = async (req, res) => {
 
 exports.getRegistrations = async (req, res) => {
   try {
+    const clubId = req.user.clubId || req.user._id;
+    const { status, page = 1, limit = 50 } = req.query;
+
+    const query = { clubId, isDeleted: false };
+    if (status) query.status = status;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [registrations, total] = await Promise.all([
+      PlayerRegistration.find(query)
+        .populate('requestedAgeGroupId', 'name nameAr ageRange')
+        .populate('reviewedBy', 'firstName lastName')
+        .sort({ submittedAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      PlayerRegistration.countDocuments(query)
+    ]);
+
     res.json({
       success: true,
-      data: { registrations: [] }
+      data: {
+        registrations: registrations.map(reg => ({
+          id: reg._id,
+          registrationNumber: reg.registrationNumber,
+          playerName: reg.playerName,
+          playerNameAr: reg.playerNameAr,
+          dateOfBirth: reg.dateOfBirth,
+          age: reg.age,
+          gender: reg.gender,
+          parentName: reg.parentName,
+          parentNameAr: reg.parentNameAr,
+          parentPhone: reg.parentPhone,
+          parentEmail: reg.parentEmail,
+          nationalId: reg.nationalId,
+          requestedAgeGroup: reg.requestedAgeGroup,
+          requestedAgeGroupId: reg.requestedAgeGroupId?._id,
+          ageGroupDetails: reg.requestedAgeGroupId,
+          sport: reg.sport,
+          position: reg.position,
+          previousExperience: reg.previousExperience,
+          medicalConditions: reg.medicalConditions,
+          emergencyContact: reg.emergencyContact,
+          documents: reg.documents,
+          status: reg.status,
+          submittedAt: reg.submittedAt,
+          reviewedAt: reg.reviewedAt,
+          reviewedBy: reg.reviewedBy,
+          approvalNotes: reg.approvalNotes,
+          rejectionReason: reg.rejectionReason,
+          rejectionReasonAr: reg.rejectionReasonAr,
+          source: reg.source
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      }
     });
   } catch (error) {
     console.error('Get registrations error:', error);
@@ -669,15 +725,197 @@ exports.getRegistrations = async (req, res) => {
   }
 };
 
-exports.handleRegistration = async (req, res) => {
+exports.approveRegistration = async (req, res) => {
   try {
     const { id } = req.params;
-    const { action, reason } = req.body;
+    const { notes, assignedTeamId } = req.body;
+    const clubId = req.user.clubId || req.user._id;
+
+    const registration = await PlayerRegistration.findOne({ 
+      _id: id, 
+      clubId, 
+      isDeleted: false 
+    });
+
+    if (!registration) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'REGISTRATION_NOT_FOUND',
+          message: 'Registration not found',
+          messageAr: 'التسجيل غير موجود'
+        }
+      });
+    }
+
+    if (registration.status !== 'pending' && registration.status !== 'under_review') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_STATUS',
+          message: `Cannot approve registration with status: ${registration.status}`,
+          messageAr: `لا يمكن الموافقة على تسجيل بحالة: ${registration.status}`
+        }
+      });
+    }
+
+    registration.approve(req.user._id, notes, assignedTeamId || registration.requestedAgeGroupId);
+    await registration.save();
+
+    if (registration.requestedAgeGroupId) {
+      await AgeGroup.findByIdAndUpdate(
+        assignedTeamId || registration.requestedAgeGroupId,
+        { $inc: { playersCount: 1 } }
+      );
+    }
 
     res.json({
       success: true,
-      message: action === 'approve' ? 'Registration approved' : 'Registration rejected',
-      messageAr: action === 'approve' ? 'تم قبول التسجيل' : 'تم رفض التسجيل'
+      message: 'Registration approved successfully',
+      messageAr: 'تم قبول التسجيل بنجاح',
+      data: { registration }
+    });
+  } catch (error) {
+    console.error('Approve registration error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'APPROVE_ERROR',
+        message: 'Error approving registration',
+        messageAr: 'خطأ في الموافقة على التسجيل'
+      }
+    });
+  }
+};
+
+exports.rejectRegistration = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason, reasonAr } = req.body;
+    const clubId = req.user.clubId || req.user._id;
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'REASON_REQUIRED',
+          message: 'Rejection reason is required',
+          messageAr: 'سبب الرفض مطلوب'
+        }
+      });
+    }
+
+    const registration = await PlayerRegistration.findOne({ 
+      _id: id, 
+      clubId, 
+      isDeleted: false 
+    });
+
+    if (!registration) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'REGISTRATION_NOT_FOUND',
+          message: 'Registration not found',
+          messageAr: 'التسجيل غير موجود'
+        }
+      });
+    }
+
+    if (registration.status !== 'pending' && registration.status !== 'under_review') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_STATUS',
+          message: `Cannot reject registration with status: ${registration.status}`,
+          messageAr: `لا يمكن رفض تسجيل بحالة: ${registration.status}`
+        }
+      });
+    }
+
+    registration.reject(req.user._id, reason, reasonAr || reason);
+    await registration.save();
+
+    res.json({
+      success: true,
+      message: 'Registration rejected successfully',
+      messageAr: 'تم رفض التسجيل بنجاح',
+      data: { registration }
+    });
+  } catch (error) {
+    console.error('Reject registration error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REJECT_ERROR',
+        message: 'Error rejecting registration',
+        messageAr: 'خطأ في رفض التسجيل'
+      }
+    });
+  }
+};
+
+exports.handleRegistration = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action, reason, reasonAr, notes, assignedTeamId } = req.body;
+    const clubId = req.user.clubId || req.user._id;
+
+    const registration = await PlayerRegistration.findOne({ 
+      _id: id, 
+      clubId, 
+      isDeleted: false 
+    });
+
+    if (!registration) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'REGISTRATION_NOT_FOUND',
+          message: 'Registration not found',
+          messageAr: 'التسجيل غير موجود'
+        }
+      });
+    }
+
+    if (action === 'approve') {
+      registration.approve(req.user._id, notes, assignedTeamId || registration.requestedAgeGroupId);
+      if (registration.requestedAgeGroupId) {
+        await AgeGroup.findByIdAndUpdate(
+          assignedTeamId || registration.requestedAgeGroupId,
+          { $inc: { playersCount: 1 } }
+        );
+      }
+    } else if (action === 'reject') {
+      if (!reason) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'REASON_REQUIRED',
+            message: 'Rejection reason is required',
+            messageAr: 'سبب الرفض مطلوب'
+          }
+        });
+      }
+      registration.reject(req.user._id, reason, reasonAr || reason);
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_ACTION',
+          message: 'Action must be either "approve" or "reject"',
+          messageAr: 'الإجراء يجب أن يكون "موافقة" أو "رفض"'
+        }
+      });
+    }
+
+    await registration.save();
+
+    res.json({
+      success: true,
+      message: action === 'approve' ? 'Registration approved successfully' : 'Registration rejected successfully',
+      messageAr: action === 'approve' ? 'تم قبول التسجيل بنجاح' : 'تم رفض التسجيل بنجاح',
+      data: { registration }
     });
   } catch (error) {
     console.error('Handle registration error:', error);
@@ -687,6 +925,209 @@ exports.handleRegistration = async (req, res) => {
         code: 'REGISTRATION_ERROR',
         message: 'Error processing registration',
         messageAr: 'خطأ في معالجة التسجيل'
+      }
+    });
+  }
+};
+
+exports.createRegistration = async (req, res) => {
+  try {
+    const clubId = req.user.clubId || req.user._id;
+    const {
+      playerName,
+      playerNameAr,
+      dateOfBirth,
+      gender,
+      parentName,
+      parentNameAr,
+      parentPhone,
+      parentEmail,
+      nationalId,
+      requestedAgeGroup,
+      requestedAgeGroupId,
+      sport,
+      position,
+      previousExperience,
+      medicalConditions,
+      emergencyContact
+    } = req.body;
+
+    if (!playerName || !dateOfBirth || !parentName || !parentPhone || !requestedAgeGroup) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Player name, date of birth, parent name, parent phone, and age group are required',
+          messageAr: 'اسم اللاعب وتاريخ الميلاد واسم ولي الأمر ورقم الهاتف والفئة العمرية مطلوبة'
+        }
+      });
+    }
+
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    const registration = await PlayerRegistration.create({
+      clubId,
+      playerName,
+      playerNameAr: playerNameAr || playerName,
+      dateOfBirth: birthDate,
+      age,
+      gender: gender || 'male',
+      parentName,
+      parentNameAr: parentNameAr || parentName,
+      parentPhone,
+      parentEmail,
+      nationalId,
+      requestedAgeGroup,
+      requestedAgeGroupId,
+      sport: sport || 'football',
+      position,
+      previousExperience,
+      medicalConditions,
+      emergencyContact,
+      source: 'admin_entry',
+      status: 'pending'
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Registration created successfully',
+      messageAr: 'تم إنشاء التسجيل بنجاح',
+      data: { registration }
+    });
+  } catch (error) {
+    console.error('Create registration error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'CREATE_REGISTRATION_ERROR',
+        message: 'Error creating registration',
+        messageAr: 'خطأ في إنشاء التسجيل'
+      }
+    });
+  }
+};
+
+exports.getPlayers = async (req, res) => {
+  try {
+    const clubId = req.user.clubId || req.user._id;
+    const { ageGroupId, status = 'approved', page = 1, limit = 50, search } = req.query;
+
+    const query = { 
+      clubId, 
+      status: 'approved',
+      isDeleted: false 
+    };
+
+    if (ageGroupId) {
+      query.$or = [
+        { requestedAgeGroupId: ageGroupId },
+        { assignedTeam: ageGroupId }
+      ];
+    }
+
+    if (search) {
+      query.$or = [
+        { playerName: { $regex: search, $options: 'i' } },
+        { playerNameAr: { $regex: search, $options: 'i' } },
+        { registrationNumber: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [players, total] = await Promise.all([
+      PlayerRegistration.find(query)
+        .populate('requestedAgeGroupId', 'name nameAr ageRange')
+        .populate('assignedTeam', 'name nameAr ageRange')
+        .sort({ approvedAt: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      PlayerRegistration.countDocuments(query)
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        players: players.map(p => ({
+          id: p._id,
+          registrationNumber: p.registrationNumber,
+          playerName: p.playerName,
+          playerNameAr: p.playerNameAr,
+          dateOfBirth: p.dateOfBirth,
+          age: p.age,
+          gender: p.gender,
+          parentName: p.parentName,
+          parentPhone: p.parentPhone,
+          ageGroup: p.assignedTeam || p.requestedAgeGroupId,
+          sport: p.sport,
+          position: p.position,
+          approvedAt: p.reviewedAt,
+          status: p.status
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get players error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'GET_PLAYERS_ERROR',
+        message: 'Error fetching players',
+        messageAr: 'خطأ في جلب اللاعبين'
+      }
+    });
+  }
+};
+
+exports.getRegistrationById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const clubId = req.user.clubId || req.user._id;
+
+    const registration = await PlayerRegistration.findOne({ 
+      _id: id, 
+      clubId, 
+      isDeleted: false 
+    })
+    .populate('requestedAgeGroupId', 'name nameAr ageRange')
+    .populate('assignedTeam', 'name nameAr ageRange')
+    .populate('reviewedBy', 'firstName lastName');
+
+    if (!registration) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'REGISTRATION_NOT_FOUND',
+          message: 'Registration not found',
+          messageAr: 'التسجيل غير موجود'
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { registration }
+    });
+  } catch (error) {
+    console.error('Get registration by ID error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'GET_REGISTRATION_ERROR',
+        message: 'Error fetching registration',
+        messageAr: 'خطأ في جلب التسجيل'
       }
     });
   }

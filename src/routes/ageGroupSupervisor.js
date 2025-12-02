@@ -28,7 +28,13 @@ router.post('/matches', controller.createMatch);
 router.patch('/matches/:id', controller.updateMatch);
 
 router.get('/registrations', controller.getRegistrations);
+router.post('/registrations', controller.createRegistration);
+router.get('/registrations/:id', controller.getRegistrationById);
 router.patch('/registrations/:id', controller.handleRegistration);
+router.post('/registrations/:id/approve', controller.approveRegistration);
+router.post('/registrations/:id/reject', controller.rejectRegistration);
+
+router.get('/players', controller.getPlayers);
 
 // Reports Routes
 router.get('/reports/players', controller.reportPlayers);
