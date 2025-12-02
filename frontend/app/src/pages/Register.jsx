@@ -9,7 +9,11 @@ const Register = () => {
     lastName: '',
     email: '',
     password: '',
-    role: 'player'
+    role: 'player',
+    organizationName: '',
+    establishedDate: '',
+    businessRegistrationNumber: '',
+    organizationType: 'club'
   });
   const [options, setOptions] = useState(null);
   const [error, setError] = useState('');
@@ -63,7 +67,19 @@ const Register = () => {
 
     setLoading(true);
 
-    const result = await register(formData);
+    const dataToSend = { ...formData };
+    
+    if (formData.role !== 'club') {
+      delete dataToSend.organizationName;
+      delete dataToSend.establishedDate;
+      delete dataToSend.businessRegistrationNumber;
+      delete dataToSend.organizationType;
+    } else {
+      delete dataToSend.firstName;
+      delete dataToSend.lastName;
+    }
+
+    const result = await register(dataToSend);
     
     if (result.success) {
       alert('تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول');
@@ -78,66 +94,27 @@ const Register = () => {
   const roles = [
     { value: 'player', label: 'لاعب' },
     { value: 'coach', label: 'مدرب' },
-    { value: 'club', label: 'نادي' },
+    { value: 'club', label: 'نادي / مؤسسة' },
     { value: 'specialist', label: 'أخصائي' }
   ];
 
+  const organizationTypes = [
+    { value: 'club', label: 'نادي رياضي' },
+    { value: 'academy', label: 'أكاديمية' },
+    { value: 'federation', label: 'اتحاد' },
+    { value: 'sports-center', label: 'مركز رياضي' }
+  ];
+
+  const isClub = formData.role === 'club';
+
   return (
     <div className="auth-page">
-      <div className="auth-card">
+      <div className="auth-card" style={{ maxWidth: isClub ? '500px' : '400px' }}>
         <h1>📝 تسجيل جديد</h1>
         
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="form-group">
-              <label>الاسم الأول</label>
-              <input
-                type="text"
-                value={formData.firstName}
-                onChange={(e) => handleChange('firstName', e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label>الاسم الأخير</label>
-              <input
-                type="text"
-                value={formData.lastName}
-                onChange={(e) => handleChange('lastName', e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>البريد الإلكتروني</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleChange('email', e.target.value)}
-              placeholder="example@email.com"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>كلمة المرور</label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) => handleChange('password', e.target.value)}
-              placeholder="مثال: Ahmed123"
-              minLength={8}
-              required
-            />
-            <small style={{ color: '#666', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
-              8 أحرف على الأقل، حرف كبير، حرف صغير، ورقم
-            </small>
-          </div>
-
           <div className="form-group">
             <label>نوع الحساب</label>
             <select
@@ -150,6 +127,107 @@ const Register = () => {
                 </option>
               ))}
             </select>
+          </div>
+
+          {isClub ? (
+            <>
+              <div className="form-group">
+                <label>اسم المؤسسة / النادي *</label>
+                <input
+                  type="text"
+                  value={formData.organizationName}
+                  onChange={(e) => handleChange('organizationName', e.target.value)}
+                  placeholder="مثال: نادي الهلال"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>نوع المؤسسة *</label>
+                <select
+                  value={formData.organizationType}
+                  onChange={(e) => handleChange('organizationType', e.target.value)}
+                  required
+                >
+                  {organizationTypes.map(type => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>تاريخ التأسيس *</label>
+                  <input
+                    type="date"
+                    value={formData.establishedDate}
+                    onChange={(e) => handleChange('establishedDate', e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>رقم السجل التجاري *</label>
+                  <input
+                    type="text"
+                    value={formData.businessRegistrationNumber}
+                    onChange={(e) => handleChange('businessRegistrationNumber', e.target.value)}
+                    placeholder="1234567890"
+                    required
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="form-row">
+              <div className="form-group">
+                <label>الاسم الأول *</label>
+                <input
+                  type="text"
+                  value={formData.firstName}
+                  onChange={(e) => handleChange('firstName', e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>الاسم الأخير *</label>
+                <input
+                  type="text"
+                  value={formData.lastName}
+                  onChange={(e) => handleChange('lastName', e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="form-group">
+            <label>البريد الإلكتروني *</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleChange('email', e.target.value)}
+              placeholder="example@email.com"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>كلمة المرور *</label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(e) => handleChange('password', e.target.value)}
+              placeholder="مثال: Ahmed123"
+              minLength={8}
+              required
+            />
+            <small style={{ color: '#666', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
+              8 أحرف على الأقل، حرف كبير، حرف صغير، ورقم
+            </small>
           </div>
 
           <button type="submit" className="submit-btn" disabled={loading}>
