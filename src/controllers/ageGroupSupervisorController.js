@@ -184,9 +184,47 @@ exports.getAgeGroup = async (req, res) => {
 
 exports.updateAgeGroup = async (req, res) => {
   try {
+    const { name, nameAr, ageRange, status } = req.body;
+
+    // Validate input
+    if (!name || !nameAr || !ageRange || !ageRange.min || !ageRange.max) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Name, nameAr, and age range are required',
+          messageAr: 'الاسم والاسم بالعربية ونطاق العمر مطلوبة'
+        }
+      });
+    }
+
+    if (ageRange.min >= ageRange.max) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Min age must be less than max age',
+          messageAr: 'السن الصغرى يجب أن تكون أقل من السن الكبرى'
+        }
+      });
+    }
+
+    const updateData = {
+      name: name.trim(),
+      nameAr: nameAr.trim(),
+      ageRange: {
+        min: parseInt(ageRange.min),
+        max: parseInt(ageRange.max)
+      }
+    };
+
+    if (status) {
+      updateData.status = status;
+    }
+
     const group = await AgeGroup.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -213,8 +251,8 @@ exports.updateAgeGroup = async (req, res) => {
       success: false,
       error: {
         code: 'UPDATE_GROUP_ERROR',
-        message: 'Error updating age group',
-        messageAr: 'خطأ في تحديث الفئة العمرية'
+        message: 'Error updating age group: ' + error.message,
+        messageAr: 'خطأ في تحديث الفئة العمرية: ' + error.message
       }
     });
   }
@@ -334,17 +372,60 @@ exports.getSchedule = async (req, res) => {
 exports.createTrainingSession = async (req, res) => {
   try {
     const clubId = req.user.clubId || req.user._id;
+    const { ageGroupId, date, time, duration, location, status = 'scheduled' } = req.body;
+
+    // Validate required fields
+    if (!ageGroupId || !date || !time || !duration || !location) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'ageGroupId, date, time, duration, and location are required',
+          messageAr: 'معرف الفئة العمرية والتاريخ والوقت والمدة والموقع مطلوبة'
+        }
+      });
+    }
+
+    // Verify age group exists
+    const ageGroup = await AgeGroup.findById(ageGroupId);
+    if (!ageGroup) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'GROUP_NOT_FOUND',
+          message: 'Age group not found',
+          messageAr: 'الفئة العمرية غير موجودة'
+        }
+      });
+    }
+
+    // Parse time to calculate startTime and endTime
+    const [hours, minutes] = time.split(':');
+    const startDate = new Date(date);
+    startDate.setHours(parseInt(hours), parseInt(minutes));
+    
+    const endDate = new Date(startDate);
+    endDate.setMinutes(endDate.getMinutes() + parseInt(duration));
+
     const sessionData = {
-      ...req.body,
-      clubId,
-      createdBy: req.user._id
+      ageGroup: ageGroupId,
+      date: new Date(date),
+      startTime: time,
+      endTime: endDate.toTimeString().slice(0, 5),
+      location: location.trim(),
+      status: status,
+      club: clubId,
+      createdBy: req.user._id,
+      attendance: []
     };
 
     const session = await TrainingSession.create(sessionData);
 
+    const populatedSession = await session.populate('ageGroup', 'name nameAr');
+
     res.status(201).json({
       success: true,
-      data: session,
+      data: populatedSession,
       message: 'Training session created successfully',
       messageAr: 'تم إنشاء جلسة التدريب بنجاح'
     });

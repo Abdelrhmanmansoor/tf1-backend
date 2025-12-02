@@ -12,6 +12,7 @@ router.get('/groups', controller.getAgeGroups);
 router.post('/groups', controller.createAgeGroup);
 router.get('/groups/:id', controller.getAgeGroup);
 router.patch('/groups/:id', controller.updateAgeGroup);
+router.put('/groups/:id', controller.updateAgeGroup);
 router.delete('/groups/:id', controller.deleteAgeGroup);
 
 router.post('/groups/:id/assign-coach', controller.assignCoach);
