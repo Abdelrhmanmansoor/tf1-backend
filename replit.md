@@ -21,6 +21,9 @@ SportX Platform is a comprehensive "LinkedIn for Sports" platform in the Middle 
 - **Profile Management** - Dropdown-only forms
 - **Real-time Notifications** via Socket.io
 - **Enhanced Security** - Helmet, Rate Limiters, Sanitization
+- **Leader/Team Dashboard System** - Enterprise-grade dual-dashboard
+- **RBAC Permission System** - Granular permission control
+- **Audit Logging** - Complete action tracking
 - CORS Configured for Development & Production
 
 ### Frontend (Port 5000)
@@ -47,10 +50,44 @@ cd frontend/app && npm run dev  # Runs on port 5000
 ## Features (December 2025)
 
 ### Authentication System
-- 10 user roles: player, coach, club, specialist, admin, administrator, age-group-supervisor, sports-director, executive-director, secretary
+- 11 user roles: player, coach, club, specialist, admin, administrator, administrative-officer, age-group-supervisor, sports-director, executive-director, secretary
 - Role-specific registration validation
 - JWT with access & refresh tokens
 - Password: min 8 chars with uppercase, lowercase, number
+
+### Leader/Team Dashboard System (NEW)
+Enterprise-grade dual-dashboard architecture:
+
+**Leader Dashboard** (Full Administrative Control):
+- Manage team members with granular permissions
+- View and export audit logs
+- Configure team settings
+- Full access to all modules
+
+**Team Dashboard** (Role-Based Limited Permissions):
+- Access only permitted modules
+- Dynamic navigation based on permissions
+- Activity tracking per member
+- Safe redirect system (no 404s or unexpected logout)
+
+### RBAC Permission System
+Permission-by-permission control with categories:
+- Dashboard: view, analytics
+- Users: view, create, edit, delete, block
+- Jobs: view, create, edit, delete, applications
+- Matches: view, create, edit, delete
+- Content: view, create, edit, delete, publish
+- Settings: view, edit
+- Reports: view, export
+- System: notifications, logs
+
+### Audit Logging System
+Complete action tracking:
+- All user actions logged
+- IP, User-Agent, browser info
+- Success/failure status
+- Previous/new values for changes
+- Severity levels (info, warning, error, critical)
 
 ### Match Hub
 - Browse public matches with filters
@@ -86,6 +123,34 @@ POST /api/v1/auth/register    - Register new user
 POST /api/v1/auth/login       - Login user
 POST /api/v1/auth/refresh     - Refresh access token
 POST /api/v1/auth/logout      - Logout user
+```
+
+#### Leader Dashboard (Admin Only)
+```
+GET  /api/v1/leader/dashboard           - Get leader dashboard
+GET  /api/v1/leader/team                - Get team members
+POST /api/v1/leader/team                - Add team member
+PATCH /api/v1/leader/team/:memberId/permissions - Update permissions
+DELETE /api/v1/leader/team/:memberId    - Remove team member
+GET  /api/v1/leader/permissions         - Get available permissions
+GET  /api/v1/leader/audit-logs          - Get audit logs
+PATCH /api/v1/leader/settings           - Update team settings
+```
+
+#### Team Dashboard
+```
+GET  /api/v1/team/dashboard             - Get team member dashboard
+GET  /api/v1/team/permissions           - Get my permissions
+GET  /api/v1/team/check-access/:module  - Check module access
+GET  /api/v1/team/my-activity           - Get my activity log
+```
+
+#### Administrative Officer (Sports Field)
+```
+GET  /api/v1/administrative-officer/dashboard  - Get dashboard
+GET  /api/v1/administrative-officer/reports    - Get field reports
+GET  /api/v1/administrative-officer/schedule   - Get schedule
+GET  /api/v1/administrative-officer/facilities - Get facilities
 ```
 
 #### Match Hub
@@ -134,20 +199,31 @@ PUT  /api/v1/notifications/read-all - Mark all as read
 │   │   ├── database.js          # MongoDB connection
 │   │   └── socket.js            # Socket.io config
 │   ├── models/
+│   │   ├── admin/
+│   │   │   ├── LeaderTeam.js    # Leader/Team management
+│   │   │   ├── AuditLog.js      # Audit logging
+│   │   │   ├── Permission.js    # Permission definitions
+│   │   │   └── index.js         # Admin models export
 │   │   ├── PublicMatch.js       # Match Hub model
 │   │   └── Notification.js      # Notifications model
 │   ├── controllers/
+│   │   ├── leaderDashboardController.js  # Leader dashboard
+│   │   ├── teamDashboardController.js    # Team dashboard
 │   │   ├── matchHubController.js
 │   │   ├── jobsController.js
 │   │   ├── profileController.js
 │   │   └── notificationController.js
 │   ├── routes/
+│   │   ├── leaderDashboard.js   # Leader routes
+│   │   ├── teamDashboard.js     # Team routes
+│   │   ├── administrativeOfficer.js  # Admin officer routes
 │   │   ├── matchHub.js          # Match routes
 │   │   ├── jobs.js              # Jobs routes
 │   │   ├── profile.js           # Profile routes
 │   │   └── notifications.js     # Notification routes
 │   ├── middleware/
 │   │   ├── auth.js              # JWT authentication
+│   │   ├── rbac.js              # RBAC & permission checks
 │   │   ├── sanitize.js          # NoSQL injection prevention
 │   │   └── validation.js        # Input validation
 │   └── data/
@@ -204,6 +280,7 @@ PUT  /api/v1/notifications/read-all - Mark all as read
 - NoSQL injection prevention (sanitizeRequest middleware)
 - Request sanitization
 - Trust proxy for production
+- RBAC with audit logging
 
 ## Environment Variables
 
@@ -245,6 +322,23 @@ Password: Admin123456
 ```
 
 **ملاحظة:** كلمة المرور القديمة `admin123` لم تعد تعمل بسبب متطلبات كلمة المرور الجديدة.
+
+## User Roles
+
+### Primary Roles (المستخدمين الأساسيين)
+- **player** - لاعب
+- **coach** - مدرب
+- **club** - نادي
+- **specialist** - أخصائي
+
+### Administrative Roles (الأدوار الإدارية)
+- **admin** - مدير النظام (Full Access)
+- **administrator** - إداري
+- **administrative-officer** - موظف إداري (الميدان الرياضي)
+- **age-group-supervisor** - مشرف فئة عمرية
+- **sports-director** - المدير الرياضي
+- **executive-director** - المدير التنفيذي
+- **secretary** - أمين السر
 
 ## Token Management
 
@@ -295,7 +389,17 @@ Password: Admin123456
 - متقدم
 - احترافي
 
+### Permission Categories (فئات الصلاحيات)
+- dashboard - لوحة التحكم
+- users - المستخدمين
+- jobs - الوظائف
+- matches - المباريات
+- content - المحتوى
+- settings - الإعدادات
+- reports - التقارير
+- system - النظام
+
 ---
 
 **Last Updated:** December 02, 2025
-**Version:** 3.0.0 (Enhanced Backend + Security)
+**Version:** 4.0.0 (Leader/Team Dashboard + RBAC + Audit Logging)

@@ -5,7 +5,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 const { requireLeader, logAction } = require('../middleware/rbac');
 
 router.use(authenticate);
-router.use(authorize('admin'));
+router.use(requireLeader);
 
 router.get('/dashboard', logAction('dashboard', 'view', 'Leader dashboard accessed'), controller.getDashboard);
 
