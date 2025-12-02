@@ -513,6 +513,7 @@ exports.updateMatch = async (req, res) => {
 
 exports.getGroupPlayers = async (req, res) => {
   try {
+    const PlayerProfile = require('../modules/player/models/PlayerProfile');
     const group = await AgeGroup.findById(req.params.id);
     if (!group) {
       return res.status(404).json({

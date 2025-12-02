@@ -108,6 +108,15 @@ const playerProfileSchema = new mongoose.Schema({
     default: 0
   },
 
+  // Age Group Assignment
+  ageGroupId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'AgeGroup',
+    index: true
+  },
+  ageGroupName: String,
+  ageGroupNameAr: String,
+
   // Experience & Achievements
   currentClub: {
     clubId: {

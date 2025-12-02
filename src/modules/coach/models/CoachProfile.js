@@ -146,6 +146,15 @@ const coachProfileSchema = new mongoose.Schema({
   },
   methodologies: [String], // Training methodologies used
 
+  // Assigned Age Group (by supervisor)
+  assignedAgeGroupId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'AgeGroup',
+    index: true
+  },
+  assignedAgeGroupName: String,
+  assignedAgeGroupNameAr: String,
+
   // Service Offerings
   trainingTypes: [{
     type: String,
