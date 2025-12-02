@@ -14,6 +14,7 @@ const Alert = require('./Alert');
 const LeaderTeam = require('./LeaderTeam');
 const AuditLog = require('./AuditLog');
 const Permission = require('./Permission');
+const SiteSettings = require('./SiteSettings');
 
 module.exports = {
   AgeGroup,
@@ -32,5 +33,6 @@ module.exports = {
   Alert,
   LeaderTeam,
   AuditLog,
-  Permission
+  Permission,
+  SiteSettings
 };

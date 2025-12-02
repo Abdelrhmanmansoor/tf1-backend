@@ -25,6 +25,7 @@ const jobsRoutes = require('./src/routes/jobs');
 const leaderDashboardRoutes = require('./src/routes/leaderDashboard');
 const teamDashboardRoutes = require('./src/routes/teamDashboard');
 const administrativeOfficerRoutes = require('./src/routes/administrativeOfficer');
+const siteSettingsRoutes = require('./src/routes/siteSettings');
 const { createSearchIndexes } = require('./src/config/searchIndexes');
 const configureSocket = require('./src/config/socket');
 const logger = require('./src/utils/logger');
@@ -250,6 +251,9 @@ app.use(`/api/${API_VERSION}/jobs`, jobsRoutes);
 app.use(`/api/${API_VERSION}/leader`, leaderDashboardRoutes);
 app.use(`/api/${API_VERSION}/team`, teamDashboardRoutes);
 app.use(`/api/${API_VERSION}/administrative-officer`, administrativeOfficerRoutes);
+
+// Site Settings (Leader Control Panel)
+app.use(`/api/${API_VERSION}/settings`, siteSettingsRoutes);
 
 // ==================== ERROR HANDLING ====================
 app.use((err, req, res, next) => {
