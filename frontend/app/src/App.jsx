@@ -7,6 +7,7 @@ import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AgeGroupSupervisor from './pages/AgeGroupSupervisor';
+import AdminDashboard from './pages/AdminDashboard';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -85,6 +86,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <AgeGroupSupervisor />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin-dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
                   </ProtectedRoute>
                 } 
               />
