@@ -32,6 +32,14 @@ const API_VERSION = process.env.API_VERSION || 'v1';
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
 
+// In development, allow Replit domains dynamically
+if (NODE_ENV === 'development' || process.env.REPLIT_DEV_DOMAIN) {
+  allowedOrigins.push('*');
+  if (process.env.REPLIT_DEV_DOMAIN) {
+    allowedOrigins.push(`https://${process.env.REPLIT_DEV_DOMAIN}`);
+  }
+}
+
 // ==================== BANNER ====================
 const printBanner = () => {
   console.clear();
