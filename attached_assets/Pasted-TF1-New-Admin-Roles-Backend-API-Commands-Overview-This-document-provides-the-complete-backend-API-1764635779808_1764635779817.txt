@@ -1,0 +1,828 @@
+TF1 - New Admin Roles Backend API Commands
+Overview
+
+This document provides the complete backend API specifications for the 5 new administrative roles added to the TF1 platform:
+
+    Administrator (إداري) - General system administration
+    Age Group Supervisor (مشرف فئات سنية) - Manages age groups and youth categories
+    Sports Director (مدير رياضي) - Manages sports programs and activities
+    Executive Director (مدير تنفيذي) - High-level management and strategy
+    Secretary (سكرتير) - Administrative support, scheduling, communications
+
+Authentication & Authorization
+
+All endpoints require JWT authentication with role-based access control.
+Required Headers
+
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+
+Role Registration
+
+Update the user registration endpoint to accept new roles:
+
+// Valid roles array
+const VALID_ROLES = [
+  'player',
+  'coach', 
+  'club',
+  'specialist',
+  'administrator',      // NEW
+  'age-group-supervisor', // NEW
+  'sports-director',     // NEW
+  'executive-director',  // NEW
+  'secretary'            // NEW
+];
+
+1. Administrator (إداري) API Endpoints
+Dashboard Overview
+
+GET /api/v1/administrator/dashboard
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "stats": {
+      "totalUsers": 1250,
+      "activeUsers": 890,
+      "pendingApprovals": 15,
+      "totalClubs": 45,
+      "totalCoaches": 180,
+      "totalPlayers": 820,
+      "recentRegistrations": 28,
+      "systemAlerts": 3
+    }
+  }
+}
+
+User Management
+
+GET /api/v1/administrator/users
+
+Query Parameters:
+
+    page (number, default: 1)
+    limit (number, default: 20)
+    role (string, optional): Filter by role
+    status (string, optional): 'active' | 'blocked' | 'pending'
+    search (string, optional): Search by name or email
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "string",
+        "email": "string",
+        "firstName": "string",
+        "lastName": "string",
+        "role": "string",
+        "status": "active" | "blocked" | "pending",
+        "createdAt": "ISO date",
+        "lastActive": "ISO date"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 100,
+      "pages": 5
+    }
+  }
+}
+
+Pending Approvals
+
+GET /api/v1/administrator/approvals
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "approvals": [
+      {
+        "id": "string",
+        "name": "string",
+        "email": "string",
+        "role": "string",
+        "date": "ISO date",
+        "status": "pending"
+      }
+    ]
+  }
+}
+
+Approve/Reject User
+
+PATCH /api/v1/administrator/approvals/:id
+
+Request Body:
+
+{
+  "action": "approve" | "reject",
+  "reason": "string (optional, required for reject)"
+}
+
+Block/Unblock User
+
+PATCH /api/v1/administrator/users/:id/block
+
+Request Body:
+
+{
+  "blocked": true | false,
+  "reason": "string (required when blocking)"
+}
+
+System Alerts
+
+GET /api/v1/administrator/alerts
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "alerts": [
+      {
+        "id": "string",
+        "type": "warning" | "error" | "info",
+        "message": "string",
+        "messageAr": "string",
+        "date": "ISO date",
+        "resolved": false
+      }
+    ]
+  }
+}
+
+System Settings
+
+GET /api/v1/administrator/settings
+PATCH /api/v1/administrator/settings
+
+Settings Object:
+
+{
+  "maintenanceMode": false,
+  "siteName": "TF1",
+  "siteNameAr": "تي اف ون",
+  "primaryColor": "#3B82F6",
+  "secondaryColor": "#10B981"
+}
+
+2. Age Group Supervisor (مشرف فئات سنية) API Endpoints
+Dashboard Overview
+
+GET /api/v1/age-group-supervisor/dashboard
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "stats": {
+      "totalAgeGroups": 8,
+      "totalPlayers": 245,
+      "totalCoaches": 12,
+      "upcomingMatches": 5,
+      "activeTrainings": 3,
+      "pendingRegistrations": 8
+    }
+  }
+}
+
+Age Groups CRUD
+
+GET /api/v1/age-group-supervisor/groups
+POST /api/v1/age-group-supervisor/groups
+GET /api/v1/age-group-supervisor/groups/:id
+PATCH /api/v1/age-group-supervisor/groups/:id
+DELETE /api/v1/age-group-supervisor/groups/:id
+
+Age Group Object:
+
+{
+  "id": "string",
+  "name": "Under 10",
+  "nameAr": "تحت 10 سنوات",
+  "ageRange": {
+    "min": 8,
+    "max": 10
+  },
+  "coachId": "string",
+  "coachName": "string",
+  "playersCount": 32,
+  "status": "active" | "inactive",
+  "trainingSchedule": [
+    {
+      "day": "Sunday",
+      "time": "16:00",
+      "duration": 90
+    }
+  ]
+}
+
+Assign Coach to Age Group
+
+POST /api/v1/age-group-supervisor/groups/:id/assign-coach
+
+Request Body:
+
+{
+  "coachId": "string"
+}
+
+Age Group Players
+
+GET /api/v1/age-group-supervisor/groups/:id/players
+POST /api/v1/age-group-supervisor/groups/:id/players
+DELETE /api/v1/age-group-supervisor/groups/:id/players/:playerId
+
+Training Schedule
+
+GET /api/v1/age-group-supervisor/schedule
+POST /api/v1/age-group-supervisor/schedule
+PATCH /api/v1/age-group-supervisor/schedule/:id
+DELETE /api/v1/age-group-supervisor/schedule/:id
+
+Training Session Object:
+
+{
+  "id": "string",
+  "ageGroupId": "string",
+  "ageGroupName": "string",
+  "date": "2024-01-16",
+  "time": "16:00",
+  "duration": 90,
+  "location": "string",
+  "coachId": "string",
+  "status": "scheduled" | "completed" | "cancelled"
+}
+
+Matches
+
+GET /api/v1/age-group-supervisor/matches
+POST /api/v1/age-group-supervisor/matches
+PATCH /api/v1/age-group-supervisor/matches/:id
+
+Match Object:
+
+{
+  "id": "string",
+  "ageGroupId": "string",
+  "opponent": "string",
+  "date": "2024-01-20",
+  "time": "15:00",
+  "location": "string",
+  "homeAway": "home" | "away",
+  "status": "scheduled" | "completed" | "cancelled",
+  "result": {
+    "our": 2,
+    "opponent": 1
+  }
+}
+
+Player Registration Requests
+
+GET /api/v1/age-group-supervisor/registrations
+PATCH /api/v1/age-group-supervisor/registrations/:id
+
+3. Sports Director (مدير رياضي) API Endpoints
+Dashboard Overview
+
+GET /api/v1/sports-director/dashboard
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "stats": {
+      "activePrograms": 12,
+      "totalAthletes": 580,
+      "coachingStaff": 28,
+      "upcomingEvents": 8,
+      "winRate": 72,
+      "trainingHours": 1250
+    }
+  }
+}
+
+Sports Programs CRUD
+
+GET /api/v1/sports-director/programs
+POST /api/v1/sports-director/programs
+GET /api/v1/sports-director/programs/:id
+PATCH /api/v1/sports-director/programs/:id
+DELETE /api/v1/sports-director/programs/:id
+
+Program Object:
+
+{
+  "id": "string",
+  "name": "Elite Development",
+  "nameAr": "تطوير النخبة",
+  "type": "training" | "competition" | "development",
+  "description": "string",
+  "descriptionAr": "string",
+  "startDate": "ISO date",
+  "endDate": "ISO date",
+  "participants": 45,
+  "maxParticipants": 60,
+  "progress": 75,
+  "status": "active" | "completed" | "upcoming",
+  "coaches": ["coachId1", "coachId2"]
+}
+
+Coach Performance
+
+GET /api/v1/sports-director/coaches/performance
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "coaches": [
+      {
+        "id": "string",
+        "name": "string",
+        "rating": 4.8,
+        "sessionsCompleted": 156,
+        "playersManaged": 32,
+        "winRate": 68
+      }
+    ]
+  }
+}
+
+Coach Evaluations
+
+GET /api/v1/sports-director/coaches/:id/evaluations
+POST /api/v1/sports-director/coaches/:id/evaluations
+
+Evaluation Object:
+
+{
+  "id": "string",
+  "coachId": "string",
+  "date": "ISO date",
+  "rating": 4.5,
+  "categories": {
+    "technicalSkills": 4.5,
+    "communication": 4.8,
+    "playerDevelopment": 4.2,
+    "teamManagement": 4.6
+  },
+  "comments": "string",
+  "evaluatorId": "string"
+}
+
+Athletes Overview
+
+GET /api/v1/sports-director/athletes
+GET /api/v1/sports-director/athletes/:id/performance
+
+Training Analytics
+
+GET /api/v1/sports-director/analytics/training
+
+Query Parameters:
+
+    period: 'week' | 'month' | 'quarter' | 'year'
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "totalHours": 1250,
+    "averageAttendance": 85,
+    "programsCompleted": 8,
+    "athleteProgress": [
+      {
+        "metric": "Fitness Level",
+        "improvement": 15
+      }
+    ]
+  }
+}
+
+Recruitment Pipeline
+
+GET /api/v1/sports-director/recruitment
+POST /api/v1/sports-director/recruitment
+PATCH /api/v1/sports-director/recruitment/:id
+
+4. Executive Director (مدير تنفيذي) API Endpoints
+Dashboard Overview
+
+GET /api/v1/executive-director/dashboard
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "stats": {
+      "totalRevenue": 2450000,
+      "monthlyGrowth": 12.5,
+      "totalMembers": 3200,
+      "activePartnerships": 18,
+      "pendingDecisions": 7,
+      "upcomingMeetings": 4
+    }
+  }
+}
+
+KPIs (Key Performance Indicators)
+
+GET /api/v1/executive-director/kpis
+PATCH /api/v1/executive-director/kpis/:id
+
+KPI Object:
+
+{
+  "id": "string",
+  "name": "Member Satisfaction",
+  "nameAr": "رضا الأعضاء",
+  "value": 92,
+  "target": 95,
+  "unit": "%",
+  "trend": "up" | "down" | "stable",
+  "period": "monthly"
+}
+
+Strategic Initiatives
+
+GET /api/v1/executive-director/initiatives
+POST /api/v1/executive-director/initiatives
+PATCH /api/v1/executive-director/initiatives/:id
+DELETE /api/v1/executive-director/initiatives/:id
+
+Initiative Object:
+
+{
+  "id": "string",
+  "title": "Digital Transformation",
+  "titleAr": "التحول الرقمي",
+  "description": "string",
+  "descriptionAr": "string",
+  "status": "planning" | "in-progress" | "completed",
+  "priority": "high" | "medium" | "low",
+  "deadline": "ISO date",
+  "progress": 65,
+  "owner": "string",
+  "budget": 500000,
+  "spent": 325000
+}
+
+Partnerships
+
+GET /api/v1/executive-director/partnerships
+POST /api/v1/executive-director/partnerships
+PATCH /api/v1/executive-director/partnerships/:id
+
+Partnership Object:
+
+{
+  "id": "string",
+  "partnerName": "string",
+  "partnerNameAr": "string",
+  "type": "sponsor" | "strategic" | "vendor" | "affiliate",
+  "status": "active" | "negotiating" | "expired",
+  "startDate": "ISO date",
+  "endDate": "ISO date",
+  "value": 1000000,
+  "contactPerson": "string",
+  "contactEmail": "string"
+}
+
+Financial Reports
+
+GET /api/v1/executive-director/reports/financial
+
+Query Parameters:
+
+    period: 'month' | 'quarter' | 'year'
+    year: number
+    month: number (optional)
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "revenue": {
+      "total": 2450000,
+      "breakdown": [
+        { "source": "Memberships", "amount": 1500000 },
+        { "source": "Sponsorships", "amount": 800000 },
+        { "source": "Events", "amount": 150000 }
+      ]
+    },
+    "expenses": {
+      "total": 1800000,
+      "breakdown": [
+        { "category": "Staff", "amount": 900000 },
+        { "category": "Facilities", "amount": 500000 },
+        { "category": "Operations", "amount": 400000 }
+      ]
+    },
+    "profit": 650000
+  }
+}
+
+Announcements
+
+GET /api/v1/executive-director/announcements
+POST /api/v1/executive-director/announcements
+PATCH /api/v1/executive-director/announcements/:id
+DELETE /api/v1/executive-director/announcements/:id
+
+Announcement Object:
+
+{
+  "id": "string",
+  "title": "string",
+  "titleAr": "string",
+  "content": "string",
+  "contentAr": "string",
+  "targetRoles": ["all"] | ["player", "coach"],
+  "priority": "high" | "normal",
+  "publishDate": "ISO date",
+  "expiryDate": "ISO date",
+  "status": "draft" | "published" | "archived"
+}
+
+5. Secretary (سكرتير) API Endpoints
+Dashboard Overview
+
+GET /api/v1/secretary/dashboard
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "stats": {
+      "todayMeetings": 4,
+      "pendingDocuments": 12,
+      "unreadMessages": 8,
+      "upcomingCalls": 3,
+      "tasksToday": 7,
+      "scheduledEvents": 15
+    }
+  }
+}
+
+Calendar & Meetings
+
+GET /api/v1/secretary/calendar
+POST /api/v1/secretary/calendar/meetings
+GET /api/v1/secretary/calendar/meetings/:id
+PATCH /api/v1/secretary/calendar/meetings/:id
+DELETE /api/v1/secretary/calendar/meetings/:id
+
+Meeting Object:
+
+{
+  "id": "string",
+  "title": "Board Meeting",
+  "titleAr": "اجتماع مجلس الإدارة",
+  "date": "2024-01-16",
+  "time": "09:00",
+  "duration": 120,
+  "location": "string",
+  "locationAr": "string",
+  "isOnline": false,
+  "meetingLink": "string (if online)",
+  "attendees": [
+    {
+      "id": "string",
+      "name": "string",
+      "email": "string",
+      "status": "pending" | "confirmed" | "declined"
+    }
+  ],
+  "agenda": "string",
+  "agendaAr": "string",
+  "status": "scheduled" | "in-progress" | "completed" | "cancelled",
+  "notes": "string",
+  "createdBy": "string"
+}
+
+Send Meeting Invitations
+
+POST /api/v1/secretary/calendar/meetings/:id/invite
+
+Request Body:
+
+{
+  "attendeeIds": ["userId1", "userId2"],
+  "message": "string",
+  "messageAr": "string"
+}
+
+Documents Management
+
+GET /api/v1/secretary/documents
+POST /api/v1/secretary/documents
+GET /api/v1/secretary/documents/:id
+PATCH /api/v1/secretary/documents/:id
+DELETE /api/v1/secretary/documents/:id
+
+Document Object:
+
+{
+  "id": "string",
+  "name": "string",
+  "type": "contract" | "letter" | "report" | "memo",
+  "fileUrl": "string",
+  "date": "ISO date",
+  "status": "pending" | "approved" | "rejected",
+  "priority": "high" | "normal" | "low",
+  "assignedTo": "string",
+  "dueDate": "ISO date",
+  "notes": "string"
+}
+
+Document Approval Workflow
+
+POST /api/v1/secretary/documents/:id/submit
+POST /api/v1/secretary/documents/:id/approve
+POST /api/v1/secretary/documents/:id/reject
+
+Messages/Communications
+
+GET /api/v1/secretary/messages
+POST /api/v1/secretary/messages
+GET /api/v1/secretary/messages/:id
+PATCH /api/v1/secretary/messages/:id/read
+DELETE /api/v1/secretary/messages/:id
+
+Message Object:
+
+{
+  "id": "string",
+  "from": {
+    "id": "string",
+    "name": "string",
+    "email": "string"
+  },
+  "to": {
+    "id": "string",
+    "name": "string",
+    "email": "string"
+  },
+  "subject": "string",
+  "subjectAr": "string",
+  "body": "string",
+  "bodyAr": "string",
+  "priority": "high" | "normal",
+  "date": "ISO date",
+  "read": false,
+  "attachments": [
+    {
+      "name": "string",
+      "url": "string",
+      "size": 1024
+    }
+  ]
+}
+
+Tasks
+
+GET /api/v1/secretary/tasks
+POST /api/v1/secretary/tasks
+PATCH /api/v1/secretary/tasks/:id
+DELETE /api/v1/secretary/tasks/:id
+
+Task Object:
+
+{
+  "id": "string",
+  "title": "string",
+  "titleAr": "string",
+  "description": "string",
+  "priority": "high" | "medium" | "low",
+  "dueDate": "ISO date",
+  "status": "pending" | "in-progress" | "completed",
+  "assignedBy": "string",
+  "relatedMeetingId": "string (optional)",
+  "relatedDocumentId": "string (optional)"
+}
+
+Common Response Formats
+Success Response
+
+{
+  "success": true,
+  "data": { ... },
+  "message": "Operation successful",
+  "messageAr": "تمت العملية بنجاح"
+}
+
+Error Response
+
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Error description",
+    "messageAr": "وصف الخطأ"
+  }
+}
+
+Pagination Format
+
+{
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 100,
+    "pages": 5,
+    "hasNext": true,
+    "hasPrev": false
+  }
+}
+
+CORS Configuration
+
+Enable CORS for the frontend domains:
+
+const corsOptions = {
+  origin: [
+    'https://tf1one.com',
+    'https://www.tf1one.com',
+    'http://localhost:5000',
+    'https://*.replit.dev'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+Socket.io Events (Optional)
+
+For real-time notifications:
+
+// Server emits
+socket.emit('new_notification', {
+  notificationType: 'approval_required',
+  title: 'New Approval Request',
+  titleAr: 'طلب موافقة جديد',
+  message: 'A new user registration requires approval',
+  messageAr: 'تسجيل مستخدم جديد يتطلب الموافقة',
+  actionUrl: '/dashboard/administrator/approvals',
+  priority: 'high'
+});
+
+Database Schema Updates
+
+Add new fields to User model:
+
+const userSchema = {
+  // ... existing fields
+  role: {
+    type: String,
+    enum: [
+      'player',
+      'coach',
+      'club', 
+      'specialist',
+      'administrator',
+      'age-group-supervisor',
+      'sports-director',
+      'executive-director',
+      'secretary'
+    ],
+    required: true
+  },
+  department: String, // For admin roles
+  position: String,   // For admin roles
+  // ...
+};
+
+Implementation Priority
+
+    High Priority:
+        User registration with new roles
+        Dashboard endpoints for all roles
+        Basic CRUD operations
+
+    Medium Priority:
+        Analytics and reporting endpoints
+        Document management
+        Meeting scheduling
+
+    Low Priority:
+        Advanced analytics
+        Real-time notifications
+        Export functionality
