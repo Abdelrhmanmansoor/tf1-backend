@@ -6,6 +6,7 @@ import Jobs from './pages/Jobs';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import AgeGroupSupervisor from './pages/AgeGroupSupervisor';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -76,6 +77,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/age-group-supervisor" 
+                element={
+                  <ProtectedRoute>
+                    <AgeGroupSupervisor />
                   </ProtectedRoute>
                 } 
               />

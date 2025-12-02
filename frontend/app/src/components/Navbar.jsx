@@ -33,6 +33,11 @@ const Navbar = () => {
               <Link to="/profile" className="nav-link">
                 👤 ملفي الشخصي
               </Link>
+              {['age-group-supervisor', 'admin', 'administrator', 'club'].includes(user.role) && (
+                <Link to="/age-group-supervisor" className="nav-link">
+                  👥 إدارة الفئات
+                </Link>
+              )}
               <NotificationBell />
               <button onClick={handleLogout} className="logout-btn">
                 خروج
