@@ -32,16 +32,41 @@ const Register = () => {
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (error) setError('');
+  };
+
+  const validatePassword = (password) => {
+    if (password.length < 8) {
+      return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
+    }
+    if (!/[A-Z]/.test(password)) {
+      return 'كلمة المرور يجب أن تحتوي على حرف كبير واحد على الأقل (A-Z)';
+    }
+    if (!/[a-z]/.test(password)) {
+      return 'كلمة المرور يجب أن تحتوي على حرف صغير واحد على الأقل (a-z)';
+    }
+    if (!/[0-9]/.test(password)) {
+      return 'كلمة المرور يجب أن تحتوي على رقم واحد على الأقل';
+    }
+    return null;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
+
     setLoading(true);
 
     const result = await register(formData);
     
     if (result.success) {
+      alert('تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول');
       navigate('/login');
     } else {
       setError(result.error);
@@ -104,10 +129,13 @@ const Register = () => {
               type="password"
               value={formData.password}
               onChange={(e) => handleChange('password', e.target.value)}
-              placeholder="••••••••"
-              minLength={6}
+              placeholder="مثال: Ahmed123"
+              minLength={8}
               required
             />
+            <small style={{ color: '#666', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
+              8 أحرف على الأقل، حرف كبير، حرف صغير، ورقم
+            </small>
           </div>
 
           <div className="form-group">
