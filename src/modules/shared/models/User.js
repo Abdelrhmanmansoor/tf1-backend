@@ -19,9 +19,33 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     required: [true, 'Role is required'],
-    enum: ['player', 'coach', 'club', 'specialist'],
+    enum: [
+      'player', 
+      'coach', 
+      'club', 
+      'specialist',
+      'admin',
+      'administrator',
+      'age-group-supervisor',
+      'sports-director',
+      'executive-director',
+      'secretary'
+    ],
     default: 'player'
   },
+  
+  // Admin role specific fields
+  department: {
+    type: String,
+    trim: true
+  },
+  position: {
+    type: String,
+    trim: true
+  },
+  permissions: [{
+    type: String
+  }],
   
   // Basic account info
   firstName: String,
