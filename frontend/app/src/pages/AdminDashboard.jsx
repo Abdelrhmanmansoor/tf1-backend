@@ -29,7 +29,7 @@ const AdminDashboard = () => {
 
   // دقق أولاً على الصلاحيات
   useEffect(() => {
-    if (!user || !['admin', 'administrator', 'club'].includes(user.role)) {
+    if (!user || !['admin', 'administrator', 'club', 'leader'].includes(user.role)) {
       navigate('/');
     }
   }, [user, navigate]);

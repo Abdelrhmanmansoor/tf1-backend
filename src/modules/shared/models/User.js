@@ -30,7 +30,8 @@ const userSchema = new mongoose.Schema({
       'age-group-supervisor',
       'sports-director',
       'executive-director',
-      'secretary'
+      'secretary',
+      'leader'
     ],
     default: 'player'
   },
