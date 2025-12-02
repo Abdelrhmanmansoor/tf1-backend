@@ -34,13 +34,13 @@ const validateRegister = [
     ),
 
   body('role')
-    .isIn(['player', 'coach', 'club', 'specialist'])
-    .withMessage('Role must be one of: player, coach, club, specialist'),
+    .isIn(['player', 'coach', 'club', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary'])
+    .withMessage('Role must be one of: player, coach, club, specialist, admin, administrator, age-group-supervisor, sports-director, executive-director, secretary'),
 
-  // Individual user fields (required for player, coach, specialist)
+  // Individual user fields (required for player, coach, specialist, and admin roles)
   body('firstName')
     .if((value, { req }) =>
-      ['player', 'coach', 'specialist'].includes(req.body.role)
+      ['player', 'coach', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary'].includes(req.body.role)
     )
     .trim()
     .notEmpty()
@@ -50,7 +50,7 @@ const validateRegister = [
 
   body('lastName')
     .if((value, { req }) =>
-      ['player', 'coach', 'specialist'].includes(req.body.role)
+      ['player', 'coach', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary'].includes(req.body.role)
     )
     .trim()
     .notEmpty()
