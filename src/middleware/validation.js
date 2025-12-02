@@ -2,11 +2,17 @@ const { body, query, validationResult } = require('express-validator');
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
+  
+  console.log('📝 Validation check for:', req.path);
+  console.log('📝 Request body:', JSON.stringify(req.body, null, 2));
+  
   if (!errors.isEmpty()) {
     const errorMessages = errors.array().map(error => ({
       field: error.path,
       message: error.msg,
     }));
+
+    console.log('❌ Validation errors:', JSON.stringify(errorMessages, null, 2));
 
     return res.status(400).json({
       success: false,
@@ -15,6 +21,8 @@ const handleValidationErrors = (req, res, next) => {
       code: 'VALIDATION_ERROR',
     });
   }
+  
+  console.log('✅ Validation passed');
   next();
 };
 
