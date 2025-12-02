@@ -117,8 +117,6 @@ leaderTeamSchema.methods.removeMember = function(memberId) {
   return false;
 };
 
-leaderTeamSchema.index({ leaderId: 1 });
 leaderTeamSchema.index({ 'teamMembers.userId': 1 });
-leaderTeamSchema.index({ 'teamMembers.accessKey': 1 });
 
 module.exports = mongoose.model('LeaderTeam', leaderTeamSchema);

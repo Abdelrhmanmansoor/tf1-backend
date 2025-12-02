@@ -47,7 +47,6 @@ const permissionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-permissionSchema.index({ code: 1 });
 permissionSchema.index({ module: 1 });
 permissionSchema.index({ category: 1 });
 

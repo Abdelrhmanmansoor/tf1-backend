@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema({
       'specialist',
       'admin',
       'administrator',
+      'administrative-officer',
       'age-group-supervisor',
       'sports-director',
       'executive-director',
