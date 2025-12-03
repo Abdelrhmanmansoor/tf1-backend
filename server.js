@@ -146,7 +146,16 @@ app.use('/api/v1/notifications', notificationsLimiter);
 
 // ==================== STATIC FILES (UPLOADS) ====================
 const path = require('path');
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const fs = require('fs');
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(uploadsDir));
 
 // ==================== REQUEST LOGGING ====================
 morgan.token('colored-status', (req, res) => {
@@ -183,8 +192,6 @@ app.use(compression());
 
 // ==================== SECURITY: SANITIZE REQUESTS ====================
 app.use(sanitizeRequest); // Prevent NoSQL injection
-
-app.use('/uploads', express.static('uploads'));
 
 // ==================== ROOT & HEALTH CHECK ====================
 app.get('/', (req, res) => {
