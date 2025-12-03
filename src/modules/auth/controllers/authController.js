@@ -23,6 +23,7 @@ class AuthController {
       const { 
         email, 
         password, 
+        registrationCode,
         role, 
         phone,
         location,
@@ -42,6 +43,31 @@ class AuthController {
         website,
         socialMedia
       } = req.body;
+
+      // Verify registration code
+      if (!registrationCode) {
+        return res.status(400).json({
+          success: false,
+          message: 'Registration code is required',
+          code: 'REGISTRATION_CODE_REQUIRED'
+        });
+      }
+
+      const RegistrationCode = require('../../../models/RegistrationCode');
+      const regCode = await RegistrationCode.findOne({ 
+        code: registrationCode.toUpperCase().trim()
+      });
+
+      if (!regCode || !regCode.isValid()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or expired registration code',
+          code: 'INVALID_REGISTRATION_CODE'
+        });
+      }
+
+      // Mark code as used
+      await regCode.use(email.toLowerCase());
 
       // Validate role-specific required fields
       if (role === 'club') {

@@ -33,6 +33,13 @@ const validateRegister = [
     .normalizeEmail()
     .trim(),
 
+  body('registrationCode')
+    .trim()
+    .notEmpty()
+    .withMessage('Registration code is required')
+    .isLength({ min: 10 })
+    .withMessage('Registration code is invalid'),
+
   body('password')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters long')

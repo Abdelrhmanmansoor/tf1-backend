@@ -1,0 +1,11 @@
+{
+  "codes": [
+    {
+      "code": "SPORTX2025@SECURE#MASTER",
+      "allowedRoles": ["player", "coach", "club", "specialist", "administrator", "leader", "age-group-supervisor", "sports-director", "executive-director", "secretary"],
+      "maxUses": 999,
+      "isActive": true,
+      "description": "Master registration code for all roles - use this to register"
+    }
+  ]
+}
