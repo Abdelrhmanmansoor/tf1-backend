@@ -1042,3 +1042,38 @@ exports.createJobEvent = async (req, res) => {
     });
   }
 };
+
+/**
+ * @desc Enhanced download with proper headers
+ */
+exports.downloadResumeEnhanced = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const JobApplication = require('../modules/club/models/JobApplication');
+
+    const application = await JobApplication.findById(applicationId);
+    if (!application?.attachments?.length) {
+      return res.status(404).json({ success: false, message: 'Resume not found' });
+    }
+
+    const resume = application.attachments[0];
+    const filePath = resume.localPath;
+    
+    const fs = require('fs');
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, message: 'File not found' });
+    }
+
+    const stat = fs.statSync(filePath);
+    res.setHeader('Content-Type', resume.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${resume.originalName}"`);
+    res.setHeader('Content-Length', stat.size);
+    res.setHeader('Cache-Control', 'no-cache');
+
+    fs.createReadStream(filePath).pipe(res);
+    console.log(`📥 Resume downloaded: ${resume.originalName}`);
+  } catch (error) {
+    console.error('Download error:', error);
+    res.status(500).json({ success: false, message: 'Error downloading file' });
+  }
+};

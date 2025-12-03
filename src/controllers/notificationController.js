@@ -522,3 +522,44 @@ exports.createBulkNotifications = async (users, notificationDataTemplate) => {
     throw error;
   }
 };
+
+// @desc    Get job-related notifications only
+// @route   GET /api/v1/notifications/jobs
+// @access  Private
+exports.getJobNotifications = async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const userId = req.user._id.toString();
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const { getNotifications } = require('../middleware/notificationHandler');
+    const { notifications } = await getNotifications(userId, {
+      limit: parseInt(limit),
+      filter: { unreadOnly: false },
+    });
+
+    const jobNotifications = notifications.filter(n => 
+      n.type && (n.type.includes('job') || n.type.includes('application'))
+    );
+
+    const language = req.user.language || 'en';
+    const formatted = jobNotifications.map(n => ({
+      ...n,
+      title: language === 'ar' && n.titleAr ? n.titleAr : n.title,
+      message: language === 'ar' && n.messageAr ? n.messageAr : n.message,
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: formatted.length,
+      data: formatted,
+    });
+  } catch (error) {
+    console.error('Error fetching job notifications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching job notifications',
+      error: error.message,
+    });
+  }
+};

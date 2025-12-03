@@ -10,12 +10,14 @@ router.use(authenticate);
 router.get('/', notificationController.getNotifications);
 router.get('/unread', notificationController.getUnreadNotifications);
 router.get('/unread/count', notificationController.getUnreadCount);
+router.get('/jobs', notificationController.getJobNotifications);
 router.get('/group/:groupKey', notificationController.getGroupedNotifications);
 
 // Mark as read
 router.put('/:id/read', notificationController.markAsRead);
 router.put('/read-all', notificationController.markAllAsRead);
 router.put('/read-multiple', notificationController.markMultipleAsRead);
+router.put('/mark-all-read', notificationController.markAllAsRead);
 
 // Delete notifications
 router.delete('/:id', notificationController.deleteNotification);

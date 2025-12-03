@@ -12,6 +12,7 @@ const globalRoutes = require('./global');
 const jobsRoutes = require('./jobs');
 const leaderDashboardRoutes = require('./leaderDashboard');
 const teamDashboardRoutes = require('./teamDashboard');
+const clubApplicationsRoutes = require('./clubApplications');
 
 const router = express.Router();
 
@@ -29,6 +30,7 @@ router.use('/global', globalRoutes);
 router.use('/jobs', jobsRoutes);
 router.use('/leader', leaderDashboardRoutes);
 router.use('/team', teamDashboardRoutes);
+router.use('/club/applications', clubApplicationsRoutes);
 
 // API documentation endpoint
 router.get('/', (req, res) => {
