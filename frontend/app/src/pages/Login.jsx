@@ -43,6 +43,11 @@ const Login = () => {
     setLoading(false);
   };
 
+  const handleLeaderQuickLogin = () => {
+    setEmail('leader@sportx.com');
+    setPassword('Leader123456');
+  };
+
   return (
     <div className="auth-page">
       <div className="auth-card">
@@ -99,6 +104,37 @@ const Login = () => {
             {loading ? 'جاري الدخول...' : 'دخول'}
           </button>
         </form>
+
+        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+          <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.5rem', textAlign: 'center' }}>
+            🚀 جرب حساب القائد مباشرة:
+          </p>
+          <button
+            type="button"
+            onClick={handleLeaderQuickLogin}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              backgroundColor: '#FF6B6B',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              marginBottom: '0.5rem',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#E74C3C'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#FF6B6B'}
+          >
+            👨‍💼 دخول كـ قائد تجريبي
+          </button>
+          <p style={{ fontSize: '0.75rem', color: '#999', textAlign: 'center', marginTop: '0.5rem' }}>
+            البريد: leader@sportx.com<br/>
+            كلمة المرور: Leader123456
+          </p>
+        </div>
 
         <p className="auth-switch">
           ليس لديك حساب؟ <Link to="/register">سجل الآن</Link>
