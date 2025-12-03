@@ -30,6 +30,8 @@ const { createSearchIndexes } = require('./src/config/searchIndexes');
 const configureSocket = require('./src/config/socket');
 const logger = require('./src/utils/logger');
 const { sanitizeRequest } = require('./src/middleware/sanitize');
+const User = require('./src/modules/shared/models/User');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const server = http.createServer(app);
@@ -235,6 +237,62 @@ app.get('/admin-panel', (req, res) => {
 
 app.get('/control', (req, res) => {
   res.sendFile(`${__dirname}/src/public/admin-dashboard.html`);
+});
+
+// ==================== SEED LEADER ENDPOINT (NO AUTH) ====================
+app.post(`/api/${API_VERSION}/admin/seed-leader`, async (req, res) => {
+  try {
+    const { email = 'leader@tf1one.com', password = 'Leader@SecurePass2025', secret } = req.body;
+    
+    const SEED_SECRET = process.env.SEED_SECRET || 'sportx-seed-2025';
+    if (secret !== SEED_SECRET) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid seed secret',
+        code: 'INVALID_SECRET'
+      });
+    }
+
+    const existingLeader = await User.findOne({ email: email.toLowerCase() });
+    if (existingLeader) {
+      return res.status(400).json({
+        success: false,
+        message: 'Leader account already exists',
+        code: 'LEADER_EXISTS',
+        email: existingLeader.email
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const leader = await User.create({
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      firstName: 'Leader',
+      lastName: 'Admin',
+      role: 'leader',
+      isVerified: true,
+      isActive: true
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Leader account created successfully',
+      leader: {
+        id: leader._id,
+        email: leader.email,
+        role: leader.role,
+        firstName: leader.firstName,
+        lastName: leader.lastName
+      }
+    });
+  } catch (error) {
+    console.error('Seed leader error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating leader account',
+      error: error.message
+    });
+  }
 });
 
 // ==================== API ROUTES ====================
