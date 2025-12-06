@@ -258,7 +258,10 @@ exports.applyToJob = async (req, res) => {
     let resumeAttachment = null;
     if (req.file) {
       try {
-        const fileUrl = `/uploads/resumes/${req.file.filename}`;
+        // Build full URL for the file (API base URL + file path)
+        const apiBaseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const relativePath = `/uploads/resumes/${req.file.filename}`;
+        const fullFileUrl = `${apiBaseUrl}${relativePath}`;
         const fileExt = path.extname(req.file.originalname).toLowerCase();
 
         resumeAttachment = {
@@ -267,14 +270,14 @@ exports.applyToJob = async (req, res) => {
           originalName: req.file.originalname,
           mimeType: req.file.mimetype,
           format: fileExt.replace('.', ''),
-          url: fileUrl,
+          url: fullFileUrl,
           localPath: req.file.path,
           size: req.file.size,
           uploadedAt: new Date(),
         };
 
         console.log(
-          `📄 Resume uploaded locally: ${req.file.originalname} (${req.file.size} bytes) -> ${fileUrl}`
+          `📄 Resume uploaded locally: ${req.file.originalname} (${req.file.size} bytes) -> ${fullFileUrl}`
         );
       } catch (uploadError) {
         console.error('Resume upload error:', uploadError);
@@ -802,17 +805,24 @@ exports.downloadAttachment = async (req, res) => {
     const filename = attachment.originalName || attachment.name || 'document';
     const mimeType = attachment.mimeType || 'application/octet-stream';
 
-    // Check if file is stored locally
-    if (attachment.localPath && fs.existsSync(attachment.localPath)) {
+    // Check if file is stored locally (by path or relative URL)
+    let localFilePath = attachment.localPath;
+    
+    // If no localPath but URL is relative (/uploads/...), convert to local path
+    if (!localFilePath && attachment.url && attachment.url.startsWith('/uploads/')) {
+      localFilePath = path.join(process.cwd(), attachment.url);
+    }
+    
+    if (localFilePath && fs.existsSync(localFilePath)) {
       // LOCAL FILE - Direct file download
-      console.log(`📥 Downloading local file: ${filename} from ${attachment.localPath}`);
+      console.log(`📥 Downloading local file: ${filename} from ${localFilePath}`);
       
       res.setHeader('Content-Type', mimeType);
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
       
-      const fileStream = fs.createReadStream(attachment.localPath);
+      const fileStream = fs.createReadStream(localFilePath);
       fileStream.pipe(res);
       
       fileStream.on('error', (error) => {
@@ -825,8 +835,8 @@ exports.downloadAttachment = async (req, res) => {
           });
         }
       });
-    } else if (attachment.url) {
-      // CLOUDINARY/REMOTE FILE - Download from URL
+    } else if (attachment.url && (attachment.url.startsWith('http://') || attachment.url.startsWith('https://'))) {
+      // CLOUDINARY/REMOTE FILE - Download from URL (only if it's a full URL)
       console.log(`📥 Downloading remote file: ${filename} from ${attachment.url}`);
       
       const protocolModule = attachment.url.startsWith('https') ? https : http;
