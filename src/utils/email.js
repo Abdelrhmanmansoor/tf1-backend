@@ -181,6 +181,87 @@ class EmailService {
     }
   }
 
+  async sendApplicationEmail(applicant, jobTitle, clubName, jobLocation, applicationDate) {
+    if (!this.transporter) {
+      console.log('⚠️  Email service not configured - skipping application email');
+      return false;
+    }
+
+    const applicantName = applicant.firstName || applicant.fullName || 'Applicant';
+
+    const mailOptions = {
+      from: `${process.env.SMTP_FROM_NAME || 'TF1 Sports Platform'} <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
+      to: applicant.email,
+      subject: 'تم استلام طلب التوظيف - Application Received | TF1',
+      html: `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+          <div style="background-color: #ffffff; border-radius: 10px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #1a73e8; font-size: 28px; margin: 0;">TF1 Sports Platform</h1>
+              <p style="color: #666; font-size: 14px; margin: 5px 0;">منصة TF1 الرياضية</p>
+            </div>
+
+            <!-- English Content -->
+            <div style="margin-bottom: 40px; border-bottom: 2px solid #f0f0f0; padding-bottom: 30px;">
+              <h2 style="color: #333; font-size: 24px; margin-bottom: 20px;">Application Received</h2>
+              <p style="color: #555; font-size: 16px; line-height: 1.6;">Dear ${applicantName},</p>
+              <p style="color: #555; font-size: 16px; line-height: 1.6;">Thank you for applying to the position of <strong>${jobTitle}</strong> at <strong>${clubName}</strong>. Your application has been successfully received and is now under review.</p>
+
+              <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p style="color: #333; font-weight: bold; margin: 0 0 10px 0;">Application Details:</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>Position:</strong> ${jobTitle}</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>Organization:</strong> ${clubName}</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>Location:</strong> ${jobLocation}</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>Status:</strong> Under Review</p>
+              </div>
+
+              <p style="color: #666; font-size: 14px;">We will review your application carefully and get back to you soon. You will receive updates through your dashboard and email.</p>
+            </div>
+
+            <!-- Arabic Content -->
+            <div style="direction: rtl; text-align: right;">
+              <h2 style="color: #333; font-size: 24px; margin-bottom: 20px;">تم استلام طلبك</h2>
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">عزيزنا ${applicantName}،</p>
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">شكراً لتقديمك على وظيفة <strong>${jobTitle}</strong> في <strong>${clubName}</strong>. تم استقبال طلبك بنجاح وهو قيد المراجعة الآن.</p>
+
+              <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p style="color: #333; font-weight: bold; margin: 0 0 10px 0;">تفاصيل الطلب:</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>الوظيفة:</strong> ${jobTitle}</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>المؤسسة:</strong> ${clubName}</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>الموقع:</strong> ${jobLocation}</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>الحالة:</strong> قيد المراجعة</p>
+              </div>
+
+              <p style="color: #666; font-size: 14px;">سنقوم بمراجعة طلبك بعناية والتواصل معك قريباً. ستتلقى تحديثات عبر لوحة التحكم والبريد الإلكتروني.</p>
+            </div>
+
+            <!-- Footer -->
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+            <p style="color: #999; font-size: 12px; text-align: center; margin: 10px 0;">
+              If you have any questions, please contact us through your dashboard.
+            </p>
+            <p style="color: #999; font-size: 12px; text-align: center; direction: rtl;">
+              إذا كان لديك أي أسئلة، يرجى التواصل معنا عبر لوحة التحكم.
+            </p>
+            <p style="color: #bbb; font-size: 11px; text-align: center; margin-top: 20px;">
+              © 2024 TF1 Sports Platform. All rights reserved.
+            </p>
+          </div>
+        </div>
+      `,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Application confirmation email sent to ${applicant.email}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to send application email:', error);
+      return false;
+    }
+  }
+
   async testConnection() {
     try {
       await this.transporter.verify();

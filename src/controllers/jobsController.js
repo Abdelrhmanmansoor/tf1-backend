@@ -372,27 +372,20 @@ exports.applyToJob = async (req, res) => {
 
     // 8. Send email to applicant
     try {
-      const { sendEmail } = require('../utils/emailService');
-      const applicant = await User.findById(applicantId).select('firstName lastName email');
+      const emailService = require('../utils/email');
+      const applicant = await User.findById(applicantId).select('firstName lastName fullName email');
       
       if (applicant?.email) {
         const ClubProfile = require('../modules/club/models/ClubProfile');
         const clubProfile = await ClubProfile.findOne({ userId: job.clubId._id });
 
-        await sendEmail({
-          to: applicant.email,
-          template: 'application-submitted',
-          data: {
-            applicantName: applicant.firstName || applicant.fullName,
-            jobTitle: job.titleAr || job.title,
-            clubName: clubProfile?.clubName || 'النادي',
-            applicationDate: application.createdAt,
-            location: job.requirements?.location?.city || 'غير محدد',
-            actionUrl: `${process.env.FRONTEND_URL || 'https://www.tf1one.com'}/jobs/${job._id}/application/${application._id}`
-          },
-          language: 'ar'
-        });
-        console.log(`📧 Application confirmation email sent to ${applicant.email}`);
+        await emailService.sendApplicationEmail(
+          applicant,
+          job.titleAr || job.title,
+          clubProfile?.clubName || 'النادي',
+          job.requirements?.location?.city || 'غير محدد',
+          application.createdAt
+        );
       }
     } catch (emailError) {
       console.error('⚠️ Email send error (non-critical):', emailError.message);

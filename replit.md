@@ -56,7 +56,8 @@ The SportX Platform is built as a full-stack application with a clear separation
 
 ## Recent Changes (December 6, 2025)
 1. **Fixed Registration Code Validation** - Made registration code optional for regular users (player, coach, specialist, age-group-supervisor, secretary). Only required for administrative roles (club, admin, leader, sports-director, executive-director).
-2. **Implemented Email Service** - Created `src/utils/emailService.js` with automatic email notifications upon job application submission.
-3. **Enhanced Job Application Flow** - Updated `applyToJob` controller to send HTML-formatted confirmation emails in Arabic.
+2. **Implemented Email Service** - Added `sendApplicationEmail()` to `src/utils/email.js` with automatic email notifications upon job application submission using existing SMTP configuration.
+3. **Enhanced Job Application Flow** - Updated `applyToJob` controller to send HTML-formatted confirmation emails in Arabic and English with full application details.
 4. **Frontend Security** - Added Vite middleware to block access to sensitive directories (.git, .env, node_modules).
 5. **Club Dashboard** - Displays applicant names correctly and shows all applicant inputs (fullName, email, phone, sports experience, cover letter, resume).
+6. **Email Integration** - Application emails now use the same proven SMTP transporter as verification emails, ensuring reliable delivery on production.
