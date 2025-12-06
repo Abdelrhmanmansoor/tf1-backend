@@ -44,30 +44,34 @@ class AuthController {
         socialMedia
       } = req.body;
 
-      // Verify registration code
-      if (!registrationCode) {
-        return res.status(400).json({
-          success: false,
-          message: 'Registration code is required',
-          code: 'REGISTRATION_CODE_REQUIRED'
+      // Verify registration code (only required for certain roles)
+      const codesRequiredRoles = ['club', 'admin', 'administrator', 'leader', 'sports-director', 'executive-director'];
+      
+      if (codesRequiredRoles.includes(role)) {
+        if (!registrationCode) {
+          return res.status(400).json({
+            success: false,
+            message: 'Registration code is required',
+            code: 'REGISTRATION_CODE_REQUIRED'
+          });
+        }
+
+        const RegistrationCode = require('../../../models/RegistrationCode');
+        const regCode = await RegistrationCode.findOne({ 
+          code: registrationCode.toUpperCase().trim()
         });
+
+        if (!regCode || !regCode.isValid()) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid or expired registration code',
+            code: 'INVALID_REGISTRATION_CODE'
+          });
+        }
+
+        // Mark code as used
+        await regCode.use(email.toLowerCase());
       }
-
-      const RegistrationCode = require('../../../models/RegistrationCode');
-      const regCode = await RegistrationCode.findOne({ 
-        code: registrationCode.toUpperCase().trim()
-      });
-
-      if (!regCode || !regCode.isValid()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid or expired registration code',
-          code: 'INVALID_REGISTRATION_CODE'
-        });
-      }
-
-      // Mark code as used
-      await regCode.use(email.toLowerCase());
 
       // Validate role-specific required fields
       if (role === 'club') {

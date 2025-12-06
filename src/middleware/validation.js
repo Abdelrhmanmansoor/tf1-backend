@@ -34,11 +34,19 @@ const validateRegister = [
     .trim(),
 
   body('registrationCode')
+    .if((value, { req }) =>
+      ['club', 'admin', 'administrator', 'leader', 'sports-director', 'executive-director'].includes(req.body.role)
+    )
     .trim()
     .notEmpty()
     .withMessage('Registration code is required')
     .isLength({ min: 10 })
-    .withMessage('Registration code is invalid'),
+    .withMessage('Registration code is invalid')
+    .if((value, { req }) =>
+      !['club', 'admin', 'administrator', 'leader', 'sports-director', 'executive-director'].includes(req.body.role)
+    )
+    .optional()
+    .trim(),
 
   body('password')
     .isLength({ min: 8 })
