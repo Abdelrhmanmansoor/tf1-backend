@@ -10,6 +10,7 @@ import Register from './pages/Register';
 import AgeGroupSupervisor from './pages/AgeGroupSupervisor';
 import AdminDashboard from './pages/AdminDashboard';
 import LeaderDashboard from './pages/LeaderDashboard';
+import ClubDashboard from './pages/ClubDashboard';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
