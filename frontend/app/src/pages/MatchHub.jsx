@@ -20,13 +20,13 @@ const MatchHub = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newMatch, setNewMatch] = useState({
     name: '',
-    sport: 'كرة القدم',
+    sport: 'football',
     region: '',
     city: '',
     neighborhood: '',
     date: '',
     time: '',
-    level: 'متوسط',
+    level: 'amateur',
     maxPlayers: 10,
     description: '',
     venue: ''

@@ -8,8 +8,8 @@ const publicMatchSchema = new mongoose.Schema({
   },
   sport: {
     type: String,
-    enum: ['كرة القدم', 'كرة السلة', 'الكرة الطائرة', 'التنس', 'الإسكواش'],
-    default: 'كرة القدم'
+    enum: ['football', 'basketball', 'volleyball', 'tennis', 'squash'],
+    default: 'football'
   },
   region: {
     type: String,
@@ -33,8 +33,8 @@ const publicMatchSchema = new mongoose.Schema({
   },
   level: {
     type: String,
-    enum: ['مبتدئ', 'متوسط', 'متقدم', 'احترافي'],
-    default: 'متوسط'
+    enum: ['amateur', 'intermediate', 'advanced', 'professional'],
+    default: 'amateur'
   },
   maxPlayers: {
     type: Number,
