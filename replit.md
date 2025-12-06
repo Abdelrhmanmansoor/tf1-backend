@@ -22,8 +22,9 @@ The SportX Platform is built as a full-stack application with a clear separation
 - **RBAC Permission System:** Implements granular, permission-by-permission control categorized by modules like Dashboard, Users, Jobs, Matches, Content, Settings, Reports, and System.
 - **Audit Logging System:** Tracks all user actions, including IP, user-agent, previous/new values for changes, and severity levels, ensuring a comprehensive action history.
 - **Match Hub:** Allows authenticated users to create, join, or browse public matches with advanced filtering capabilities (region, city, sport, level, date). Real-time updates for player counts and notifications for organizers.
-- **Jobs System:** Enables browsing job listings, applying with resume uploads, and receiving application notifications.
+- **Jobs System:** Enables browsing job listings, applying with resume uploads, receiving application notifications, and automatic email confirmations upon application submission.
 - **Real-time Notifications:** Implemented using Socket.io for instant updates across the platform.
+- **Email Service:** Automated email notifications on job application submission with HTML templates in Arabic, featuring applicant details, job info, and action links.
 
 **System Design Choices:**
 - **Backend:** Node.js with Express.js for RESTful APIs. MongoDB with Mongoose for data persistence.
@@ -44,10 +45,18 @@ The SportX Platform is built as a full-stack application with a clear separation
 - **helmet**: Helps secure Express apps by setting various HTTP headers.
 - **cors**: Middleware for enabling Cross-Origin Resource Sharing.
 - **express-rate-limit**: Basic rate-limiting middleware for Express.
+- **nodemailer**: Email sending service for transactional emails (application confirmations).
 
 **Frontend:**
 - **React**: JavaScript library for building user interfaces.
-- **Vite**: Next-generation frontend tooling.
+- **Vite**: Next-generation frontend tooling with middleware security for blocking sensitive paths (.git, .env, etc).
 - **React Router**: For declarative routing in React applications.
 - **Axios**: Promise-based HTTP client for the browser and Node.js.
 - **Socket.io Client**: Client-side library for Socket.io.
+
+## Recent Changes (December 6, 2025)
+1. **Fixed Registration Code Validation** - Made registration code optional for regular users (player, coach, specialist, age-group-supervisor, secretary). Only required for administrative roles (club, admin, leader, sports-director, executive-director).
+2. **Implemented Email Service** - Created `src/utils/emailService.js` with automatic email notifications upon job application submission.
+3. **Enhanced Job Application Flow** - Updated `applyToJob` controller to send HTML-formatted confirmation emails in Arabic.
+4. **Frontend Security** - Added Vite middleware to block access to sensitive directories (.git, .env, node_modules).
+5. **Club Dashboard** - Displays applicant names correctly and shows all applicant inputs (fullName, email, phone, sports experience, cover letter, resume).
