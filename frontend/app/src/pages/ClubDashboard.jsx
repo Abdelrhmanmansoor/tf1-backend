@@ -35,9 +35,9 @@ const ClubDashboard = () => {
   const fetchClubJobs = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/jobs');
-      setJobs(res.data.jobs || []);
       setError('');
+      const res = await api.get('/clubs/jobs');
+      setJobs(res.data.jobs || []);
     } catch (err) {
       console.error('Error fetching jobs:', err);
       setError('خطأ في جلب الوظائف');
@@ -64,9 +64,9 @@ const ClubDashboard = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/notifications');
-      setNotifications(res.data.notifications || []);
       setError('');
+      const res = await api.get('/notifications');
+      setNotifications(res.data.data || res.data.notifications || []);
     } catch (err) {
       console.error('Error fetching notifications:', err);
       setError('خطأ في جلب الإشعارات');
@@ -94,18 +94,27 @@ const ClubDashboard = () => {
     }
   };
 
-  const downloadResume = async (applicationId, attachmentIndex) => {
+  const downloadResume = async (applicationId, attachmentIndex, attachmentName) => {
     try {
       const response = await api.get(`/jobs/applications/${applicationId}/download/${attachmentIndex}`, {
         responseType: 'blob'
       });
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = attachmentName || 'resume.pdf';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'resume.pdf');
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Error downloading resume:', err);
       setError('خطأ في تحميل السيرة الذاتية');
@@ -249,7 +258,7 @@ const ClubDashboard = () => {
                               <button 
                                 className="btn-small"
                                 style={{ backgroundColor: '#4CAF50', color: 'white' }}
-                                onClick={() => downloadResume(app._id, 0)}
+                                onClick={() => downloadResume(app._id, 0, app.applicationDetails?.attachments[0]?.name)}
                               >
                                 📄 السيرة
                               </button>
@@ -375,7 +384,7 @@ const ClubDashboard = () => {
                   {selectedApplication.applicationDetails.attachments.map((att, idx) => (
                     <button 
                       key={idx}
-                      onClick={() => downloadResume(selectedApplication._id, idx)}
+                      onClick={() => downloadResume(selectedApplication._id, idx, att.name)}
                       style={{
                         background: '#e91e63',
                         color: 'white',

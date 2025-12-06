@@ -33,9 +33,14 @@ const Navbar = () => {
               <Link to="/profile" className="nav-link">
                 👤 ملفي الشخصي
               </Link>
-              {['age-group-supervisor', 'admin', 'administrator', 'club'].includes(user.role) && (
+              {['age-group-supervisor', 'admin', 'administrator'].includes(user.role) && (
                 <Link to="/age-group-supervisor" className="nav-link">
                   👥 إدارة الفئات
+                </Link>
+              )}
+              {user.role === 'club' && (
+                <Link to="/dashboard/club" className="nav-link admin-dashboard-link">
+                  🏢 لوحة النادي
                 </Link>
               )}
               {user.role === 'leader' && (

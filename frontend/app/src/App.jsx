@@ -109,6 +109,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route 
+                path="/dashboard/club"
+                element={
+                  <ProtectedRoute>
+                    <ClubDashboard />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </main>
         </div>

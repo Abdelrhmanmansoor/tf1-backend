@@ -93,11 +93,13 @@ exports.getUnreadNotifications = async (req, res) => {
     res.status(200).json({
       success: true,
       count: formattedNotifications.length,
-      total: result.total,
-      page: result.page,
-      pages: result.pages,
-      hasMore: result.hasMore,
+      total: formattedNotifications.length,
+      page: parseInt(page),
+      pages: Math.ceil(formattedNotifications.length / parseInt(limit)),
+      hasMore: false,
       data: formattedNotifications,
+      notifications: formattedNotifications,
+      source,
     });
   } catch (error) {
     console.error('Error fetching unread notifications:', error);
