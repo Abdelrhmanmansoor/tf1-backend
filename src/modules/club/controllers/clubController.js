@@ -921,6 +921,39 @@ exports.scheduleInterview = async (req, res) => {
       console.error('Error sending notification:', notificationError);
     }
 
+    // Send email to applicant if requested
+    if (req.body.sendEmail !== false) {
+      try {
+        const emailService = require('../../../utils/email');
+        const ClubProfile = require('../models/ClubProfile');
+        const clubProfile = await ClubProfile.findOne({ userId: req.user._id });
+        
+        await emailService.sendInterviewEmail(
+          application.applicantId,
+          application.jobId.titleAr || application.jobId.title,
+          clubProfile?.clubName || application.clubId.clubName || 'Club',
+          {
+            type: req.body.type,
+            scheduledDate: req.body.date || req.body.scheduledDate,
+            location: req.body.location,
+            meetingLink: req.body.meetingLink
+          },
+          req.body.customMessage || '',
+          req.body.language || 'ar'
+        );
+
+        // Log communication
+        application.addCommunication({
+          type: 'email',
+          subject: 'Interview Scheduled',
+          message: `Interview invitation sent for ${application.jobId.title}`
+        }, req.user._id);
+        await application.save();
+      } catch (emailError) {
+        console.error('⚠️ Interview email error (non-critical):', emailError.message);
+      }
+    }
+
     res.json({
       success: true,
       message: 'Interview scheduled successfully',
@@ -998,6 +1031,38 @@ exports.makeOffer = async (req, res) => {
       }
     } catch (notificationError) {
       console.error('Error sending notification:', notificationError);
+    }
+
+    // Send email to applicant if requested
+    if (req.body.sendEmail !== false) {
+      try {
+        const emailService = require('../../../utils/email');
+        const ClubProfile = require('../models/ClubProfile');
+        const clubProfile = await ClubProfile.findOne({ userId: req.user._id });
+        
+        await emailService.sendOfferEmail(
+          application.applicantId,
+          application.jobId.titleAr || application.jobId.title,
+          clubProfile?.clubName || application.clubId.clubName || 'Club',
+          {
+            startDate: req.body.startDate,
+            expiryDate: req.body.expiryDate,
+            contractType: req.body.contractType
+          },
+          req.body.customMessage || '',
+          req.body.language || 'ar'
+        );
+
+        // Log communication
+        application.addCommunication({
+          type: 'email',
+          subject: 'Job Offer',
+          message: `Job offer sent for ${application.jobId.title}`
+        }, req.user._id);
+        await application.save();
+      } catch (emailError) {
+        console.error('⚠️ Offer email error (non-critical):', emailError.message);
+      }
     }
 
     res.json({
@@ -1078,6 +1143,36 @@ exports.hireApplicant = async (req, res) => {
       console.error('Error sending notification:', notificationError);
     }
 
+    // Send email to applicant if requested
+    if (req.body.sendEmail !== false) {
+      try {
+        const emailService = require('../../../utils/email');
+        const ClubProfile = require('../models/ClubProfile');
+        const clubProfile = await ClubProfile.findOne({ userId: req.user._id });
+        
+        await emailService.sendHireEmail(
+          application.applicantId,
+          application.jobId.titleAr || application.jobId.title,
+          clubProfile?.clubName || application.clubId.clubName || 'Club',
+          {
+            startDate: req.body.startDate
+          },
+          req.body.customMessage || '',
+          req.body.language || 'ar'
+        );
+
+        // Log communication
+        application.addCommunication({
+          type: 'email',
+          subject: 'Welcome to the Team',
+          message: `Hire confirmation sent for ${application.jobId.title}`
+        }, req.user._id);
+        await application.save();
+      } catch (emailError) {
+        console.error('⚠️ Hire email error (non-critical):', emailError.message);
+      }
+    }
+
     res.json({
       success: true,
       message: 'Applicant hired successfully',
@@ -1155,6 +1250,33 @@ exports.rejectApplication = async (req, res) => {
       }
     } catch (notificationError) {
       console.error('Error sending notification:', notificationError);
+    }
+
+    // Send email to applicant if requested
+    if (req.body.sendEmail !== false) {
+      try {
+        const emailService = require('../../../utils/email');
+        const ClubProfile = require('../models/ClubProfile');
+        const clubProfile = await ClubProfile.findOne({ userId: req.user._id });
+        
+        await emailService.sendRejectionEmail(
+          application.applicantId,
+          application.jobId.titleAr || application.jobId.title,
+          clubProfile?.clubName || application.clubId.clubName || 'Club',
+          req.body.customMessage || '',
+          req.body.language || 'ar'
+        );
+
+        // Log communication
+        application.addCommunication({
+          type: 'email',
+          subject: 'Application Update',
+          message: `Application status update sent for ${application.jobId.title}`
+        }, req.user._id);
+        await application.save();
+      } catch (emailError) {
+        console.error('⚠️ Rejection email error (non-critical):', emailError.message);
+      }
     }
 
     res.json({
