@@ -5,6 +5,7 @@ import MatchHub from './pages/MatchHub';
 import Jobs from './pages/Jobs';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
+import LeaderLogin from './pages/LeaderLogin';
 import Register from './pages/Register';
 import AgeGroupSupervisor from './pages/AgeGroupSupervisor';
 import AdminDashboard from './pages/AdminDashboard';
@@ -73,6 +74,7 @@ function App() {
               <Route path="/matches" element={<MatchHub />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/leader/login" element={<LeaderLogin />} />
               <Route path="/register" element={<Register />} />
               <Route 
                 path="/profile" 
