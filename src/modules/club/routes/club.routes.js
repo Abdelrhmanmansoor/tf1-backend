@@ -112,6 +112,9 @@ router.post('/applications/:applicationId/hire', authorize('club'), clubControll
 // Reject application
 router.post('/applications/:applicationId/reject', authorize('club'), clubController.rejectApplication);
 
+// Send direct message email to applicant
+router.post('/applications/:applicationId/send-email', authorize('club'), clubController.sendDirectMessage);
+
 // ============================================
 // TEAM MANAGEMENT
 // ============================================

@@ -1293,6 +1293,76 @@ exports.rejectApplication = async (req, res) => {
   }
 };
 
+// Send direct message email to applicant
+exports.sendDirectMessage = async (req, res) => {
+  try {
+    const { message, language } = req.body;
+    
+    if (!message || message.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message content is required'
+      });
+    }
+
+    const application = await JobApplication.findOne({
+      _id: req.params.applicationId,
+      clubId: req.user._id
+    }).populate('applicantId jobId clubId');
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found'
+      });
+    }
+
+    // Get club profile for club name
+    const ClubProfile = require('../models/ClubProfile');
+    const clubProfile = await ClubProfile.findOne({ userId: req.user._id });
+    const clubName = clubProfile?.clubName || application.clubId.clubName || 'Club';
+
+    // Send direct message email
+    try {
+      const emailService = require('../../../utils/email');
+      await emailService.sendDirectMessageEmail(
+        application.applicantId,
+        application.jobId.titleAr || application.jobId.title,
+        clubName,
+        message,
+        language || 'ar'
+      );
+
+      // Log communication
+      application.addCommunication({
+        type: 'email',
+        subject: 'Direct Message',
+        message: message.substring(0, 200) + (message.length > 200 ? '...' : '')
+      }, req.user._id);
+      await application.save();
+
+      res.json({
+        success: true,
+        message: 'Email sent successfully',
+        emailSent: true
+      });
+    } catch (emailError) {
+      console.error('❌ Direct message email error:', emailError.message);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to send email',
+        error: emailError.message
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error sending direct message',
+      error: error.message
+    });
+  }
+};
+
 // ============================================
 // TEAM MANAGEMENT
 // ============================================

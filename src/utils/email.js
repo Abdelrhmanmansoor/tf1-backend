@@ -624,6 +624,75 @@ class EmailService {
     }
   }
 
+  async sendDirectMessageEmail(applicant, jobTitle, clubName, message, language = 'ar') {
+    if (!this.transporter) {
+      console.log('⚠️  Email service not configured - skipping direct message email');
+      return false;
+    }
+
+    const applicantName = applicant.firstName || applicant.fullName || 'Applicant';
+    const isArabic = language === 'ar';
+
+    const mailOptions = {
+      from: this.getFromAddress(),
+      to: applicant.email,
+      subject: isArabic ? `رسالة جديدة بخصوص طلبك - ${jobTitle} | TF1` : `New Message Regarding Your Application - ${jobTitle} | TF1`,
+      html: `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+          <div style="background-color: #ffffff; border-radius: 10px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            ${this.getEmailHeader()}
+
+            <div style="${isArabic ? 'direction: rtl; text-align: right;' : ''}">
+              <h2 style="color: #20c997; font-size: 24px; margin-bottom: 20px;">
+                ${isArabic ? '📬 رسالة جديدة من ' + clubName : '📬 New Message from ' + clubName}
+              </h2>
+              
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                ${isArabic ? `عزيزنا ${applicantName}،` : `Dear ${applicantName},`}
+              </p>
+              
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                ${isArabic 
+                  ? `لقد تلقيت رسالة جديدة بخصوص طلبك لوظيفة <strong>${jobTitle}</strong>:`
+                  : `You have received a new message regarding your application for <strong>${jobTitle}</strong>:`
+                }
+              </p>
+
+              <div style="background: linear-gradient(135deg, #e8f5f1 0%, #d1f0e8 100%); padding: 20px; border-radius: 10px; margin: 25px 0; border-right: 4px solid #20c997;">
+                <p style="color: #333; font-size: 16px; line-height: 1.8; margin: 0; white-space: pre-wrap;">${message}</p>
+              </div>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.FRONTEND_URL}/dashboard" 
+                   style="background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px; font-weight: bold;">
+                  ${isArabic ? 'عرض لوحة التحكم' : 'View Dashboard'}
+                </a>
+              </div>
+
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                ${isArabic 
+                  ? 'يمكنك الرد على هذه الرسالة من خلال لوحة التحكم الخاصة بك.'
+                  : 'You can respond to this message through your dashboard.'
+                }
+              </p>
+            </div>
+
+            ${this.getEmailFooter()}
+          </div>
+        </div>
+      `,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Direct message email sent to ${applicant.email}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to send direct message email:', error);
+      return false;
+    }
+  }
+
   async testConnection() {
     try {
       await this.transporter.verify();
