@@ -213,6 +213,13 @@ class AuthController {
       }
 
       const isPasswordValid = await user.comparePassword(password);
+      console.log('🔐 Password check:', {
+        email: user.email,
+        passwordProvided: password.substring(0, 5) + '...',
+        passwordHash: user.password.substring(0, 10) + '...',
+        isValid: isPasswordValid
+      });
+
       if (!isPasswordValid) {
         return res.status(401).json({
           success: false,
