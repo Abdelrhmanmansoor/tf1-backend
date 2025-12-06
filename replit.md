@@ -61,3 +61,11 @@ The SportX Platform is built as a full-stack application with a clear separation
 4. **Frontend Security** - Added Vite middleware to block access to sensitive directories (.git, .env, node_modules).
 5. **Club Dashboard** - Displays applicant names correctly and shows all applicant inputs (fullName, email, phone, sports experience, cover letter, resume).
 6. **Email Integration** - Application emails now use the same proven SMTP transporter as verification emails, ensuring reliable delivery on production.
+7. **SendGrid Email Integration** - Added SendGrid SMTP support with automatic fallback to legacy SMTP. EmailService now prioritizes SENDGRID_API_KEY when available.
+8. **Application Status Email Notifications** - Implemented comprehensive bilingual (EN/AR) email templates for all status changes:
+   - `sendInterviewEmail()`: Interview invitation with date/time, location, meeting links
+   - `sendOfferEmail()`: Job offer details with start date, contract type, expiry date
+   - `sendHireEmail()`: Welcome aboard confirmation with start information
+   - `sendRejectionEmail()`: Professional rejection notice with optional custom message
+9. **Conditional Email Dispatch** - All status update endpoints (scheduleInterview, makeOffer, hireApplicant, rejectApplication) now conditionally send emails based on `sendEmail` flag in request body (defaults to true).
+10. **Communication Tracking** - All email communications are logged to JobApplication.communications array for audit trail.
