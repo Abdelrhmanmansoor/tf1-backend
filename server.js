@@ -20,6 +20,7 @@ const sportsDirectorRoutes = require('./src/routes/sportsDirector');
 const executiveDirectorRoutes = require('./src/routes/executiveDirector');
 const secretaryRoutes = require('./src/routes/secretary');
 const matchHubRoutes = require('./src/routes/matchHub');
+const matchesSystemRoutes = require('./src/modules/matches/routes');
 const profileRoutes = require('./src/routes/profile');
 const jobsRoutes = require('./src/routes/jobs');
 const leaderDashboardRoutes = require('./src/routes/leaderDashboard');
@@ -252,7 +253,12 @@ app.use(`/api/${API_VERSION}/executive-director`, executiveDirectorRoutes);
 app.use(`/api/${API_VERSION}/secretary`, secretaryRoutes);
 
 // Match Hub & Profile Routes
-app.use(`/api/${API_VERSION}/matches`, matchHubRoutes);
+// Old match hub (preserved for backward compatibility)
+app.use(`/api/${API_VERSION}/match-hub`, matchHubRoutes);
+
+// New isolated matches system
+app.use('/matches', matchesSystemRoutes);
+
 app.use(`/api/${API_VERSION}/profile`, profileRoutes);
 app.use(`/api/${API_VERSION}/jobs`, jobsRoutes);
 
