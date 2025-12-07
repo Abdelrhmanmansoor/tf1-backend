@@ -152,8 +152,9 @@ class InvitationService {
         if (status === 'confirmed') {
           match.current_players = currentCount + 1;
 
-          // Auto-transition to full if capacity reached
+          // Auto-transition to full if capacity reached (with validation)
           if (match.current_players >= match.max_players && match.state === 'open') {
+            StateMachine.validateTransition(match.state, 'full');
             match.state = 'full';
           }
 

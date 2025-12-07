@@ -136,6 +136,7 @@ class MatchService {
 
         // Auto-transition to full if capacity reached
         if (match.current_players >= match.max_players && match.state === 'open') {
+          // Validate state transition
           StateMachine.validateTransition(match.state, 'full');
           match.state = 'full';
         }
@@ -194,7 +195,7 @@ class MatchService {
       if (participation.status === 'confirmed') {
         match.current_players = Math.max(0, match.current_players - 1);
 
-        // If was full and now has space, move to open
+        // If was full and now has space, move to open (with validation)
         if (match.state === 'full' && match.current_players < match.max_players) {
           StateMachine.validateTransition(match.state, 'open');
           match.state = 'open';
