@@ -36,6 +36,7 @@ SportX Platform connects the entire sports ecosystem in one place:
 ✅ Real-time capabilities (Socket.io)
 ✅ Email notifications
 ✅ Rate limiting & DDoS protection
+✅ **Isolated Matches System** (NEW - independent match organization platform)
 
 ### Coming Soon
 🔨 Training/consultation booking system
@@ -92,6 +93,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | Document | Description |
 |----------|-------------|
 | **[HANDOVER_GUIDE.md](HANDOVER_GUIDE.md)** | 👋 **START HERE** - Complete developer guide with setup, architecture, and common tasks |
+| **[src/modules/matches/README.md](src/modules/matches/README.md)** | 🎮 **Matches System** - Isolated match organization system documentation |
+| **[MATCHES_ENV_CONFIG.md](MATCHES_ENV_CONFIG.md)** | ⚙️ Matches system environment variables and configuration |
 | [PROJECT-BRIEF.md](PROJECT-BRIEF.md) | 📋 Full project specification, roadmap, and feature details |
 | [SECURITY.md](SECURITY.md) | 🔒 Security best practices and production checklist |
 | [SECURITY_AUDIT_REPORT.md](SECURITY_AUDIT_REPORT.md) | 🔍 Recent security audit findings (8 vulnerabilities fixed) |
@@ -127,12 +130,39 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 src/
 ├── config/          # Configuration (database, socket.io, etc.)
 ├── middleware/      # Authentication, validation, sanitization
-├── modules/         # Feature modules (auth, player, coach, club, specialist)
+├── modules/         # Feature modules (auth, player, coach, club, specialist, matches)
+│   └── matches/     # 🎮 Isolated Matches System (NEW)
+│       ├── models/       # Match-specific database models
+│       ├── services/     # Business logic (transactions, state machine)
+│       ├── controllers/  # Request handlers
+│       ├── routes/       # API routes under /matches
+│       ├── middleware/   # Match-specific auth
+│       └── utils/        # JWT service, state machine
 ├── models/          # Database models
 ├── controllers/     # Request handlers
 ├── routes/          # API routes
 └── utils/           # Helper functions
 ```
+
+### 🎮 Isolated Matches System
+
+The platform includes a fully isolated match organization system with:
+- Independent authentication (separate JWT tokens)
+- Complete match lifecycle management with state machine
+- Team creation and management
+- Real-time chat for matches
+- Player ratings and history
+- Transactional join operations with capacity enforcement
+- WebSocket notifications
+
+**API Endpoints:** All under `/matches/*` prefix
+- `/matches/auth/*` - Authentication (signup, login, me)
+- `/matches/*` - Match operations (create, join, leave, start, finish, rate)
+- `/matches/teams/*` - Team management
+- `/matches/:id/chat` - Match chat
+- `/matches/me/matches/history` - User history
+
+See [matches/README.md](src/modules/matches/README.md) for complete documentation.
 
 ---
 
