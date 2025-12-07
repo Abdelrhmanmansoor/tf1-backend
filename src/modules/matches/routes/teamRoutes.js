@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const teamController = require('../controllers/teamController');
 const { authenticate } = require('../middleware/auth');
+const { matchesLimiter } = require('../middleware/rateLimiter');
 
-// All routes require authentication
+// All routes require authentication and rate limiting
 router.use(authenticate);
+router.use(matchesLimiter);
 
 // Team routes
 router.post('/', teamController.createTeam);
