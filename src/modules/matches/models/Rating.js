@@ -3,17 +3,17 @@ const mongoose = require('mongoose');
 const ratingSchema = new mongoose.Schema({
   match_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Match',
+    ref: 'MSMatch',
     required: true
   },
   rater_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MatchUser',
+    ref: 'MSMatchUser',
     required: true
   },
   ratee_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MatchUser',
+    ref: 'MSMatchUser',
     required: true
   },
   score: {
@@ -37,4 +37,4 @@ ratingSchema.index({ match_id: 1, rater_id: 1, ratee_id: 1 }, { unique: true });
 ratingSchema.index({ match_id: 1 });
 ratingSchema.index({ ratee_id: 1 });
 
-module.exports = mongoose.model('Rating', ratingSchema);
+module.exports = mongoose.model('MSRating', ratingSchema, 'ms_ratings');

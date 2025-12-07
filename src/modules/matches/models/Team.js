@@ -13,12 +13,12 @@ const teamSchema = new mongoose.Schema({
   },
   captain_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MatchUser',
+    ref: 'MSMatchUser',
     required: true
   },
   created_by: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MatchUser',
+    ref: 'MSMatchUser',
     required: true
   },
   created_at: {
@@ -38,4 +38,4 @@ teamSchema.index({ name: 1 });
 teamSchema.index({ captain_id: 1 });
 teamSchema.index({ created_by: 1 });
 
-module.exports = mongoose.model('Team', teamSchema);
+module.exports = mongoose.model('MSTeam', teamSchema, 'ms_teams');

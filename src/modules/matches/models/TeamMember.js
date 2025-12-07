@@ -3,12 +3,12 @@ const mongoose = require('mongoose');
 const teamMemberSchema = new mongoose.Schema({
   team_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Team',
+    ref: 'MSTeam',
     required: true
   },
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MatchUser',
+    ref: 'MSMatchUser',
     required: true
   },
   role: {
@@ -31,4 +31,4 @@ const teamMemberSchema = new mongoose.Schema({
 teamMemberSchema.index({ team_id: 1, user_id: 1 }, { unique: true });
 teamMemberSchema.index({ user_id: 1 });
 
-module.exports = mongoose.model('TeamMember', teamMemberSchema);
+module.exports = mongoose.model('MSTeamMember', teamMemberSchema, 'ms_team_members');

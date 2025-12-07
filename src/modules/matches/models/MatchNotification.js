@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const matchNotificationSchema = new mongoose.Schema({
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MatchUser',
+    ref: 'MSMatchUser',
     required: true
   },
   type: {
@@ -12,7 +12,7 @@ const matchNotificationSchema = new mongoose.Schema({
   },
   match_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Match',
+    ref: 'MSMatch',
     default: null
   },
   payload: {
@@ -33,4 +33,4 @@ const matchNotificationSchema = new mongoose.Schema({
 matchNotificationSchema.index({ user_id: 1, created_at: -1 });
 matchNotificationSchema.index({ user_id: 1, read_at: 1 });
 
-module.exports = mongoose.model('MatchNotification', matchNotificationSchema);
+module.exports = mongoose.model('MSMatchNotification', matchNotificationSchema, 'ms_match_notifications');

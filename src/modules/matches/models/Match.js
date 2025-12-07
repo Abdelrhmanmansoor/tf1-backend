@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const matchSchema = new mongoose.Schema({
   created_by: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MatchUser',
+    ref: 'MSMatchUser',
     required: true
   },
   starts_at: {
@@ -60,4 +60,4 @@ matchSchema.index({ state: 1 });
 matchSchema.index({ created_by: 1 });
 matchSchema.index({ starts_at: 1 });
 
-module.exports = mongoose.model('Match', matchSchema);
+module.exports = mongoose.model('MSMatch', matchSchema, 'ms_matches');

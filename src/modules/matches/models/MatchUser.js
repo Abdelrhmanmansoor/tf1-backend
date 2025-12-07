@@ -37,4 +37,4 @@ const matchUserSchema = new mongoose.Schema({
 // Index for performance
 matchUserSchema.index({ email: 1 });
 
-module.exports = mongoose.model('MatchUser', matchUserSchema);
+module.exports = mongoose.model('MSMatchUser', matchUserSchema, 'ms_match_users');

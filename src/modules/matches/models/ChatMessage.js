@@ -3,17 +3,17 @@ const mongoose = require('mongoose');
 const chatMessageSchema = new mongoose.Schema({
   match_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Match',
+    ref: 'MSMatch',
     required: true
   },
   team_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Team',
+    ref: 'MSTeam',
     default: null
   },
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MatchUser',
+    ref: 'MSMatchUser',
     required: true
   },
   body: {
@@ -31,4 +31,4 @@ const chatMessageSchema = new mongoose.Schema({
 chatMessageSchema.index({ match_id: 1, created_at: -1 });
 chatMessageSchema.index({ user_id: 1 });
 
-module.exports = mongoose.model('ChatMessage', chatMessageSchema);
+module.exports = mongoose.model('MSChatMessage', chatMessageSchema, 'ms_chat_messages');

@@ -3,17 +3,17 @@ const mongoose = require('mongoose');
 const participationSchema = new mongoose.Schema({
   match_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Match',
+    ref: 'MSMatch',
     required: true
   },
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MatchUser',
+    ref: 'MSMatchUser',
     required: true
   },
   team_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Team',
+    ref: 'MSTeam',
     default: null
   },
   status: {
@@ -32,4 +32,4 @@ participationSchema.index({ match_id: 1, user_id: 1 }, { unique: true });
 participationSchema.index({ match_id: 1 });
 participationSchema.index({ user_id: 1 });
 
-module.exports = mongoose.model('Participation', participationSchema);
+module.exports = mongoose.model('MSParticipation', participationSchema, 'ms_participations');
