@@ -1,0 +1,148 @@
+هذه الأوامر والـ Endpoints المطلوبة للـ Backend لإكمال ميزة "انضم لمباراة":
+Backend API Commands for "Join a Match" Feature
+1. GET /api/v1/matches/regions
+
+الغرض: جلب المناطق وخيارات الـ Dropdowns
+
+Response المتوقع:
+
+{
+  "success": true,
+  "regions": [
+    { "name": "الرياض", "nameEn": "Riyadh", "cities": [{"name": "الرياض", "nameEn": "Riyadh"}, {"name": "الخرج", "nameEn": "Al Kharj"}] },
+    { "name": "مكة المكرمة", "nameEn": "Makkah", "cities": [{"name": "جدة", "nameEn": "Jeddah"}, {"name": "مكة", "nameEn": "Makkah"}] },
+    { "name": "المنطقة الشرقية", "nameEn": "Eastern", "cities": [{"name": "الدمام", "nameEn": "Dammam"}, {"name": "الخبر", "nameEn": "Khobar"}] }
+  ],
+  "neighborhoods": {
+    "الرياض": ["العليا", "النخيل", "الملقا"],
+    "جدة": ["الحمراء", "الروضة", "البوادي"]
+  },
+  "levels": [
+    { "value": "beginner", "label": "مبتدئ", "labelEn": "Beginner" },
+    { "value": "intermediate", "label": "متوسط", "labelEn": "Intermediate" },
+    { "value": "advanced", "label": "متقدم", "labelEn": "Advanced" }
+  ],
+  "sports": [
+    { "value": "football", "label": "كرة القدم", "labelEn": "Football" },
+    { "value": "basketball", "label": "كرة السلة", "labelEn": "Basketball" },
+    { "value": "volleyball", "label": "الكرة الطائرة", "labelEn": "Volleyball" }
+  ]
+}
+
+2. GET /api/v1/matches
+
+الغرض: جلب المباريات مع الفلاتر
+
+Query Parameters:
+
+    region (optional): فلتر المنطقة
+    city (optional): فلتر المدينة
+    sport (optional): فلتر الرياضة
+    level (optional): فلتر المستوى
+    date (optional): فلتر التاريخ
+    page (default: 1)
+    limit (default: 20)
+
+Response المتوقع:
+
+{
+  "success": true,
+  "matches": [
+    {
+      "_id": "match123",
+      "name": "مباراة ودية",
+      "sport": "football",
+      "region": "الرياض",
+      "city": "الرياض",
+      "neighborhood": "العليا",
+      "date": "2025-12-10",
+      "time": "18:00",
+      "level": "intermediate",
+      "maxPlayers": 10,
+      "currentPlayers": 5,
+      "venue": "ملعب النادي",
+      "status": "upcoming",
+      "creator": {
+        "_id": "user123",
+        "firstName": "أحمد",
+        "lastName": "محمد"
+      },
+      "players": []
+    }
+  ],
+  "total": 50,
+  "page": 1,
+  "pages": 3
+}
+
+3. POST /api/v1/matches (يتطلب Authorization)
+
+الغرض: إنشاء مباراة جديدة
+
+Headers:
+
+Authorization: Bearer <token>
+Content-Type: application/json
+
+Body:
+
+{
+  "name": "مباراة ودية",
+  "sport": "football",
+  "region": "الرياض",
+  "city": "الرياض",
+  "neighborhood": "العليا",
+  "date": "2025-12-10",
+  "time": "18:00",
+  "level": "intermediate",
+  "maxPlayers": 10,
+  "venue": "ملعب النادي"
+}
+
+Response المتوقع:
+
+{
+  "success": true,
+  "match": { ... }
+}
+
+4. POST /api/v1/matches/:matchId/join (يتطلب Authorization)
+
+الغرض: الانضمام لمباراة
+
+Response المتوقع:
+
+{
+  "success": true,
+  "message": "تم الانضمام للمباراة بنجاح"
+}
+
+5. POST /api/v1/matches/:matchId/leave (يتطلب Authorization)
+
+الغرض: مغادرة مباراة
+
+Response المتوقع:
+
+{
+  "success": true,
+  "message": "تم مغادرة المباراة بنجاح"
+}
+
+6. GET /api/v1/matches/my-matches (يتطلب Authorization)
+
+الغرض: جلب مباريات المستخدم
+
+Response المتوقع:
+
+{
+  "success": true,
+  "matches": [...],
+  "total": 5
+}
+
+المطلوب من الـ Backend:
+
+    إنشاء Match Schema/Model
+    إنشاء الـ 6 endpoints أعلاه
+    ربط اللاعبين بالمباريات (many-to-many)
+    إضافة validation 
