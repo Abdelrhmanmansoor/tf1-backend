@@ -78,8 +78,9 @@ Thumbs.db
 # Uploads (temporary files)
 uploads/
 
-# Notification data (JSON fallback)
-data/
+# Notification data (JSON fallback) - but not src/data
+/data/
+!/src/data/
 
 # Test files
 test-results/

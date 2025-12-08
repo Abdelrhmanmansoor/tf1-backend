@@ -1,0 +1,279 @@
+{
+  "regions": [
+    {
+      "id": "riyadh",
+      "nameAr": "الرياض",
+      "nameEn": "Riyadh",
+      "cities": [
+        { "id": "riyadh-city", "nameAr": "الرياض", "nameEn": "Riyadh" },
+        { "id": "diriyah", "nameAr": "الدرعية", "nameEn": "Diriyah" },
+        { "id": "alkharj", "nameAr": "الخرج", "nameEn": "Al Kharj" },
+        { "id": "dawadmi", "nameAr": "الدوادمي", "nameEn": "Dawadmi" },
+        { "id": "majmaah", "nameAr": "المجمعة", "nameEn": "Majmaah" },
+        { "id": "quwaiyah", "nameAr": "القويعية", "nameEn": "Quwaiyah" },
+        { "id": "afif", "nameAr": "عفيف", "nameEn": "Afif" },
+        { "id": "zulfi", "nameAr": "الزلفي", "nameEn": "Zulfi" },
+        { "id": "shaqra", "nameAr": "شقراء", "nameEn": "Shaqra" },
+        { "id": "huraymila", "nameAr": "حريملاء", "nameEn": "Huraymila" }
+      ]
+    },
+    {
+      "id": "makkah",
+      "nameAr": "مكة المكرمة",
+      "nameEn": "Makkah",
+      "cities": [
+        { "id": "makkah-city", "nameAr": "مكة المكرمة", "nameEn": "Makkah" },
+        { "id": "jeddah", "nameAr": "جدة", "nameEn": "Jeddah" },
+        { "id": "taif", "nameAr": "الطائف", "nameEn": "Taif" },
+        { "id": "qunfudhah", "nameAr": "القنفذة", "nameEn": "Qunfudhah" },
+        { "id": "lith", "nameAr": "الليث", "nameEn": "Al-Lith" },
+        { "id": "rabigh", "nameAr": "رابغ", "nameEn": "Rabigh" },
+        { "id": "khulais", "nameAr": "خليص", "nameEn": "Khulais" },
+        { "id": "turabah", "nameAr": "تربة", "nameEn": "Turabah" },
+        { "id": "jumum", "nameAr": "الجموم", "nameEn": "Jumum" },
+        { "id": "khurma", "nameAr": "الخرمة", "nameEn": "Khurma" }
+      ]
+    },
+    {
+      "id": "madinah",
+      "nameAr": "المدينة المنورة",
+      "nameEn": "Madinah",
+      "cities": [
+        { "id": "madinah-city", "nameAr": "المدينة المنورة", "nameEn": "Madinah" },
+        { "id": "yanbu", "nameAr": "ينبع", "nameEn": "Yanbu" },
+        { "id": "alula", "nameAr": "العلا", "nameEn": "Al-Ula" },
+        { "id": "mahd-dhahab", "nameAr": "مهد الذهب", "nameEn": "Mahd adh Dhahab" },
+        { "id": "badr", "nameAr": "بدر", "nameEn": "Badr" },
+        { "id": "khaybar", "nameAr": "خيبر", "nameEn": "Khaybar" }
+      ]
+    },
+    {
+      "id": "eastern",
+      "nameAr": "المنطقة الشرقية",
+      "nameEn": "Eastern Province",
+      "cities": [
+        { "id": "dammam", "nameAr": "الدمام", "nameEn": "Dammam" },
+        { "id": "khobar", "nameAr": "الخبر", "nameEn": "Khobar" },
+        { "id": "dhahran", "nameAr": "الظهران", "nameEn": "Dhahran" },
+        { "id": "jubail", "nameAr": "الجبيل", "nameEn": "Jubail" },
+        { "id": "qatif", "nameAr": "القطيف", "nameEn": "Qatif" },
+        { "id": "hafr-albatin", "nameAr": "حفر الباطن", "nameEn": "Hafar Al-Batin" },
+        { "id": "ras-tanura", "nameAr": "رأس تنورة", "nameEn": "Ras Tanura" },
+        { "id": "sayhat", "nameAr": "سيهات", "nameEn": "Sayhat" },
+        { "id": "safwa", "nameAr": "صفوى", "nameEn": "Safwa" },
+        { "id": "abqaiq", "nameAr": "بقيق", "nameEn": "Abqaiq" }
+      ]
+    },
+    {
+      "id": "asir",
+      "nameAr": "عسير",
+      "nameEn": "Asir",
+      "cities": [
+        { "id": "abha", "nameAr": "أبها", "nameEn": "Abha" },
+        { "id": "khamis-mushait", "nameAr": "خميس مشيط", "nameEn": "Khamis Mushait" },
+        { "id": "bisha", "nameAr": "بيشة", "nameEn": "Bisha" },
+        { "id": "najran", "nameAr": "نجران", "nameEn": "Najran" },
+        { "id": "sarat-abidah", "nameAr": "سراة عبيدة", "nameEn": "Sarat Abidah" },
+        { "id": "ahad-rafidah", "nameAr": "أحد رفيدة", "nameEn": "Ahad Rafidah" },
+        { "id": "muhayil", "nameAr": "محايل", "nameEn": "Muhayil" },
+        { "id": "balqarn", "nameAr": "بلقرن", "nameEn": "Balqarn" }
+      ]
+    },
+    {
+      "id": "qassim",
+      "nameAr": "القصيم",
+      "nameEn": "Qassim",
+      "cities": [
+        { "id": "buraidah", "nameAr": "بريدة", "nameEn": "Buraidah" },
+        { "id": "unaizah", "nameAr": "عنيزة", "nameEn": "Unaizah" },
+        { "id": "rass", "nameAr": "الرس", "nameEn": "Ar Rass" },
+        { "id": "bukayriyah", "nameAr": "البكيرية", "nameEn": "Bukayriyah" },
+        { "id": "badai", "nameAr": "البدائع", "nameEn": "Al-Badai" },
+        { "id": "midhnab", "nameAr": "المذنب", "nameEn": "Al-Midhnab" }
+      ]
+    },
+    {
+      "id": "hail",
+      "nameAr": "حائل",
+      "nameEn": "Hail",
+      "cities": [
+        { "id": "hail-city", "nameAr": "حائل", "nameEn": "Hail" },
+        { "id": "baqaa", "nameAr": "بقعاء", "nameEn": "Baqaa" },
+        { "id": "ghazalah", "nameAr": "الغزالة", "nameEn": "Al Ghazalah" },
+        { "id": "shinan", "nameAr": "الشنان", "nameEn": "Ash Shinan" }
+      ]
+    },
+    {
+      "id": "tabuk",
+      "nameAr": "تبوك",
+      "nameEn": "Tabuk",
+      "cities": [
+        { "id": "tabuk-city", "nameAr": "تبوك", "nameEn": "Tabuk" },
+        { "id": "umluj", "nameAr": "أملج", "nameEn": "Umluj" },
+        { "id": "wajh", "nameAr": "الوجه", "nameEn": "Al Wajh" },
+        { "id": "duba", "nameAr": "ضباء", "nameEn": "Duba" },
+        { "id": "tayma", "nameAr": "تيماء", "nameEn": "Tayma" }
+      ]
+    },
+    {
+      "id": "northern-borders",
+      "nameAr": "الحدود الشمالية",
+      "nameEn": "Northern Borders",
+      "cities": [
+        { "id": "arar", "nameAr": "عرعر", "nameEn": "Arar" },
+        { "id": "rafha", "nameAr": "رفحاء", "nameEn": "Rafha" },
+        { "id": "turaif", "nameAr": "طريف", "nameEn": "Turaif" }
+      ]
+    },
+    {
+      "id": "jazan",
+      "nameAr": "جازان",
+      "nameEn": "Jazan",
+      "cities": [
+        { "id": "jazan-city", "nameAr": "جازان", "nameEn": "Jazan" },
+        { "id": "sabya", "nameAr": "صبيا", "nameEn": "Sabya" },
+        { "id": "abu-arish", "nameAr": "أبو عريش", "nameEn": "Abu Arish" },
+        { "id": "samtah", "nameAr": "صامطة", "nameEn": "Samtah" },
+        { "id": "farasan", "nameAr": "فرسان", "nameEn": "Farasan" }
+      ]
+    },
+    {
+      "id": "bahah",
+      "nameAr": "الباحة",
+      "nameEn": "Al Bahah",
+      "cities": [
+        { "id": "bahah-city", "nameAr": "الباحة", "nameEn": "Al Bahah" },
+        { "id": "baljurashi", "nameAr": "بلجرشي", "nameEn": "Baljurashi" },
+        { "id": "mandaq", "nameAr": "المندق", "nameEn": "Al Mandaq" },
+        { "id": "qilwah", "nameAr": "قلوة", "nameEn": "Qilwah" }
+      ]
+    },
+    {
+      "id": "jouf",
+      "nameAr": "الجوف",
+      "nameEn": "Al Jouf",
+      "cities": [
+        { "id": "sakaka", "nameAr": "سكاكا", "nameEn": "Sakaka" },
+        { "id": "dumat-aljandal", "nameAr": "دومة الجندل", "nameEn": "Dumat Al-Jandal" },
+        { "id": "qurayyat", "nameAr": "القريات", "nameEn": "Qurayyat" },
+        { "id": "tabarjal", "nameAr": "طبرجل", "nameEn": "Tabarjal" }
+      ]
+    }
+  ],
+  "neighborhoods": {
+    "riyadh-city": [
+      { "id": "olaya", "nameAr": "العليا", "nameEn": "Olaya" },
+      { "id": "malqa", "nameAr": "الملقا", "nameEn": "Malqa" },
+      { "id": "naseem", "nameAr": "النسيم", "nameEn": "Naseem" },
+      { "id": "narjis", "nameAr": "النرجس", "nameEn": "Narjis" },
+      { "id": "sahafa", "nameAr": "الصحافة", "nameEn": "Sahafa" },
+      { "id": "muruj", "nameAr": "المروج", "nameEn": "Muruj" },
+      { "id": "yasmin", "nameAr": "الياسمين", "nameEn": "Yasmin" },
+      { "id": "rawdah", "nameAr": "الروضة", "nameEn": "Rawdah" },
+      { "id": "suwaidi", "nameAr": "السويدي", "nameEn": "Suwaidi" },
+      { "id": "batha", "nameAr": "البطحاء", "nameEn": "Batha" }
+    ],
+    "jeddah": [
+      { "id": "corniche", "nameAr": "الكورنيش", "nameEn": "Corniche" },
+      { "id": "balad", "nameAr": "البلد", "nameEn": "Al Balad" },
+      { "id": "rawdah-jeddah", "nameAr": "الروضة", "nameEn": "Ar Rawdah" },
+      { "id": "hamra", "nameAr": "الحمراء", "nameEn": "Al Hamra" },
+      { "id": "andalus", "nameAr": "الأندلس", "nameEn": "Al Andalus" },
+      { "id": "zahra", "nameAr": "الزهراء", "nameEn": "Az Zahra" },
+      { "id": "salamah", "nameAr": "السلامة", "nameEn": "As Salamah" },
+      { "id": "naseem-jeddah", "nameAr": "النسيم", "nameEn": "An Naseem" }
+    ],
+    "dammam": [
+      { "id": "faisaliah", "nameAr": "الفيصلية", "nameEn": "Al Faisaliah" },
+      { "id": "shatie", "nameAr": "الشاطئ", "nameEn": "Ash Shatie" },
+      { "id": "adama", "nameAr": "الأدامة", "nameEn": "Al Adama" },
+      { "id": "mazrouiah", "nameAr": "المزروعية", "nameEn": "Al Mazrouiah" },
+      { "id": "nuzha-dammam", "nameAr": "النزهة", "nameEn": "An Nuzhah" }
+    ]
+  },
+  "leagues": [
+    { "id": "professional", "nameAr": "دوري المحترفين", "nameEn": "Professional League" },
+    { "id": "first-division", "nameAr": "دوري الدرجة الأولى", "nameEn": "First Division" },
+    { "id": "second-division", "nameAr": "دوري الدرجة الثانية", "nameEn": "Second Division" },
+    { "id": "third-division", "nameAr": "دوري الدرجة الثالثة", "nameEn": "Third Division" },
+    { "id": "youth", "nameAr": "دوري الشباب", "nameEn": "Youth League" },
+    { "id": "amateur", "nameAr": "الدوري الهاوي", "nameEn": "Amateur League" },
+    { "id": "local", "nameAr": "دوري محلي", "nameEn": "Local League" },
+    { "id": "friendly", "nameAr": "مباريات ودية", "nameEn": "Friendly Matches" }
+  ],
+  "positions": [
+    { "id": "goalkeeper", "nameAr": "حارس مرمى", "nameEn": "Goalkeeper" },
+    { "id": "right-back", "nameAr": "ظهير أيمن", "nameEn": "Right Back" },
+    { "id": "left-back", "nameAr": "ظهير أيسر", "nameEn": "Left Back" },
+    { "id": "center-back", "nameAr": "قلب دفاع", "nameEn": "Center Back" },
+    { "id": "defensive-midfielder", "nameAr": "وسط دفاعي", "nameEn": "Defensive Midfielder" },
+    { "id": "central-midfielder", "nameAr": "وسط", "nameEn": "Central Midfielder" },
+    { "id": "attacking-midfielder", "nameAr": "وسط مهاجم", "nameEn": "Attacking Midfielder" },
+    { "id": "right-winger", "nameAr": "جناح أيمن", "nameEn": "Right Winger" },
+    { "id": "left-winger", "nameAr": "جناح أيسر", "nameEn": "Left Winger" },
+    { "id": "striker", "nameAr": "مهاجم", "nameEn": "Striker" }
+  ],
+  "levels": [
+    { "id": "beginner", "nameAr": "مبتدئ", "nameEn": "Beginner" },
+    { "id": "intermediate", "nameAr": "متوسط", "nameEn": "Intermediate" },
+    { "id": "advanced", "nameAr": "متقدم", "nameEn": "Advanced" },
+    { "id": "semi-professional", "nameAr": "شبه محترف", "nameEn": "Semi-Professional" },
+    { "id": "professional", "nameAr": "محترف", "nameEn": "Professional" }
+  ],
+  "preferredFoot": [
+    { "id": "right", "nameAr": "اليمنى", "nameEn": "Right" },
+    { "id": "left", "nameAr": "اليسرى", "nameEn": "Left" },
+    { "id": "both", "nameAr": "كلاهما", "nameEn": "Both" }
+  ],
+  "experience": [
+    { "id": "0-1", "nameAr": "أقل من سنة", "nameEn": "Less than 1 year" },
+    { "id": "1-3", "nameAr": "1-3 سنوات", "nameEn": "1-3 years" },
+    { "id": "3-5", "nameAr": "3-5 سنوات", "nameEn": "3-5 years" },
+    { "id": "5-10", "nameAr": "5-10 سنوات", "nameEn": "5-10 years" },
+    { "id": "10+", "nameAr": "أكثر من 10 سنوات", "nameEn": "10+ years" }
+  ],
+  "certificates": [
+    { "id": "uefa-pro", "nameAr": "يويفا برو", "nameEn": "UEFA Pro License" },
+    { "id": "uefa-a", "nameAr": "يويفا A", "nameEn": "UEFA A License" },
+    { "id": "uefa-b", "nameAr": "يويفا B", "nameEn": "UEFA B License" },
+    { "id": "uefa-c", "nameAr": "يويفا C", "nameEn": "UEFA C License" },
+    { "id": "asian-a", "nameAr": "آسيوية A", "nameEn": "Asian A License" },
+    { "id": "asian-b", "nameAr": "آسيوية B", "nameEn": "Asian B License" },
+    { "id": "asian-c", "nameAr": "آسيوية C", "nameEn": "Asian C License" },
+    { "id": "national", "nameAr": "شهادة وطنية", "nameEn": "National Certificate" },
+    { "id": "grassroots", "nameAr": "تدريب قاعدي", "nameEn": "Grassroots" },
+    { "id": "youth", "nameAr": "تدريب ناشئين", "nameEn": "Youth Coaching" }
+  ],
+  "coachingTypes": [
+    { "id": "individual", "nameAr": "تدريب فردي", "nameEn": "Individual Training" },
+    { "id": "group", "nameAr": "تدريب جماعي", "nameEn": "Group Training" },
+    { "id": "team", "nameAr": "تدريب فريق", "nameEn": "Team Training" },
+    { "id": "tactical", "nameAr": "تدريب تكتيكي", "nameEn": "Tactical Training" },
+    { "id": "fitness", "nameAr": "تدريب لياقة", "nameEn": "Fitness Training" },
+    { "id": "technical", "nameAr": "تدريب مهاري", "nameEn": "Technical Training" },
+    { "id": "goalkeeping", "nameAr": "تدريب حراس", "nameEn": "Goalkeeping Training" }
+  ],
+  "ageGroups": [
+    { "id": "u8", "nameAr": "تحت 8 سنوات", "nameEn": "Under 8" },
+    { "id": "u10", "nameAr": "تحت 10 سنوات", "nameEn": "Under 10" },
+    { "id": "u12", "nameAr": "تحت 12 سنة", "nameEn": "Under 12" },
+    { "id": "u14", "nameAr": "تحت 14 سنة", "nameEn": "Under 14" },
+    { "id": "u16", "nameAr": "تحت 16 سنة", "nameEn": "Under 16" },
+    { "id": "u18", "nameAr": "تحت 18 سنة", "nameEn": "Under 18" },
+    { "id": "u20", "nameAr": "تحت 20 سنة", "nameEn": "Under 20" },
+    { "id": "adult", "nameAr": "بالغين", "nameEn": "Adult" },
+    { "id": "all-ages", "nameAr": "جميع الأعمار", "nameEn": "All Ages" }
+  ],
+  "sports": [
+    { "id": "football", "nameAr": "كرة القدم", "nameEn": "Football" },
+    { "id": "basketball", "nameAr": "كرة السلة", "nameEn": "Basketball" },
+    { "id": "volleyball", "nameAr": "كرة الطائرة", "nameEn": "Volleyball" },
+    { "id": "handball", "nameAr": "كرة اليد", "nameEn": "Handball" },
+    { "id": "tennis", "nameAr": "التنس", "nameEn": "Tennis" },
+    { "id": "swimming", "nameAr": "السباحة", "nameEn": "Swimming" },
+    { "id": "athletics", "nameAr": "ألعاب القوى", "nameEn": "Athletics" },
+    { "id": "martial-arts", "nameAr": "الفنون القتالية", "nameEn": "Martial Arts" },
+    { "id": "gymnastics", "nameAr": "الجمباز", "nameEn": "Gymnastics" },
+    { "id": "fitness", "nameAr": "اللياقة البدنية", "nameEn": "Fitness" }
+  ]
+}
