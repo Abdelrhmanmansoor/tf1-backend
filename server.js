@@ -40,7 +40,9 @@ const PORT = process.env.PORT || 4000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const API_VERSION = process.env.API_VERSION || 'v1';
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+  'http://localhost:3000',
+];
 
 // In development, allow Replit domains dynamically
 if (NODE_ENV === 'development' || process.env.REPLIT_DEV_DOMAIN) {
@@ -53,11 +55,31 @@ if (NODE_ENV === 'development' || process.env.REPLIT_DEV_DOMAIN) {
 // ==================== BANNER ====================
 const printBanner = () => {
   console.clear();
-  console.log(chalk.cyan.bold('\n╔═══════════════════════════════════════════════════════════╗'));
-  console.log(chalk.cyan.bold('║                                                           ║'));
-  console.log(chalk.cyan.bold('║              🏆 SPORTX PLATFORM API 🏆                   ║'));
-  console.log(chalk.cyan.bold('║                                                           ║'));
-  console.log(chalk.cyan.bold('╚═══════════════════════════════════════════════════════════╝\n'));
+  console.log(
+    chalk.cyan.bold(
+      '\n╔═══════════════════════════════════════════════════════════╗'
+    )
+  );
+  console.log(
+    chalk.cyan.bold(
+      '║                                                           ║'
+    )
+  );
+  console.log(
+    chalk.cyan.bold(
+      '║              🏆 SPORTX PLATFORM API 🏆                   ║'
+    )
+  );
+  console.log(
+    chalk.cyan.bold(
+      '║                                                           ║'
+    )
+  );
+  console.log(
+    chalk.cyan.bold(
+      '╚═══════════════════════════════════════════════════════════╝\n'
+    )
+  );
 };
 
 // ==================== SOCKET.IO ====================
@@ -65,10 +87,10 @@ const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
     credentials: true,
-    methods: ['GET', 'POST']
+    methods: ['GET', 'POST'],
   },
   pingTimeout: 60000,
-  pingInterval: 25000
+  pingInterval: 25000,
 });
 
 const socketHelpers = configureSocket(io);
@@ -85,24 +107,28 @@ if (NODE_ENV === 'production' || process.env.RENDER) {
 }
 
 // ==================== SECURITY MIDDLEWARE ====================
-app.use(helmet({
-  contentSecurityPolicy: NODE_ENV === 'production' ? undefined : false,
-  crossOriginEmbedderPolicy: false
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: NODE_ENV === 'production' ? undefined : false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  })
+);
 
 // ==================== RATE LIMITING ====================
 const limiter = rateLimit({
@@ -111,13 +137,13 @@ const limiter = rateLimit({
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.',
-    code: 'RATE_LIMIT_EXCEEDED'
+    code: 'RATE_LIMIT_EXCEEDED',
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => {
+  skip: req => {
     return req.path === '/health' || req.path.includes('/auth/verify-email');
-  }
+  },
 });
 
 const authLimiter = rateLimit({
@@ -125,11 +151,12 @@ const authLimiter = rateLimit({
   max: NODE_ENV === 'development' ? 50 : 10,
   message: {
     success: false,
-    message: 'Too many authentication attempts. Please try again after 15 minutes.',
-    code: 'AUTH_RATE_LIMIT_EXCEEDED'
+    message:
+      'Too many authentication attempts. Please try again after 15 minutes.',
+    code: 'AUTH_RATE_LIMIT_EXCEEDED',
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 const notificationsLimiter = rateLimit({
@@ -138,8 +165,8 @@ const notificationsLimiter = rateLimit({
   message: {
     success: false,
     message: 'Too many notification requests. Please slow down.',
-    code: 'NOTIFICATIONS_RATE_LIMIT'
-  }
+    code: 'NOTIFICATIONS_RATE_LIMIT',
+  },
 });
 
 app.use('/api/', limiter);
@@ -170,21 +197,29 @@ morgan.token('colored-status', (req, res) => {
   return color(status);
 });
 
-morgan.token('colored-method', (req) => {
+morgan.token('colored-method', req => {
   const methods = {
     GET: chalk.blue,
     POST: chalk.green,
     PUT: chalk.yellow,
     DELETE: chalk.red,
-    PATCH: chalk.magenta
+    PATCH: chalk.magenta,
   };
   return (methods[req.method] || chalk.white)(req.method);
 });
 
 if (NODE_ENV === 'development') {
-  app.use(morgan(':colored-method :url :colored-status :response-time ms - :res[content-length]'));
+  app.use(
+    morgan(
+      ':colored-method :url :colored-status :response-time ms - :res[content-length]'
+    )
+  );
 } else {
-  app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
+  app.use(
+    morgan('combined', {
+      stream: { write: message => logger.info(message.trim()) },
+    })
+  );
 }
 
 // ==================== BODY PARSING ====================
@@ -205,7 +240,7 @@ app.get('/', (req, res) => {
     message: 'Welcome to SportX Platform API',
     documentation: `/api/${API_VERSION}`,
     health: '/health',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -219,8 +254,8 @@ app.get('/health', (req, res) => {
     uptime: process.uptime(),
     memory: {
       used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
-      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB'
-    }
+      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB',
+    },
   });
 });
 
@@ -266,7 +301,10 @@ app.use(`/api/${API_VERSION}/jobs`, jobsRoutes);
 // Leader & Team Dashboard Routes
 app.use(`/api/${API_VERSION}/leader`, leaderDashboardRoutes);
 app.use(`/api/${API_VERSION}/team`, teamDashboardRoutes);
-app.use(`/api/${API_VERSION}/administrative-officer`, administrativeOfficerRoutes);
+app.use(
+  `/api/${API_VERSION}/administrative-officer`,
+  administrativeOfficerRoutes
+);
 
 // Site Settings (Leader Control Panel)
 app.use(`/api/${API_VERSION}/settings`, siteSettingsRoutes);
@@ -277,7 +315,7 @@ app.use((err, req, res, next) => {
     path: req.path,
     method: req.method,
     ip: req.ip,
-    stack: err.stack
+    stack: err.stack,
   });
 
   const statusCode = err.statusCode || err.status || 500;
@@ -289,21 +327,23 @@ app.use((err, req, res, next) => {
     message,
     ...(NODE_ENV === 'development' && {
       stack: err.stack,
-      details: err.errors
+      details: err.errors,
     }),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
 app.use((req, res) => {
-  logger.warn(`404 Not Found: ${req.method} ${req.originalUrl} - IP: ${req.ip}`);
+  logger.warn(
+    `404 Not Found: ${req.method} ${req.originalUrl} - IP: ${req.ip}`
+  );
 
   res.status(404).json({
     success: false,
     error: 'Route not found',
     path: req.originalUrl,
     suggestion: `Check API documentation at http://localhost:${PORT}/api/${API_VERSION}`,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -323,9 +363,19 @@ const startServer = async () => {
       logger.info(chalk.green('✅ Database connected successfully'));
       dbConnected = true;
     } catch (dbError) {
-      logger.warn(chalk.yellow('⚠️  MongoDB connection failed - Server will start without database'));
-      logger.warn(chalk.yellow('⚠️  Please configure MONGODB_URI environment variable'));
-      logger.warn(chalk.yellow('⚠️  Database-dependent features will not work until connected'));
+      logger.warn(
+        chalk.yellow(
+          '⚠️  MongoDB connection failed - Server will start without database'
+        )
+      );
+      logger.warn(
+        chalk.yellow('⚠️  Please configure MONGODB_URI environment variable')
+      );
+      logger.warn(
+        chalk.yellow(
+          '⚠️  Database-dependent features will not work until connected'
+        )
+      );
     }
 
     if (dbConnected) {
@@ -346,15 +396,31 @@ const startServer = async () => {
       console.log('');
       console.log(chalk.bold('  📍 Server Details:'));
       console.log(chalk.gray('  ├─') + ' Port: ' + chalk.cyan.bold(PORT));
-      console.log(chalk.gray('  ├─') + ' Environment: ' + chalk.cyan.bold(NODE_ENV));
-      console.log(chalk.gray('  ├─') + ' API Version: ' + chalk.cyan.bold(API_VERSION));
-      console.log(chalk.gray('  └─') + ' Process ID: ' + chalk.cyan.bold(process.pid));
+      console.log(
+        chalk.gray('  ├─') + ' Environment: ' + chalk.cyan.bold(NODE_ENV)
+      );
+      console.log(
+        chalk.gray('  ├─') + ' API Version: ' + chalk.cyan.bold(API_VERSION)
+      );
+      console.log(
+        chalk.gray('  └─') + ' Process ID: ' + chalk.cyan.bold(process.pid)
+      );
 
       console.log('');
       console.log(chalk.bold('  🌐 Endpoints:'));
-      console.log(chalk.gray('  ├─') + ' API Base: ' + chalk.blue.underline(`http://localhost:${PORT}/api/${API_VERSION}`));
-      console.log(chalk.gray('  ├─') + ' Health Check: ' + chalk.blue.underline(`http://localhost:${PORT}/health`));
-      console.log(chalk.gray('  └─') + ' Socket.io: ' + chalk.green('✓ Enabled'));
+      console.log(
+        chalk.gray('  ├─') +
+          ' API Base: ' +
+          chalk.blue.underline(`http://localhost:${PORT}/api/${API_VERSION}`)
+      );
+      console.log(
+        chalk.gray('  ├─') +
+          ' Health Check: ' +
+          chalk.blue.underline(`http://localhost:${PORT}/health`)
+      );
+      console.log(
+        chalk.gray('  └─') + ' Socket.io: ' + chalk.green('✓ Enabled')
+      );
 
       console.log('');
       console.log(chalk.bold('  🎯 Available APIs:'));
@@ -367,14 +433,30 @@ const startServer = async () => {
       console.log(chalk.gray('  ├─') + ' Global Search');
       console.log(chalk.gray('  ├─') + ' Notifications');
       console.log(chalk.gray('  ├─') + ' Reviews & Ratings');
-      console.log(chalk.gray('  └─') + ' Global Services (Upload, Location, etc.)');
+      console.log(
+        chalk.gray('  └─') + ' Global Services (Upload, Location, etc.)'
+      );
 
       console.log('');
       console.log(chalk.bold('  📊 System Status:'));
-      console.log(chalk.gray('  ├─') + ' Database: ' + (dbConnected ? chalk.green('✓ Connected') : chalk.yellow('⚠ Not Connected')));
-      console.log(chalk.gray('  ├─') + ' Search Indexes: ' + (dbConnected ? chalk.green('✓ Ready') : chalk.yellow('⚠ Disabled')));
-      console.log(chalk.gray('  ├─') + ' Socket.io: ' + chalk.green('✓ Active'));
-      console.log(chalk.gray('  └─') + ' Rate Limiting: ' + chalk.green('✓ Enabled'));
+      console.log(
+        chalk.gray('  ├─') +
+          ' Database: ' +
+          (dbConnected
+            ? chalk.green('✓ Connected')
+            : chalk.yellow('⚠ Not Connected'))
+      );
+      console.log(
+        chalk.gray('  ├─') +
+          ' Search Indexes: ' +
+          (dbConnected ? chalk.green('✓ Ready') : chalk.yellow('⚠ Disabled'))
+      );
+      console.log(
+        chalk.gray('  ├─') + ' Socket.io: ' + chalk.green('✓ Active')
+      );
+      console.log(
+        chalk.gray('  └─') + ' Rate Limiting: ' + chalk.green('✓ Enabled')
+      );
 
       console.log('');
       console.log(chalk.cyan('━'.repeat(60)));
@@ -384,7 +466,6 @@ const startServer = async () => {
 
       logger.info('Press CTRL+C to stop the server');
     });
-
   } catch (error) {
     logger.error(chalk.red('❌ Failed to start server:'), error);
     process.exit(1);
@@ -392,8 +473,10 @@ const startServer = async () => {
 };
 
 // ==================== GRACEFUL SHUTDOWN ====================
-const gracefulShutdown = async (signal) => {
-  logger.info(chalk.yellow(`\n${signal} received. Initiating graceful shutdown...`));
+const gracefulShutdown = async signal => {
+  logger.info(
+    chalk.yellow(`\n${signal} received. Initiating graceful shutdown...`)
+  );
 
   server.close(async () => {
     logger.info('🔌 HTTP server closed');
@@ -418,7 +501,7 @@ const gracefulShutdown = async (signal) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   logger.error('Uncaught Exception:', error);
   gracefulShutdown('uncaughtException');
 });

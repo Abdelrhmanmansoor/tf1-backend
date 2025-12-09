@@ -18,7 +18,7 @@ router.post('/login', authLimiter, authController.login);
 
 // Mount routes under /matches/api
 router.use('/api/auth', authRoutes);
-router.use('/api', matchRoutes);  // Match routes will be at /matches/api/matches, etc.
+router.use('/api', matchRoutes); // Match routes will be at /matches/api/matches, etc.
 router.use('/api/teams', teamRoutes);
 router.use('/api/me', historyRoutes);
 router.use('/api/notifications', notificationRoutes);
