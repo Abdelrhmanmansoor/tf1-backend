@@ -233,13 +233,17 @@ class MatchService {
 
       // Notify match full
       if (match.current_players >= match.max_players) {
-        await this.notifyMatchFull(match, session).catch(console.error);
+        await this.notifyMatchFull(match, session).catch(err => {
+          console.error(`Failed to notify match full for match ${match._id}:`, err);
+        });
       }
 
       await session.commitTransaction();
 
       // Send notification asynchronously
-      this.notifyPlayerJoined(match, userId).catch(console.error);
+      this.notifyPlayerJoined(match, userId).catch(err => {
+        console.error(`Failed to notify player joined for match ${match._id}, user ${userId}:`, err);
+      });
 
       return { participation: participation[0], match };
     } catch (error) {

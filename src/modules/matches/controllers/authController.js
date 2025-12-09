@@ -1,4 +1,3 @@
-const bcrypt = require('bcryptjs');
 const MatchUser = require('../models/MatchUser');
 const jwtService = require('../utils/jwtService');
 const emailService = require('../../../utils/email');
@@ -25,13 +24,10 @@ class AuthController {
         });
       }
 
-      // Hash password
-      const password_hash = await bcrypt.hash(password, 10);
-
-      // Create user
+      // Create user (password will be hashed by pre-save hook)
       const user = new MatchUser({
         email: email.toLowerCase(),
-        password_hash,
+        password_hash: password,  // Will be hashed by model's pre-save hook
         name,
         verified: false,
         role: 'MatchUser'

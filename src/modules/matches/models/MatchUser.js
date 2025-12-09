@@ -75,10 +75,8 @@ matchUserSchema.pre('save', async function(next) {
     return next();
   }
   
-  // Only hash if it's not already hashed (doesn't start with $2a$ or $2b$)
-  if (!this.password_hash.startsWith('$2a$') && !this.password_hash.startsWith('$2b$')) {
-    this.password_hash = await bcrypt.hash(this.password_hash, 10);
-  }
+  // Always hash the password when modified
+  this.password_hash = await bcrypt.hash(this.password_hash, 10);
   
   next();
 });
