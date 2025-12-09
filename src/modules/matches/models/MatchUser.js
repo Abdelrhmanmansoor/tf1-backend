@@ -23,21 +23,18 @@ const matchUserSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-<<<<<<< Updated upstream
   role: {
     type: String,
     default: 'MatchUser'
   },
-  // Email verification
-  emailVerificationToken: String,
-  emailVerificationTokenExpires: Date,
-=======
   phone: {
     type: String,
     trim: true,
     default: null
   },
->>>>>>> Stashed changes
+  // Email verification
+  emailVerificationToken: String,
+  emailVerificationTokenExpires: Date,
   is_admin: {
     type: Boolean,
     default: false
