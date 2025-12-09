@@ -11,20 +11,25 @@ const participationSchema = new mongoose.Schema({
     ref: 'MSMatchUser',
     required: true
   },
-  team_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'MSTeam',
-    default: null
-  },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'waitlisted', 'checked_in', 'no_show'],
-    default: 'confirmed'
+    enum: ['joined'],
+    default: 'joined'
   },
   joined_at: {
     type: Date,
     default: Date.now
+  },
+  created_at: {
+    type: Date,
+    default: Date.now
+  },
+  updated_at: {
+    type: Date,
+    default: Date.now
   }
+}, {
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
 
 // UNIQUE constraint: one user can only join a match once
@@ -32,4 +37,4 @@ participationSchema.index({ match_id: 1, user_id: 1 }, { unique: true });
 participationSchema.index({ match_id: 1 });
 participationSchema.index({ user_id: 1 });
 
-module.exports = mongoose.model('MSParticipation', participationSchema, 'ms_participations');
+module.exports = mongoose.model('MSParticipation', participationSchema, 'ms_match_participants');

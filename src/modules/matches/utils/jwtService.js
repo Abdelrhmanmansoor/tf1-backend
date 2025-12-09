@@ -29,6 +29,24 @@ class MatchJwtService {
     }
     return authHeader.substring(7);
   }
+
+  extractTokenFromCookie(cookies) {
+    if (!cookies || !cookies.matches_token) {
+      throw new Error('No matches_token cookie found');
+    }
+    return cookies.matches_token;
+  }
+
+  getCookieOptions() {
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER;
+    return {
+      httpOnly: true,
+      secure: isProduction, // true in production
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/'
+    };
+  }
 }
 
 module.exports = new MatchJwtService();

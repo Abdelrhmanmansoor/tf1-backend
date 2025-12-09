@@ -3,29 +3,30 @@ const router = express.Router();
 const matchController = require('../controllers/matchController');
 const chatController = require('../controllers/chatController');
 const historyController = require('../controllers/historyController');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, optionalAuth } = require('../middleware/auth');
 const { matchesLimiter, joinLeaveLimiter, chatLimiter } = require('../middleware/rateLimiter');
 
-// All routes require authentication and have general rate limiting
-router.use(authenticate);
-router.use(matchesLimiter);
+// Public list endpoint (no auth required)
+router.get('/matches', optionalAuth, matchesLimiter, matchController.listMatches);
+router.get('/matches/:id', optionalAuth, matchesLimiter, matchController.getMatch);
 
-// Match CRUD and actions
-router.post('/', matchController.createMatch);
-router.post('/:id/publish', matchController.publishMatch);
-router.get('/', matchController.listMatches);
-router.get('/:id', matchController.getMatch);
-router.post('/:id/join', joinLeaveLimiter, matchController.joinMatch);
-router.post('/:id/leave', joinLeaveLimiter, matchController.leaveMatch);
-router.post('/:id/invite', matchController.inviteToMatch);
-router.post('/:id/invitations/:inv_id/respond', matchController.respondToInvitation);
-router.post('/:id/start', matchController.startMatch);
-router.post('/:id/finish', matchController.finishMatch);
-router.post('/:id/cancel', matchController.cancelMatch);
-router.post('/:id/rate', matchController.ratePlayer);
+// Protected match endpoints
+router.post('/matches', authenticate, matchesLimiter, matchController.createMatch);
+router.post('/matches/:id/join', authenticate, joinLeaveLimiter, matchController.joinMatch);
+router.post('/matches/:id/leave', authenticate, joinLeaveLimiter, matchController.leaveMatch);
+router.get('/my-matches', authenticate, matchesLimiter, matchController.getMyMatches);
+
+// Legacy routes for backward compatibility
+router.post('/:id/publish', authenticate, matchesLimiter, matchController.publishMatch);
+router.post('/:id/invite', authenticate, matchesLimiter, matchController.inviteToMatch);
+router.post('/:id/invitations/:inv_id/respond', authenticate, matchesLimiter, matchController.respondToInvitation);
+router.post('/:id/start', authenticate, matchesLimiter, matchController.startMatch);
+router.post('/:id/finish', authenticate, matchesLimiter, matchController.finishMatch);
+router.post('/:id/cancel', authenticate, matchesLimiter, matchController.cancelMatch);
+router.post('/:id/rate', authenticate, matchesLimiter, matchController.ratePlayer);
 
 // Chat with specific rate limiting
-router.get('/:id/chat', chatController.getMessages);
-router.post('/:id/chat', chatLimiter, chatController.sendMessage);
+router.get('/:id/chat', authenticate, chatLimiter, chatController.getMessages);
+router.post('/:id/chat', authenticate, chatLimiter, chatController.sendMessage);
 
 module.exports = router;
