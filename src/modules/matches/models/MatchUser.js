@@ -13,8 +13,7 @@ const matchUserSchema = new mongoose.Schema({
     required: true,
     unique: true,
     lowercase: true,
-    trim: true,
-    index: true
+    trim: true
   },
   password_hash: {
     type: String,
@@ -47,7 +46,7 @@ const matchUserSchema = new mongoose.Schema({
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
 
-// Index for performance
+// Indexes for performance
 matchUserSchema.index({ email: 1 });
 matchUserSchema.index({ emailVerificationToken: 1 });
 
