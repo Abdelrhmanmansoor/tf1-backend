@@ -8,6 +8,14 @@ const teamRoutes = require('./teamRoutes');
 const historyRoutes = require('./historyRoutes');
 const notificationRoutes = require('./notificationRoutes');
 
+// Import auth controller and rate limiter for direct routes
+const authController = require('../controllers/authController');
+const { authLimiter } = require('../middleware/rateLimiter');
+
+// Direct registration/login routes for /api/v1/matches/register and /api/v1/matches/login
+router.post('/register', authLimiter, authController.register);
+router.post('/login', authLimiter, authController.login);
+
 // Mount routes under /matches/api
 router.use('/api/auth', authRoutes);
 router.use('/api', matchRoutes);  // Match routes will be at /matches/api/matches, etc.

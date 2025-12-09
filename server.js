@@ -258,6 +258,7 @@ app.use(`/api/${API_VERSION}/match-hub`, matchHubRoutes);
 
 // New isolated matches system
 app.use('/matches', matchesSystemRoutes);
+app.use(`/api/${API_VERSION}/matches`, matchesSystemRoutes); // Support /api/v1/matches paths
 
 app.use(`/api/${API_VERSION}/profile`, profileRoutes);
 app.use(`/api/${API_VERSION}/jobs`, jobsRoutes);
