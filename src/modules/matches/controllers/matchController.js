@@ -6,45 +6,69 @@ class MatchController {
   async createMatch(req, res) {
     try {
       const userId = req.matchUser._id;
-      const { starts_at, venue, max_players, team_size, mode, visibility } = req.body;
+      const { title, sport, city, area, location, date, time, level, max_players, notes, starts_at, venue, team_size, mode } = req.body;
 
-      // Validation
-      if (!starts_at || !venue || !max_players || !team_size || !mode) {
+      // Check if using new API format (title, sport, etc.) or legacy format (starts_at, venue, etc.)
+      const isNewFormat = title && sport && city && area && location && date && time && level;
+      const isLegacyFormat = starts_at && venue && team_size && mode;
+
+      if (!isNewFormat && !isLegacyFormat) {
         return res.status(400).json({
           success: false,
-          message: 'Missing required fields'
+          message: 'Missing required fields. New format requires: title, sport, city, area, location, date, time, level, max_players. Legacy format requires: starts_at, venue, max_players, team_size, mode'
         });
       }
 
-      if (max_players < 2) {
+      // Validate max_players
+      if (!max_players || max_players < 2) {
         return res.status(400).json({
           success: false,
           message: 'max_players must be at least 2'
         });
       }
 
-      if (team_size < 1) {
+      // Validate level (if using new format)
+      if (isNewFormat && !['beginner', 'intermediate', 'advanced'].includes(level)) {
         return res.status(400).json({
           success: false,
-          message: 'team_size must be at least 1'
+          message: 'level must be "beginner", "intermediate", or "advanced"'
         });
       }
 
-      if (!['player_pool', 'teams'].includes(mode)) {
-        return res.status(400).json({
-          success: false,
-          message: 'mode must be "player_pool" or "teams"'
-        });
+      // Create match data
+      let matchData;
+      if (isNewFormat) {
+        matchData = {
+          owner_id: userId,
+          title,
+          sport,
+          city,
+          area,
+          location,
+          date: new Date(date),
+          time,
+          level,
+          max_players,
+          notes: notes || '',
+          status: 'open',
+          current_players: 0
+        };
+      } else {
+        // Legacy format
+        matchData = {
+          created_by: userId,
+          starts_at,
+          venue,
+          max_players,
+          team_size,
+          mode,
+          state: 'draft',
+          visibility: 'public',
+          current_players: 0
+        };
       }
 
-      const match = await matchService.createMatch(userId, {
-        starts_at,
-        venue,
-        max_players,
-        team_size,
-        mode,
-        visibility
-      });
+      const match = await matchService.createMatch(userId, matchData, isNewFormat);
 
       res.status(201).json({
         success: true,
@@ -345,6 +369,28 @@ class MatchController {
       res.status(400).json({
         success: false,
         message: error.message || 'Error submitting rating'
+      });
+    }
+  }
+
+  async getMyMatches(req, res) {
+    try {
+      const userId = req.matchUser._id;
+
+      const myMatches = await matchService.getMyMatches(userId);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          created: myMatches.created,
+          joined: myMatches.joined
+        }
+      });
+    } catch (error) {
+      console.error('Get my matches error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Error retrieving your matches'
       });
     }
   }

@@ -5,45 +5,133 @@ const MatchNotification = require('../models/MatchNotification');
 const StateMachine = require('../utils/stateMachine');
 
 class MatchService {
-  async createMatch(userId, data) {
-    const match = await Match.create({
-      created_by: userId,
-      starts_at: data.starts_at,
-      venue: data.venue,
-      max_players: data.max_players,
-      team_size: data.team_size,
-      mode: data.mode,
-      state: 'draft',
-      visibility: data.visibility || 'public',
-      current_players: 0
-    });
+  async createMatch(userId, data, isNewFormat = false) {
+    let matchData;
 
+    if (isNewFormat) {
+      // New format with all required fields
+      matchData = {
+        owner_id: userId,
+        created_by: userId, // For backward compatibility
+        title: data.title,
+        sport: data.sport,
+        city: data.city,
+        area: data.area,
+        location: data.location,
+        date: data.date,
+        time: data.time,
+        level: data.level,
+        max_players: data.max_players,
+        notes: data.notes || '',
+        status: data.status || 'open',
+        current_players: 0
+      };
+    } else {
+      // Legacy format
+      matchData = {
+        created_by: userId,
+        starts_at: data.starts_at,
+        venue: data.venue,
+        max_players: data.max_players,
+        team_size: data.team_size,
+        mode: data.mode,
+        state: data.state || 'draft',
+        visibility: data.visibility || 'public',
+        current_players: 0
+      };
+    }
+
+    const match = await Match.create(matchData);
     return match;
   }
 
   async getMatch(matchId) {
     const match = await Match.findById(matchId)
-      .populate('created_by', 'display_name email');
+      .populate('created_by', 'name email')
+      .populate('owner_id', 'name email');
     return match;
   }
 
   async listMatches(filters = {}) {
     const query = {};
     
+    // Support both old 'state' and new 'status' fields
     if (filters.state) {
       query.state = filters.state;
+    }
+    if (filters.status) {
+      query.status = filters.status;
     }
     
     if (filters.visibility) {
       query.visibility = filters.visibility;
     }
 
+    // New filter fields
+    if (filters.sport) {
+      query.sport = filters.sport;
+    }
+    if (filters.city) {
+      query.city = filters.city;
+    }
+    if (filters.area) {
+      query.area = filters.area;
+    }
+    if (filters.level) {
+      query.level = filters.level;
+    }
+
+    // Date range filtering
+    if (filters.dateFrom || filters.dateTo) {
+      query.date = {};
+      if (filters.dateFrom) {
+        query.date.$gte = new Date(filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        query.date.$lte = new Date(filters.dateTo);
+      }
+    }
+
     const matches = await Match.find(query)
-      .populate('created_by', 'display_name email')
+      .populate('created_by', 'name email')
+      .populate('owner_id', 'name email')
       .sort({ created_at: -1 })
       .limit(filters.limit || 50);
 
     return matches;
+  }
+
+  async getMyMatches(userId) {
+    // Get matches created by user
+    const createdMatches = await Match.find({
+      $or: [
+        { created_by: userId },
+        { owner_id: userId }
+      ]
+    })
+      .populate('created_by', 'name email')
+      .populate('owner_id', 'name email')
+      .sort({ created_at: -1 });
+
+    // Get matches joined by user
+    const participations = await Participation.find({ user_id: userId })
+      .populate({
+        path: 'match_id',
+        populate: [
+          { path: 'created_by', select: 'name email' },
+          { path: 'owner_id', select: 'name email' }
+        ]
+      })
+      .sort({ joined_at: -1 });
+
+    const joinedMatches = participations
+      .map(p => p.match_id)
+      .filter(match => match !== null);
+
+    return {
+      created: createdMatches,
+      joined: joinedMatches
+    };
   }
 
   async publishMatch(matchId, userId) {
@@ -95,9 +183,10 @@ class MatchService {
         throw new Error('Match not found');
       }
 
-      // Check if match is joinable
-      if (!['open', 'full'].includes(match.state)) {
-        throw new Error(`Cannot join match in state: ${match.state}`);
+      // Check if match is joinable (support both old 'state' and new 'status')
+      const matchStatus = match.status || match.state;
+      if (matchStatus === 'finished' || matchStatus === 'canceled') {
+        throw new Error(`Cannot join match with status: ${matchStatus}`);
       }
 
       // Check if user already joined
@@ -113,46 +202,48 @@ class MatchService {
       // Check capacity
       const currentCount = await Participation.countDocuments({
         match_id: matchId,
-        status: { $in: ['confirmed', 'checked_in'] }
+        status: 'joined'
       }).session(session);
 
-      let status = 'confirmed';
-      
       if (currentCount >= match.max_players) {
-        status = 'waitlisted';
+        throw new Error('Match is full');
       }
 
       // Create participation
       const participation = await Participation.create([{
         match_id: matchId,
         user_id: userId,
-        team_id: teamId,
-        status: status
+        status: 'joined'
       }], { session });
 
       // Update current_players count
-      if (status === 'confirmed') {
-        match.current_players = currentCount + 1;
+      match.current_players = currentCount + 1;
 
-        // Auto-transition to full if capacity reached
-        if (match.current_players >= match.max_players && match.state === 'open') {
-          // Validate state transition
-          StateMachine.validateTransition(match.state, 'full');
+      // Auto-transition to full if capacity reached
+      if (match.current_players >= match.max_players) {
+        if (match.status) {
+          match.status = 'full';
+        }
+        if (match.state) {
           match.state = 'full';
         }
+      }
 
-        await match.save({ session });
+      await match.save({ session });
 
-        // Notify match full
-        if (match.state === 'full') {
-          await this.notifyMatchFull(match, session);
-        }
+      // Notify match full
+      if (match.current_players >= match.max_players) {
+        await this.notifyMatchFull(match, session).catch(err => {
+          console.error(`Failed to notify match full for match ${match._id}:`, err);
+        });
       }
 
       await session.commitTransaction();
 
       // Send notification asynchronously
-      this.notifyPlayerJoined(match, userId).catch(console.error);
+      this.notifyPlayerJoined(match, userId).catch(err => {
+        console.error(`Failed to notify player joined for match ${match._id}, user ${userId}:`, err);
+      });
 
       return { participation: participation[0], match };
     } catch (error) {
@@ -174,9 +265,10 @@ class MatchService {
         throw new Error('Match not found');
       }
 
-      // Cannot leave if match is in progress or finished
-      if (['in_progress', 'finished'].includes(match.state)) {
-        throw new Error('Cannot leave match in current state');
+      // Cannot leave if match is finished
+      const matchStatus = match.status || match.state;
+      if (matchStatus === 'finished') {
+        throw new Error('Cannot leave finished match');
       }
 
       const participation = await Participation.findOne({
@@ -192,17 +284,19 @@ class MatchService {
       await Participation.deleteOne({ _id: participation._id }).session(session);
 
       // Update capacity
-      if (participation.status === 'confirmed') {
-        match.current_players = Math.max(0, match.current_players - 1);
+      match.current_players = Math.max(0, match.current_players - 1);
 
-        // If was full and now has space, move to open (with validation)
-        if (match.state === 'full' && match.current_players < match.max_players) {
-          StateMachine.validateTransition(match.state, 'open');
+      // If was full and now has space, move to open
+      if ((match.status === 'full' || match.state === 'full') && match.current_players < match.max_players) {
+        if (match.status) {
+          match.status = 'open';
+        }
+        if (match.state) {
           match.state = 'open';
         }
-
-        await match.save({ session });
       }
+
+      await match.save({ session });
 
       await session.commitTransaction();
 
@@ -283,8 +377,7 @@ class MatchService {
 
   async getMatchParticipants(matchId) {
     const participants = await Participation.find({ match_id: matchId })
-      .populate('user_id', 'display_name email')
-      .populate('team_id', 'name logo_url')
+      .populate('user_id', 'name email')
       .sort({ joined_at: 1 });
 
     return participants;
