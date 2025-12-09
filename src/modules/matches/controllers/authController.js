@@ -5,10 +5,20 @@ const emailService = require('../../../utils/email');
 class AuthController {
   async register(req, res) {
     try {
+<<<<<<< Updated upstream
       const { email, password, name } = req.body;
 
       // Validation
       if (!email || !password || !name) {
+=======
+      const { email, password, display_name, firstName, lastName, phone } = req.body;
+
+      // Support both display_name and firstName/lastName
+      const finalDisplayName = display_name || (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName);
+
+      // Validation
+      if (!email || !password || !finalDisplayName) {
+>>>>>>> Stashed changes
         return res.status(400).json({
           success: false,
           message: 'Email, password, and name are required'
@@ -27,10 +37,16 @@ class AuthController {
       // Create user (password will be hashed by pre-save hook)
       const user = new MatchUser({
         email: email.toLowerCase(),
+<<<<<<< Updated upstream
         password_hash: password,  // Will be hashed by model's pre-save hook
         name,
         verified: false,
         role: 'MatchUser'
+=======
+        password_hash,
+        display_name: finalDisplayName,
+        phone: phone || null
+>>>>>>> Stashed changes
       });
 
       // Generate verification token
