@@ -36,39 +36,56 @@ exports.getAllApplications = async (req, res) => {
     const clubProfile = await ClubProfile.findOne({ userId });
 
     // Format applications with full data
-    const formattedApplications = applications.map(app => ({
-      _id: app._id,
-      jobId: {
-        _id: app.jobId?._id,
-        title: app.jobId?.title,
-        titleAr: app.jobId?.titleAr,
-        sport: app.jobId?.sport,
-        category: app.jobId?.category,
-        clubId: {
-          clubName: clubProfile?.clubName,
-          clubNameAr: clubProfile?.clubNameAr,
-          logo: clubProfile?.logo
-        }
-      },
-      applicantId: {
-        _id: app.applicantId?._id,
-        fullName: app.applicantId?.fullName || `${app.applicantId?.firstName} ${app.applicantId?.lastName}`,
-        email: app.applicantId?.email,
-        phoneNumber: app.applicantId?.phoneNumber,
-        profilePicture: app.applicantId?.profilePicture
-      },
-      status: app.status,
-      applicantSnapshot: app.applicantSnapshot,
-      whatsapp: app.whatsapp,
-      portfolio: app.portfolio,
-      linkedin: app.linkedin,
-      coverLetter: app.coverLetter,
-      attachments: app.attachments,
-      createdAt: app.createdAt,
-      updatedAt: app.updatedAt,
-      interview: app.interview,
-      statusHistory: app.statusHistory
-    }));
+    const formattedApplications = applications.map(app => {
+      // Find resume attachment
+      const resume = app.attachments?.find(att => att.type === 'resume' || att.type === 'cv') || app.attachments?.[0];
+      
+      return {
+        _id: app._id,
+        jobId: {
+          _id: app.jobId?._id,
+          title: app.jobId?.title,
+          titleAr: app.jobId?.titleAr,
+          sport: app.jobId?.sport,
+          category: app.jobId?.category,
+          clubId: {
+            clubName: clubProfile?.clubName,
+            clubNameAr: clubProfile?.clubNameAr,
+            logo: clubProfile?.logo
+          }
+        },
+        applicantId: {
+          _id: app.applicantId?._id,
+          fullName: app.applicantId?.fullName || `${app.applicantId?.firstName} ${app.applicantId?.lastName}`,
+          email: app.applicantId?.email,
+          phoneNumber: app.applicantId?.phoneNumber,
+          profilePicture: app.applicantId?.profilePicture
+        },
+        status: app.status,
+        applicantSnapshot: app.applicantSnapshot,
+        whatsapp: app.whatsapp,
+        portfolio: app.portfolio,
+        linkedin: app.linkedin,
+        coverLetter: app.coverLetter,
+        attachments: app.attachments,
+        // Add resume-specific fields for easy access
+        resume: resume ? {
+          name: resume.name,
+          originalName: resume.originalName,
+          url: resume.url,
+          mimeType: resume.mimeType,
+          size: resume.size,
+          uploadedAt: resume.uploadedAt,
+          downloadUrl: `/api/v1/clubs/applications/${app._id}/resume/download`,
+          viewUrl: `/api/v1/clubs/applications/${app._id}/resume/view`,
+          infoUrl: `/api/v1/clubs/applications/${app._id}/resume/info`
+        } : null,
+        createdAt: app.createdAt,
+        updatedAt: app.updatedAt,
+        interview: app.interview,
+        statusHistory: app.statusHistory
+      };
+    });
 
     res.json({
       success: true,
@@ -609,32 +626,360 @@ exports.addNotes = async (req, res) => {
   }
 };
 
-// Download resume with correct headers
+/**
+ * @route   GET /api/v1/clubs/applications/:applicationId/resume/download
+ * @desc    Download resume with proper headers (supports local files and URLs)
+ * @access  Private (Club)
+ */
 exports.downloadResume = async (req, res) => {
   try {
     const { applicationId } = req.params;
+    const userId = req.user._id;
 
-    const application = await JobApplication.findById(applicationId);
-    if (!application || !application.attachments || application.attachments.length === 0) {
-      return res.status(404).json({ success: false, message: 'Resume not found' });
+    console.log('📥 Download resume request for application:', applicationId);
+
+    // Find application and verify club ownership
+    const application = await JobApplication.findOne({
+      _id: applicationId,
+      clubId: userId,
+      isDeleted: false
+    });
+
+    if (!application) {
+      console.log('❌ Application not found or unauthorized');
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found',
+        messageAr: 'الطلب غير موجود'
+      });
     }
 
-    const resume = application.attachments[0];
-    const filePath = resume.localPath || `uploads/resumes/${resume.fileName}`;
+    // Check if attachments exist
+    if (!application.attachments || application.attachments.length === 0) {
+      console.log('❌ No attachments found');
+      return res.status(404).json({
+        success: false,
+        message: 'No resume found for this application',
+        messageAr: 'لا توجد سيرة ذاتية لهذا الطلب'
+      });
+    }
+
+    // Find resume attachment
+    const resume = application.attachments.find(att => att.type === 'resume' || att.type === 'cv') || application.attachments[0];
     
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ success: false, message: 'File not found' });
+    console.log('📄 Resume found:', {
+      name: resume.name,
+      url: resume.url,
+      localPath: resume.localPath,
+      size: resume.size
+    });
+
+    // If URL exists, redirect to it
+    if (resume.url) {
+      // Check if it's a full URL (http/https)
+      if (resume.url.startsWith('http://') || resume.url.startsWith('https://')) {
+        console.log('🔗 Redirecting to URL:', resume.url);
+        return res.redirect(resume.url);
+      }
+      
+      // If it's a relative URL, try to serve it
+      const path = require('path');
+      const absolutePath = path.isAbsolute(resume.url) 
+        ? resume.url 
+        : path.join(process.cwd(), resume.url.replace(/^\//, ''));
+      
+      console.log('📂 Checking local path:', absolutePath);
+      
+      if (fs.existsSync(absolutePath)) {
+        console.log('✅ File found locally, streaming...');
+        
+        // Set proper headers
+        res.setHeader('Content-Type', resume.mimeType || 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(resume.originalName || resume.name)}"`);
+        
+        if (resume.size) {
+          res.setHeader('Content-Length', resume.size);
+        }
+
+        // Stream file
+        const fileStream = fs.createReadStream(absolutePath);
+        
+        fileStream.on('error', (error) => {
+          console.error('❌ File stream error:', error);
+          if (!res.headersSent) {
+            res.status(500).json({
+              success: false,
+              message: 'Error reading file',
+              messageAr: 'خطأ في قراءة الملف'
+            });
+          }
+        });
+        
+        return fileStream.pipe(res);
+      }
     }
 
-    res.setHeader('Content-Type', resume.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${resume.originalName}"`);
-    res.setHeader('Content-Length', resume.size);
+    // Try localPath if exists
+    if (resume.localPath) {
+      const path = require('path');
+      const absolutePath = path.isAbsolute(resume.localPath) 
+        ? resume.localPath 
+        : path.join(process.cwd(), resume.localPath);
+      
+      console.log('📂 Checking localPath:', absolutePath);
+      
+      if (fs.existsSync(absolutePath)) {
+        console.log('✅ File found at localPath, streaming...');
+        
+        res.setHeader('Content-Type', resume.mimeType || 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(resume.originalName || resume.name)}"`);
+        
+        if (resume.size) {
+          res.setHeader('Content-Length', resume.size);
+        }
 
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
+        const fileStream = fs.createReadStream(absolutePath);
+        
+        fileStream.on('error', (error) => {
+          console.error('❌ File stream error:', error);
+          if (!res.headersSent) {
+            res.status(500).json({
+              success: false,
+              message: 'Error reading file',
+              messageAr: 'خطأ في قراءة الملف'
+            });
+          }
+        });
+        
+        return fileStream.pipe(res);
+      }
+    }
+
+    // If we reach here, file not found anywhere
+    console.log('❌ File not found in any location');
+    console.log('Resume data:', JSON.stringify(resume, null, 2));
+    
+    return res.status(404).json({
+      success: false,
+      message: 'Resume file not found on server',
+      messageAr: 'ملف السيرة الذاتية غير موجود على السيرفر',
+      debug: {
+        hasUrl: !!resume.url,
+        hasLocalPath: !!resume.localPath,
+        url: resume.url,
+        localPath: resume.localPath
+      }
+    });
   } catch (error) {
-    console.error('Download resume error:', error);
-    res.status(500).json({ success: false, message: 'Error downloading resume' });
+    console.error('❌ Download resume error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error downloading resume',
+      messageAr: 'خطأ في تحميل السيرة الذاتية',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route   GET /api/v1/clubs/applications/:applicationId/resume/view
+ * @desc    View resume inline (opens in browser instead of download)
+ * @access  Private (Club)
+ */
+exports.viewResume = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const userId = req.user._id;
+
+    console.log('👁️ View resume request for application:', applicationId);
+
+    // Find application and verify club ownership
+    const application = await JobApplication.findOne({
+      _id: applicationId,
+      clubId: userId,
+      isDeleted: false
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found',
+        messageAr: 'الطلب غير موجود'
+      });
+    }
+
+    // Check if attachments exist
+    if (!application.attachments || application.attachments.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No resume found for this application',
+        messageAr: 'لا توجد سيرة ذاتية لهذا الطلب'
+      });
+    }
+
+    // Find resume attachment
+    const resume = application.attachments.find(att => att.type === 'resume' || att.type === 'cv') || application.attachments[0];
+    
+    console.log('📄 Resume found for viewing:', {
+      name: resume.name,
+      url: resume.url,
+      mimeType: resume.mimeType
+    });
+
+    // If URL exists, redirect to it
+    if (resume.url) {
+      if (resume.url.startsWith('http://') || resume.url.startsWith('https://')) {
+        console.log('🔗 Redirecting to URL:', resume.url);
+        return res.redirect(resume.url);
+      }
+      
+      const path = require('path');
+      const absolutePath = path.isAbsolute(resume.url) 
+        ? resume.url 
+        : path.join(process.cwd(), resume.url.replace(/^\//, ''));
+      
+      if (fs.existsSync(absolutePath)) {
+        console.log('✅ File found, displaying inline...');
+        
+        // Set headers for inline display
+        res.setHeader('Content-Type', resume.mimeType || 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(resume.originalName || resume.name)}"`);
+        
+        if (resume.size) {
+          res.setHeader('Content-Length', resume.size);
+        }
+
+        const fileStream = fs.createReadStream(absolutePath);
+        return fileStream.pipe(res);
+      }
+    }
+
+    // Try localPath
+    if (resume.localPath) {
+      const path = require('path');
+      const absolutePath = path.isAbsolute(resume.localPath) 
+        ? resume.localPath 
+        : path.join(process.cwd(), resume.localPath);
+      
+      if (fs.existsSync(absolutePath)) {
+        console.log('✅ File found at localPath, displaying inline...');
+        
+        res.setHeader('Content-Type', resume.mimeType || 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(resume.originalName || resume.name)}"`);
+        
+        if (resume.size) {
+          res.setHeader('Content-Length', resume.size);
+        }
+
+        const fileStream = fs.createReadStream(absolutePath);
+        return fileStream.pipe(res);
+      }
+    }
+
+    // File not found
+    return res.status(404).json({
+      success: false,
+      message: 'Resume file not found on server',
+      messageAr: 'ملف السيرة الذاتية غير موجود على السيرفر'
+    });
+  } catch (error) {
+    console.error('❌ View resume error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error viewing resume',
+      messageAr: 'خطأ في عرض السيرة الذاتية',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route   GET /api/v1/clubs/applications/:applicationId/resume/info
+ * @desc    Get resume metadata and check if file exists
+ * @access  Private (Club)
+ */
+exports.getResumeInfo = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const userId = req.user._id;
+
+    const application = await JobApplication.findOne({
+      _id: applicationId,
+      clubId: userId,
+      isDeleted: false
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found'
+      });
+    }
+
+    if (!application.attachments || application.attachments.length === 0) {
+      return res.json({
+        success: true,
+        hasResume: false,
+        message: 'No resume attached'
+      });
+    }
+
+    const resume = application.attachments.find(att => att.type === 'resume' || att.type === 'cv') || application.attachments[0];
+    
+    // Check if file exists
+    let fileExists = false;
+    let filePath = null;
+    
+    if (resume.url) {
+      if (resume.url.startsWith('http://') || resume.url.startsWith('https://')) {
+        fileExists = true; // Assume external URLs are valid
+        filePath = resume.url;
+      } else {
+        const path = require('path');
+        const absolutePath = path.isAbsolute(resume.url) 
+          ? resume.url 
+          : path.join(process.cwd(), resume.url.replace(/^\//, ''));
+        fileExists = fs.existsSync(absolutePath);
+        filePath = absolutePath;
+      }
+    } else if (resume.localPath) {
+      const path = require('path');
+      const absolutePath = path.isAbsolute(resume.localPath) 
+        ? resume.localPath 
+        : path.join(process.cwd(), resume.localPath);
+      fileExists = fs.existsSync(absolutePath);
+      filePath = absolutePath;
+    }
+
+    res.json({
+      success: true,
+      hasResume: true,
+      fileExists,
+      resume: {
+        name: resume.name,
+        originalName: resume.originalName,
+        mimeType: resume.mimeType,
+        size: resume.size,
+        uploadedAt: resume.uploadedAt,
+        type: resume.type,
+        url: resume.url,
+        downloadUrl: `/api/v1/clubs/applications/${applicationId}/resume/download`,
+        viewUrl: `/api/v1/clubs/applications/${applicationId}/resume/view`
+      },
+      debug: {
+        hasUrl: !!resume.url,
+        hasLocalPath: !!resume.localPath,
+        filePath,
+        fileExists
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get resume info error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error getting resume info',
+      error: error.message
+    });
   }
 };
 

@@ -548,24 +548,105 @@ exports.getMemberStatistics = async (req, res) => {
 // Create job posting
 exports.createJob = async (req, res) => {
   try {
+    console.log('📝 Creating job posting with data:', req.body);
+    
     const jobData = {
       clubId: req.user._id,
       postedBy: req.user._id,
       ...req.body
     };
 
+    // Validate required fields
+    if (!jobData.title) {
+      return res.status(400).json({
+        success: false,
+        message: 'Job title is required',
+        messageAr: 'عنوان الوظيفة مطلوب'
+      });
+    }
+
+    if (!jobData.description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Job description is required',
+        messageAr: 'وصف الوظيفة مطلوب'
+      });
+    }
+
+    if (!jobData.jobType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Job type is required',
+        messageAr: 'نوع الوظيفة مطلوب'
+      });
+    }
+
+    if (!jobData.category) {
+      return res.status(400).json({
+        success: false,
+        message: 'Job category is required',
+        messageAr: 'فئة الوظيفة مطلوبة'
+      });
+    }
+
+    if (!jobData.employmentType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employment type is required',
+        messageAr: 'نوع التوظيف مطلوب'
+      });
+    }
+
+    if (!jobData.applicationDeadline) {
+      return res.status(400).json({
+        success: false,
+        message: 'Application deadline is required',
+        messageAr: 'تاريخ انتهاء التقديم مطلوب'
+      });
+    }
+
     const job = new Job(jobData);
     await job.save();
+
+    console.log('✅ Job posting created successfully:', job._id);
 
     res.status(201).json({
       success: true,
       message: 'Job posting created successfully',
+      messageAr: 'تم نشر الوظيفة بنجاح',
       job
     });
   } catch (error) {
+    console.error('❌ Error creating job posting:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => ({
+        field: err.path,
+        message: err.message
+      }));
+
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        messageAr: 'فشل التحقق من البيانات',
+        errors
+      });
+    }
+
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Job posting already exists',
+        messageAr: 'الوظيفة موجودة بالفعل'
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Error creating job posting',
+      messageAr: 'خطأ في نشر الوظيفة',
       error: error.message
     });
   }

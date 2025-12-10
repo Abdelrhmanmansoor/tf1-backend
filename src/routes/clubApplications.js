@@ -27,8 +27,10 @@ router.put('/:applicationId/status', controller.updateStatus || controller.revie
 // Add admin notes
 router.put('/:applicationId/notes', controller.addNotes);
 
-// Download resume with correct headers
+// Resume endpoints
+router.get('/:applicationId/resume/info', controller.getResumeInfo);
 router.get('/:applicationId/resume/download', controller.downloadResume);
+router.get('/:applicationId/resume/view', controller.viewResume);
 
 // Export to CSV
 router.get('/export', controller.exportApplications);
