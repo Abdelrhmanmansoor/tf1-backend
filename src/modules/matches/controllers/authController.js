@@ -91,7 +91,10 @@ class AuthController {
 
   async verify(req, res) {
     try {
-      const { token } = req.query;
+      // Support token from query params or body
+      const token = req.query.token || req.body.token;
+
+      console.log('Verify email request received, token:', token ? token.substring(0, 10) + '...' : 'missing');
 
       if (!token) {
         return res.status(400).json({
@@ -101,19 +104,31 @@ class AuthController {
         });
       }
 
-      // Find user with this verification token
-      const user = await MatchUser.findOne({
-        emailVerificationToken: token,
-        emailVerificationTokenExpires: { $gt: Date.now() }
+      // First check if token exists (without expiry check)
+      const userWithToken = await MatchUser.findOne({
+        emailVerificationToken: token
       });
 
-      if (!user) {
+      if (!userWithToken) {
+        console.log('Token not found in database');
         return res.status(400).json({
           success: false,
-          message: 'Invalid or expired verification token',
+          message: 'This verification link is invalid or has expired',
           code: 'INVALID_TOKEN'
         });
       }
+
+      // Check if token is expired
+      if (userWithToken.emailVerificationTokenExpires < Date.now()) {
+        console.log('Token expired at:', userWithToken.emailVerificationTokenExpires);
+        return res.status(400).json({
+          success: false,
+          message: 'This verification link has expired. Please request a new one.',
+          code: 'TOKEN_EXPIRED'
+        });
+      }
+
+      const user = userWithToken;
 
       // Check if already verified
       if (user.verified) {
@@ -283,6 +298,8 @@ class AuthController {
   async resendVerification(req, res) {
     try {
       const { email } = req.body;
+
+      console.log('Resend verification request for email:', email);
 
       if (!email) {
         return res.status(400).json({
