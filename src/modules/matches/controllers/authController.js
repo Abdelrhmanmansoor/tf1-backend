@@ -132,6 +132,11 @@ class AuthController {
 
       // Check if already verified
       if (user.verified) {
+        // Generate token and set cookie for auto-login
+        const accessToken = jwtService.generateAccessToken(user._id, user.email);
+        const cookieOptions = jwtService.getCookieOptions();
+        res.cookie('matches_token', accessToken, cookieOptions);
+
         return res.status(200).json({
           success: true,
           message: 'Email already verified',
@@ -141,7 +146,8 @@ class AuthController {
             name: user.name,
             verified: user.verified,
             role: user.role
-          }
+          },
+          accessToken
         });
       }
 
@@ -149,6 +155,11 @@ class AuthController {
       user.verified = true;
       user.clearEmailVerificationToken();
       await user.save();
+
+      // Generate token and set cookie for auto-login after verification
+      const accessToken = jwtService.generateAccessToken(user._id, user.email);
+      const cookieOptions = jwtService.getCookieOptions();
+      res.cookie('matches_token', accessToken, cookieOptions);
 
       res.status(200).json({
         success: true,
@@ -159,7 +170,8 @@ class AuthController {
           name: user.name,
           verified: user.verified,
           role: user.role
-        }
+        },
+        accessToken
       });
     } catch (error) {
       console.error('Verify error:', error);
