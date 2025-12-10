@@ -366,7 +366,7 @@ class AuthController {
   }
 
   // Verify email endpoint (alias for verify with better naming)
-  async verifyEmail(req, res) {
+  verifyEmail = async (req, res) => {
     return this.verify(req, res);
   }
 }
