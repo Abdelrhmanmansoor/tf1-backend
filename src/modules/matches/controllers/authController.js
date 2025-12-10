@@ -278,6 +278,80 @@ class AuthController {
   async signup(req, res) {
     return this.register(req, res);
   }
+
+  // Resend verification email
+  async resendVerification(req, res) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is required'
+        });
+      }
+
+      // Find user by email
+      const user = await MatchUser.findOne({ email: email.toLowerCase() });
+      
+      if (!user) {
+        // Don't reveal if email exists for security
+        return res.status(200).json({
+          success: true,
+          message: 'If your email is registered, you will receive a verification link shortly.'
+        });
+      }
+
+      // Check if already verified
+      if (user.verified) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is already verified'
+        });
+      }
+
+      // Generate new verification token
+      const verificationToken = user.generateEmailVerificationToken();
+      await user.save();
+
+      // Send verification email
+      try {
+        const emailSent = await emailService.sendVerificationEmail(
+          { 
+            email: user.email, 
+            firstName: user.name,
+            role: 'MatchUser'
+          }, 
+          verificationToken
+        );
+        
+        res.status(200).json({
+          success: true,
+          message: emailSent
+            ? 'Verification email sent successfully. Please check your inbox.'
+            : 'Unable to send verification email. Please try again later.'
+        });
+      } catch (emailError) {
+        console.error('Email service error:', emailError);
+        res.status(500).json({
+          success: false,
+          message: 'Failed to send verification email. Please try again later.'
+        });
+      }
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error sending verification email',
+        error: error.message
+      });
+    }
+  }
+
+  // Verify email endpoint (alias for verify with better naming)
+  async verifyEmail(req, res) {
+    return this.verify(req, res);
+  }
 }
 
 module.exports = new AuthController();

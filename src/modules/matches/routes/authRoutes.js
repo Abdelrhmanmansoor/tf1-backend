@@ -9,8 +9,10 @@ router.post('/register', authLimiter, authController.register);
 router.post('/signup', authLimiter, authController.signup); // Backward compatibility
 router.post('/verify', authController.verify);
 router.get('/verify', authController.verify); // Support both POST and GET for verification
+router.get('/verify-email', authController.verifyEmail); // New endpoint for /matches/verify-email
 router.post('/login', authLimiter, authController.login);
 router.post('/logout', authController.logout);
+router.post('/resend-verification', authLimiter, authController.resendVerification); // Resend verification email
 
 // Protected routes
 router.get('/me', authenticate, authController.me);

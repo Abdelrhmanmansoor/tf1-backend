@@ -97,7 +97,10 @@ class EmailService {
       return false;
     }
 
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+    // Use different verification path for MatchUser
+    const isMatchUser = user.role === 'MatchUser';
+    const verificationPath = isMatchUser ? '/matches/verify-email' : '/verify-email';
+    const verificationUrl = `${process.env.FRONTEND_URL}${verificationPath}?token=${verificationToken}`;
 
     // Get appropriate display name based on user type
     let displayName;
