@@ -108,4 +108,26 @@ router.get(
   jobsController.downloadAttachment
 );
 
+/**
+ * @route   PUT /api/v1/jobs/applications/:applicationId/status
+ * @desc    Update application status (club only)
+ * @access  Private (club)
+ */
+router.put(
+  '/applications/:applicationId/status',
+  authenticate,
+  jobsController.updateApplicationStatus
+);
+
+/**
+ * @route   POST /api/v1/jobs/applications/:applicationId/message
+ * @desc    Send message to applicant
+ * @access  Private (club)
+ */
+router.post(
+  '/applications/:applicationId/message',
+  authenticate,
+  jobsController.sendMessageToApplicant
+);
+
 module.exports = router;

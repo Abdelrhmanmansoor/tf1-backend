@@ -1075,6 +1075,322 @@ exports.createJobEvent = async (req, res) => {
 };
 
 /**
+ * @route   PUT /api/v1/jobs/applications/:applicationId/status
+ * @desc    Update application status (club only)
+ * @access  Private (club)
+ */
+exports.updateApplicationStatus = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const { status, notes, interviewDate, interviewLocation, offerDetails } = req.body;
+    const clubId = req.user._id;
+
+    // Valid statuses
+    const validStatuses = ['new', 'under_review', 'shortlisted', 'interview', 'offered', 'rejected', 'hired', 'withdrawn'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status',
+        messageAr: 'حالة غير صالحة',
+        validStatuses
+      });
+    }
+
+    // Find application and verify club ownership
+    const application = await JobApplication.findOne({
+      _id: applicationId,
+      isDeleted: false
+    }).populate('jobId', 'title titleAr clubId');
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found',
+        messageAr: 'الطلب غير موجود'
+      });
+    }
+
+    // Verify club owns this job
+    if (application.clubId.toString() !== clubId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this application',
+        messageAr: 'غير مصرح لك بتحديث هذا الطلب'
+      });
+    }
+
+    const previousStatus = application.status;
+
+    // Update application status
+    application.status = status;
+    
+    // Add to status history
+    if (!application.statusHistory) {
+      application.statusHistory = [];
+    }
+    application.statusHistory.push({
+      status,
+      changedAt: new Date(),
+      changedBy: clubId,
+      notes: notes || ''
+    });
+
+    // Handle interview scheduling
+    if (status === 'interview' && interviewDate) {
+      application.interview = {
+        scheduledAt: new Date(interviewDate),
+        location: interviewLocation || 'سيتم تحديده',
+        status: 'scheduled',
+        notes: notes || ''
+      };
+    }
+
+    // Handle offer
+    if (status === 'offered' && offerDetails) {
+      application.offer = {
+        salary: offerDetails.salary,
+        startDate: offerDetails.startDate ? new Date(offerDetails.startDate) : null,
+        benefits: offerDetails.benefits || [],
+        expiresAt: offerDetails.expiresAt ? new Date(offerDetails.expiresAt) : null,
+        status: 'pending'
+      };
+    }
+
+    // Add review notes
+    if (notes) {
+      application.review = {
+        ...application.review,
+        notes,
+        reviewedBy: clubId,
+        reviewedAt: new Date()
+      };
+    }
+
+    await application.save();
+
+    // Send notification to applicant
+    try {
+      const { saveNotification } = require('../middleware/notificationHandler');
+      const ClubProfile = require('../modules/club/models/ClubProfile');
+      const clubProfile = await ClubProfile.findOne({ userId: clubId });
+      const clubName = clubProfile?.clubName || 'النادي';
+      const jobTitle = application.jobId?.titleAr || application.jobId?.title || 'الوظيفة';
+
+      // Status-specific notification messages
+      const statusMessages = {
+        'under_review': {
+          title: 'Application Under Review',
+          titleAr: 'طلبك قيد المراجعة',
+          message: `Your application for ${jobTitle} is now under review by ${clubName}.`,
+          messageAr: `طلبك لوظيفة ${jobTitle} قيد المراجعة الآن من قبل ${clubName}.`
+        },
+        'shortlisted': {
+          title: 'You\'re Shortlisted!',
+          titleAr: 'تم اختيارك في القائمة المختصرة!',
+          message: `Congratulations! You've been shortlisted for ${jobTitle} at ${clubName}.`,
+          messageAr: `تهانينا! تم اختيارك في القائمة المختصرة لوظيفة ${jobTitle} في ${clubName}.`
+        },
+        'interview': {
+          title: 'Interview Scheduled',
+          titleAr: 'تم تحديد موعد المقابلة',
+          message: `${clubName} wants to interview you for ${jobTitle}. Check the details.`,
+          messageAr: `${clubName} يريد إجراء مقابلة معك لوظيفة ${jobTitle}. راجع التفاصيل.`
+        },
+        'offered': {
+          title: 'Job Offer Received!',
+          titleAr: 'تم استلام عرض وظيفي!',
+          message: `${clubName} has made you an offer for ${jobTitle}!`,
+          messageAr: `${clubName} قدم لك عرضاً وظيفياً لوظيفة ${jobTitle}!`
+        },
+        'rejected': {
+          title: 'Application Update',
+          titleAr: 'تحديث على طلبك',
+          message: `Your application for ${jobTitle} at ${clubName} was not successful this time.`,
+          messageAr: `للأسف، لم يتم قبول طلبك لوظيفة ${jobTitle} في ${clubName} هذه المرة.`
+        },
+        'hired': {
+          title: 'Congratulations! You\'re Hired!',
+          titleAr: 'تهانينا! تم توظيفك!',
+          message: `Welcome to ${clubName}! You've been hired for ${jobTitle}.`,
+          messageAr: `مرحباً بك في ${clubName}! تم توظيفك لوظيفة ${jobTitle}.`
+        }
+      };
+
+      const notifData = statusMessages[status];
+      if (notifData) {
+        const { notification, source } = await saveNotification({
+          userId: application.applicantId,
+          userRole: 'player', // or get from user
+          type: `application_${status}`,
+          title: notifData.title,
+          titleAr: notifData.titleAr,
+          message: notifData.message,
+          messageAr: notifData.messageAr,
+          relatedTo: {
+            entityType: 'job_application',
+            entityId: application._id
+          },
+          actionUrl: `/jobs/${application.jobId._id}/application/${application._id}`,
+          priority: status === 'offered' || status === 'hired' ? 'high' : 'normal'
+        });
+
+        // Send real-time notification
+        const io = req.app.get('io');
+        if (io) {
+          io.to(application.applicantId.toString()).emit('new_notification', {
+            _id: notification._id,
+            type: `application_${status}`,
+            notificationType: `application_${status}`,
+            applicationId: application._id,
+            jobId: application.jobId._id,
+            jobTitle,
+            clubName,
+            previousStatus,
+            newStatus: status,
+            title: notifData.title,
+            titleAr: notifData.titleAr,
+            message: notifData.message,
+            messageAr: notifData.messageAr,
+            actionUrl: `/jobs/${application.jobId._id}/application/${application._id}`,
+            priority: status === 'offered' || status === 'hired' ? 'high' : 'normal',
+            isRead: false,
+            createdAt: new Date()
+          });
+          console.log(`🔔 Status update notification sent to applicant ${application.applicantId}`);
+        }
+      }
+    } catch (notifError) {
+      console.error('Error sending status notification:', notifError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Application status updated successfully',
+      messageAr: 'تم تحديث حالة الطلب بنجاح',
+      data: {
+        applicationId: application._id,
+        previousStatus,
+        newStatus: status,
+        updatedAt: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('Update application status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating application status',
+      messageAr: 'خطأ في تحديث حالة الطلب',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route   POST /api/v1/jobs/applications/:applicationId/message
+ * @desc    Send message to applicant (creates notification)
+ * @access  Private (club)
+ */
+exports.sendMessageToApplicant = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const { message, messageAr } = req.body;
+    const clubId = req.user._id;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message is required',
+        messageAr: 'الرسالة مطلوبة'
+      });
+    }
+
+    const application = await JobApplication.findOne({
+      _id: applicationId,
+      clubId,
+      isDeleted: false
+    }).populate('jobId', 'title titleAr');
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found',
+        messageAr: 'الطلب غير موجود'
+      });
+    }
+
+    // Get club info
+    const ClubProfile = require('../modules/club/models/ClubProfile');
+    const clubProfile = await ClubProfile.findOne({ userId: clubId });
+    const clubName = clubProfile?.clubName || 'النادي';
+    const jobTitle = application.jobId?.titleAr || application.jobId?.title || 'الوظيفة';
+
+    // Save notification
+    const { saveNotification } = require('../middleware/notificationHandler');
+    const { notification, source } = await saveNotification({
+      userId: application.applicantId,
+      userRole: 'player',
+      type: 'club_message',
+      title: `Message from ${clubName}`,
+      titleAr: `رسالة من ${clubName}`,
+      message: message.substring(0, 200),
+      messageAr: (messageAr || message).substring(0, 200),
+      relatedTo: {
+        entityType: 'job_application',
+        entityId: application._id
+      },
+      actionUrl: `/jobs/${application.jobId._id}/application/${application._id}`,
+      priority: 'normal',
+      metadata: {
+        fullMessage: message,
+        fullMessageAr: messageAr || message,
+        clubId,
+        clubName,
+        jobTitle
+      }
+    });
+
+    // Send real-time notification
+    const io = req.app.get('io');
+    if (io) {
+      io.to(application.applicantId.toString()).emit('new_notification', {
+        _id: notification._id,
+        type: 'club_message',
+        notificationType: 'club_message',
+        applicationId: application._id,
+        jobId: application.jobId._id,
+        jobTitle,
+        clubName,
+        title: `Message from ${clubName}`,
+        titleAr: `رسالة من ${clubName}`,
+        message: message.substring(0, 200),
+        messageAr: (messageAr || message).substring(0, 200),
+        fullMessage: message,
+        isRead: false,
+        createdAt: new Date()
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Message sent successfully',
+      messageAr: 'تم إرسال الرسالة بنجاح',
+      data: {
+        notificationId: notification._id,
+        sentAt: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('Send message to applicant error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error sending message',
+      messageAr: 'خطأ في إرسال الرسالة',
+      error: error.message
+    });
+  }
+};
+
+/**
  * @desc Enhanced download with proper headers
  */
 exports.downloadResumeEnhanced = async (req, res) => {

@@ -14,7 +14,13 @@ const ClubDashboard = () => {
   const [applications, setApplications] = useState([]);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [showApplicantModal, setShowApplicantModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [messageText, setMessageText] = useState('');
+  const [interviewData, setInterviewData] = useState({ date: '', location: '', notes: '' });
   const [notifications, setNotifications] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [ageGroups, setAgeGroups] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -80,17 +86,101 @@ const ClubDashboard = () => {
     setShowApplicantModal(true);
   };
 
-  const updateApplicationStatus = async (applicationId, newStatus) => {
+  const updateApplicationStatus = async (applicationId, newStatus, additionalData = {}) => {
     try {
-      await api.put(`/jobs/applications/${applicationId}/status`, { status: newStatus });
-      setSuccess('تم تحديث حالة الطلب بنجاح');
+      setLoading(true);
+      const payload = { status: newStatus, ...additionalData };
+      
+      await api.put(`/jobs/applications/${applicationId}/status`, payload);
+      
+      setSuccess(`✅ تم تحديث حالة الطلب إلى: ${getStatusText(newStatus)}`);
       setTimeout(() => setSuccess(''), 3000);
+      
+      // Refresh applications list
       if (selectedJob) {
         fetchJobApplications(selectedJob);
       }
+      
+      // Close modals
+      setShowApplicantModal(false);
+      setShowInterviewModal(false);
     } catch (err) {
       console.error('Error updating status:', err);
-      setError('خطأ في تحديث الحالة');
+      setError('❌ خطأ في تحديث الحالة: ' + (err.response?.data?.messageAr || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusText = (status) => {
+    const statusMap = {
+      'new': 'جديد',
+      'under_review': 'قيد المراجعة',
+      'shortlisted': 'القائمة المختصرة',
+      'interview': 'مقابلة',
+      'offered': 'عرض وظيفي',
+      'hired': 'تم التوظيف',
+      'rejected': 'مرفوض'
+    };
+    return statusMap[status] || status;
+  };
+
+  const sendMessageToApplicant = async () => {
+    if (!messageText.trim()) {
+      setError('يرجى كتابة رسالة');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      await api.post(`/jobs/applications/${selectedApplication._id}/message`, {
+        message: messageText,
+        messageAr: messageText
+      });
+      
+      setSuccess('✅ تم إرسال الرسالة بنجاح');
+      setMessageText('');
+      setShowMessageModal(false);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError('❌ خطأ في إرسال الرسالة: ' + (err.response?.data?.messageAr || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const scheduleInterview = async () => {
+    if (!interviewData.date) {
+      setError('يرجى تحديد موعد المقابلة');
+      return;
+    }
+    
+    await updateApplicationStatus(selectedApplication._id, 'interview', {
+      interviewDate: interviewData.date,
+      interviewLocation: interviewData.location,
+      notes: interviewData.notes
+    });
+    
+    setInterviewData({ date: '', location: '', notes: '' });
+    setShowInterviewModal(false);
+  };
+
+  const fetchTeams = async () => {
+    try {
+      const res = await api.get('/clubs/teams');
+      setTeams(res.data.data || res.data.teams || []);
+    } catch (err) {
+      console.error('Error fetching teams:', err);
+    }
+  };
+
+  const fetchAgeGroups = async () => {
+    try {
+      const res = await api.get('/age-group-supervisor/groups');
+      setAgeGroups(res.data.data?.groups || []);
+    } catch (err) {
+      console.error('Error fetching age groups:', err);
     }
   };
 
@@ -167,6 +257,18 @@ const ClubDashboard = () => {
           onClick={() => { setActiveTab('jobs'); setSelectedJob(null); setApplications([]); }}
         >
           💼 الوظائف
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'teams' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('teams'); fetchTeams(); }}
+        >
+          ⚽ الفرق
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'ageGroups' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('ageGroups'); fetchAgeGroups(); }}
+        >
+          👶 الفئات العمرية
         </button>
         <button
           className={`tab-button ${activeTab === 'notifications' ? 'active' : ''}`}
