@@ -13,11 +13,51 @@ import LeaderDashboard from './pages/LeaderDashboard';
 import ClubDashboard from './pages/ClubDashboard';
 import './App.css';
 
+// Basic protected route - requires authentication only
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
   if (loading) return <div className="loading">جاري التحميل...</div>;
   if (!user) return <Navigate to="/login" />;
+  
+  return children;
+};
+
+// Role-based protected route - requires specific roles
+const RoleProtectedRoute = ({ children, allowedRoles, redirectTo = '/' }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) return <div className="loading">جاري التحميل...</div>;
+  if (!user) return <Navigate to="/login" />;
+  
+  // Check if user has one of the allowed roles
+  const userRole = user.role || user.roles?.[0];
+  if (!allowedRoles.includes(userRole)) {
+    console.warn(`Access denied: User role "${userRole}" not in allowed roles:`, allowedRoles);
+    return (
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '50vh',
+        textAlign: 'center',
+        padding: '20px'
+      }}>
+        <h2 style={{ color: '#f44336', marginBottom: '15px' }}>⛔ غير مصرح</h2>
+        <p style={{ color: '#666', marginBottom: '20px' }}>ليس لديك صلاحية للوصول إلى هذه الصفحة</p>
+        <a href={redirectTo} style={{ 
+          padding: '10px 25px', 
+          background: '#2196F3', 
+          color: 'white', 
+          borderRadius: '8px', 
+          textDecoration: 'none' 
+        }}>
+          العودة للرئيسية
+        </a>
+      </div>
+    );
+  }
   
   return children;
 };
@@ -85,36 +125,40 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+              {/* Age Group Supervisor Dashboard - restricted to specific roles */}
               <Route 
                 path="/age-group-supervisor" 
                 element={
-                  <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['age-group-supervisor', 'admin', 'administrator', 'club']}>
                     <AgeGroupSupervisor />
-                  </ProtectedRoute>
+                  </RoleProtectedRoute>
                 } 
               />
+              {/* Admin Dashboard - restricted to admin roles */}
               <Route 
                 path="/admin-dashboard" 
                 element={
-                  <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['admin', 'administrator', 'leader']}>
                     <AdminDashboard />
-                  </ProtectedRoute>
+                  </RoleProtectedRoute>
                 } 
               />
+              {/* Leader Dashboard - restricted to leader role */}
               <Route 
                 path="/dashboard/leader"
                 element={
-                  <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['leader', 'admin']}>
                     <LeaderDashboard />
-                  </ProtectedRoute>
+                  </RoleProtectedRoute>
                 }
               />
+              {/* Club Dashboard - restricted to club role */}
               <Route 
                 path="/dashboard/club"
                 element={
-                  <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={['club']}>
                     <ClubDashboard />
-                  </ProtectedRoute>
+                  </RoleProtectedRoute>
                 }
               />
             </Routes>

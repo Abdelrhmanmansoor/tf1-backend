@@ -5,7 +5,12 @@ import '../styles/AgeGroupSupervisor.css';
 
 const AgeGroupSupervisor = () => {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('groups');
   const [groups, setGroups] = useState([]);
+  const [players, setPlayers] = useState([]);
+  const [schedule, setSchedule] = useState([]);
+  const [matches, setMatches] = useState([]);
+  const [dashboardStats, setDashboardStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -20,7 +25,53 @@ const AgeGroupSupervisor = () => {
 
   useEffect(() => {
     fetchGroups();
+    fetchDashboard();
   }, []);
+
+  const fetchDashboard = async () => {
+    try {
+      const res = await api.get('/age-group-supervisor/dashboard');
+      setDashboardStats(res.data.data?.stats || {});
+    } catch (err) {
+      console.error('Error fetching dashboard:', err);
+    }
+  };
+
+  const fetchPlayers = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/age-group-supervisor/players');
+      setPlayers(res.data.data?.players || res.data.players || []);
+    } catch (err) {
+      console.error('Error fetching players:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSchedule = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/age-group-supervisor/schedule');
+      setSchedule(res.data.data?.sessions || res.data.sessions || []);
+    } catch (err) {
+      console.error('Error fetching schedule:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMatches = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/age-group-supervisor/matches');
+      setMatches(res.data.data?.matches || res.data.matches || []);
+    } catch (err) {
+      console.error('Error fetching matches:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchGroups = async () => {
     try {
@@ -159,18 +210,105 @@ const AgeGroupSupervisor = () => {
   return (
     <div className="age-group-container">
       <div className="age-group-header">
-        <h1>👥 إدارة الفئات العمرية</h1>
-        <p>أضف وأدر الفئات العمرية للاعبين</p>
+        <h1>👶 لوحة تحكم مشرف الفئات العمرية</h1>
+        <p>إدارة الفئات العمرية واللاعبين والجداول والمباريات</p>
+      </div>
+
+      {/* Dashboard Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+        <div style={{ background: '#e3f2fd', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem' }}>👶</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1976D2' }}>{dashboardStats.totalAgeGroups || 0}</div>
+          <div style={{ color: '#666' }}>الفئات العمرية</div>
+        </div>
+        <div style={{ background: '#e8f5e9', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem' }}>⚽</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#388E3C' }}>{dashboardStats.totalPlayers || 0}</div>
+          <div style={{ color: '#666' }}>اللاعبين</div>
+        </div>
+        <div style={{ background: '#fff3e0', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem' }}>📅</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#F57C00' }}>{dashboardStats.activeTrainings || 0}</div>
+          <div style={{ color: '#666' }}>التدريبات</div>
+        </div>
+        <div style={{ background: '#fce4ec', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem' }}>🏆</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#C2185B' }}>{dashboardStats.upcomingMatches || 0}</div>
+          <div style={{ color: '#666' }}>المباريات</div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <button 
+          onClick={() => setActiveTab('groups')}
+          style={{ 
+            padding: '10px 20px', 
+            borderRadius: '8px', 
+            border: 'none', 
+            background: activeTab === 'groups' ? '#2196F3' : '#e0e0e0',
+            color: activeTab === 'groups' ? 'white' : '#333',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          👶 الفئات العمرية
+        </button>
+        <button 
+          onClick={() => { setActiveTab('players'); fetchPlayers(); }}
+          style={{ 
+            padding: '10px 20px', 
+            borderRadius: '8px', 
+            border: 'none', 
+            background: activeTab === 'players' ? '#2196F3' : '#e0e0e0',
+            color: activeTab === 'players' ? 'white' : '#333',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          ⚽ اللاعبين
+        </button>
+        <button 
+          onClick={() => { setActiveTab('schedule'); fetchSchedule(); }}
+          style={{ 
+            padding: '10px 20px', 
+            borderRadius: '8px', 
+            border: 'none', 
+            background: activeTab === 'schedule' ? '#2196F3' : '#e0e0e0',
+            color: activeTab === 'schedule' ? 'white' : '#333',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          📅 الجداول
+        </button>
+        <button 
+          onClick={() => { setActiveTab('matches'); fetchMatches(); }}
+          style={{ 
+            padding: '10px 20px', 
+            borderRadius: '8px', 
+            border: 'none', 
+            background: activeTab === 'matches' ? '#2196F3' : '#e0e0e0',
+            color: activeTab === 'matches' ? 'white' : '#333',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          🏆 المباريات
+        </button>
       </div>
 
       {error && <div className="error-message">❌ {error}</div>}
       {success && <div className="success-message">✅ {success}</div>}
 
-      {!showForm && (
-        <button className="btn-add" onClick={() => setShowForm(true)}>
-          ➕ إضافة فئة عمرية جديدة
-        </button>
-      )}
+      {/* Groups Tab */}
+      {activeTab === 'groups' && (
+        <>
+          {!showForm && (
+            <button className="btn-add" onClick={() => setShowForm(true)}>
+              ➕ إضافة فئة عمرية جديدة
+            </button>
+          )}
 
       {showForm && (
         <div className="form-container">
@@ -310,6 +448,76 @@ const AgeGroupSupervisor = () => {
                       🗑️ حذف
                     </button>
                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+        </>
+      )}
+
+      {/* Players Tab */}
+      {activeTab === 'players' && (
+        <div className="players-tab">
+          <h3>⚽ اللاعبين المسجلين</h3>
+          {loading ? (
+            <div className="loading">جاري التحميل...</div>
+          ) : players.length === 0 ? (
+            <p style={{ textAlign: 'center', padding: '20px', color: '#666' }}>لا يوجد لاعبين مسجلين</p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
+              {players.map((player, idx) => (
+                <div key={player._id || idx} style={{ background: 'white', padding: '15px', borderRadius: '10px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                  <h4>⚽ {player.firstName} {player.lastName}</h4>
+                  <p style={{ color: '#666' }}>📧 {player.email}</p>
+                  <p style={{ color: '#666' }}>🎂 العمر: {player.age || 'غير محدد'}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Schedule Tab */}
+      {activeTab === 'schedule' && (
+        <div className="schedule-tab">
+          <h3>📅 جداول التدريب</h3>
+          {loading ? (
+            <div className="loading">جاري التحميل...</div>
+          ) : schedule.length === 0 ? (
+            <p style={{ textAlign: 'center', padding: '20px', color: '#666' }}>لا توجد جداول تدريب</p>
+          ) : (
+            <div style={{ display: 'grid', gap: '15px' }}>
+              {schedule.map((session, idx) => (
+                <div key={session._id || idx} style={{ background: 'white', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', borderRight: '4px solid #2196F3' }}>
+                  <h4>📅 {session.title || 'تدريب'}</h4>
+                  <p>📆 التاريخ: {session.date ? new Date(session.date).toLocaleDateString('ar-SA') : 'غير محدد'}</p>
+                  <p>⏰ الوقت: {session.time || 'غير محدد'}</p>
+                  <p>📍 المكان: {session.location || 'غير محدد'}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Matches Tab */}
+      {activeTab === 'matches' && (
+        <div className="matches-tab">
+          <h3>🏆 المباريات</h3>
+          {loading ? (
+            <div className="loading">جاري التحميل...</div>
+          ) : matches.length === 0 ? (
+            <p style={{ textAlign: 'center', padding: '20px', color: '#666' }}>لا توجد مباريات</p>
+          ) : (
+            <div style={{ display: 'grid', gap: '15px' }}>
+              {matches.map((match, idx) => (
+                <div key={match._id || idx} style={{ background: 'white', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', borderRight: '4px solid #4CAF50' }}>
+                  <h4>🏆 {match.title || `${match.homeTeam} vs ${match.awayTeam}`}</h4>
+                  <p>📆 التاريخ: {match.date ? new Date(match.date).toLocaleDateString('ar-SA') : 'غير محدد'}</p>
+                  <p>📍 المكان: {match.location || 'غير محدد'}</p>
+                  <p>📊 الحالة: {match.status || 'مجدولة'}</p>
                 </div>
               ))}
             </div>

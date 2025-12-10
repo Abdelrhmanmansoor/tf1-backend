@@ -376,6 +376,63 @@ const ClubDashboard = () => {
           </div>
         )}
 
+        {/* Teams Tab */}
+        {activeTab === 'teams' && (
+          <div className="teams-tab">
+            <div className="users-header">
+              <h3>⚽ فرق النادي</h3>
+              <span className="count-badge">{teams.length} فريق</span>
+            </div>
+            {loading ? (
+              <div className="loading">جاري التحميل...</div>
+            ) : teams.length === 0 ? (
+              <p style={{ textAlign: 'center', padding: '20px', color: '#666' }}>لا توجد فرق مسجلة</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                {teams.map((team) => (
+                  <div key={team._id} style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                    <h4 style={{ color: '#333', marginBottom: '10px' }}>⚽ {team.name}</h4>
+                    <p style={{ color: '#666' }}>👥 اللاعبين: {team.players?.length || 0}</p>
+                    <p style={{ color: '#666' }}>👨‍🏫 المدربين: {team.coaches?.length || 0}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Age Groups Tab */}
+        {activeTab === 'ageGroups' && (
+          <div className="age-groups-tab">
+            <div className="users-header">
+              <h3>👶 الفئات العمرية</h3>
+              <span className="count-badge">{ageGroups.length} فئة</span>
+            </div>
+            {loading ? (
+              <div className="loading">جاري التحميل...</div>
+            ) : ageGroups.length === 0 ? (
+              <p style={{ textAlign: 'center', padding: '20px', color: '#666' }}>لا توجد فئات عمرية</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                {ageGroups.map((group) => (
+                  <div key={group.id} style={{ 
+                    background: group.status === 'active' ? '#e8f5e9' : '#ffebee', 
+                    borderRadius: '12px', 
+                    padding: '20px', 
+                    border: `2px solid ${group.status === 'active' ? '#4CAF50' : '#f44336'}`
+                  }}>
+                    <h4 style={{ color: '#333', marginBottom: '5px' }}>{group.name}</h4>
+                    <p style={{ color: '#666', marginBottom: '10px' }}>{group.nameAr}</p>
+                    <p>📅 العمر: {group.ageRange?.min} - {group.ageRange?.max} سنة</p>
+                    <p>👥 اللاعبين: {group.playersCount || 0}</p>
+                    <p>👨‍🏫 المدرب: {group.coachName || 'لم يتم تعيينه'}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'notifications' && (
           <div className="notifications-tab">
             <h3>🔔 الإشعارات</h3>
@@ -503,38 +560,250 @@ const ClubDashboard = () => {
                 </div>
               )}
 
-              <div className="actions-section" style={{ marginTop: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <div className="actions-section" style={{ marginTop: '20px' }}>
+                <h4 style={{ marginBottom: '15px', color: '#333' }}>📌 تحديث حالة الطلب</h4>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '15px' }}>
+                  <button 
+                    onClick={() => updateApplicationStatus(selectedApplication._id, 'under_review')}
+                    style={{ background: '#FF9800', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
+                    disabled={loading}
+                  >
+                    📋 قيد المراجعة
+                  </button>
+                  <button 
+                    onClick={() => updateApplicationStatus(selectedApplication._id, 'shortlisted')}
+                    style={{ background: '#9C27B0', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
+                    disabled={loading}
+                  >
+                    ⭐ قائمة مختصرة
+                  </button>
+                  <button 
+                    onClick={() => { setShowApplicantModal(false); setShowInterviewModal(true); }}
+                    style={{ background: '#00BCD4', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
+                  >
+                    🎤 جدولة مقابلة
+                  </button>
+                  <button 
+                    onClick={() => updateApplicationStatus(selectedApplication._id, 'offered')}
+                    style={{ background: '#4CAF50', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
+                    disabled={loading}
+                  >
+                    ✅ عرض وظيفي
+                  </button>
+                  <button 
+                    onClick={() => updateApplicationStatus(selectedApplication._id, 'hired')}
+                    style={{ background: '#2196F3', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
+                    disabled={loading}
+                  >
+                    🎉 توظيف
+                  </button>
+                  <button 
+                    onClick={() => updateApplicationStatus(selectedApplication._id, 'rejected')}
+                    style={{ background: '#F44336', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
+                    disabled={loading}
+                  >
+                    ❌ رفض
+                  </button>
+                </div>
+                
+                <h4 style={{ marginBottom: '10px', color: '#333' }}>💬 التواصل مع المتقدم</h4>
                 <button 
-                  onClick={() => updateApplicationStatus(selectedApplication._id, 'under_review')}
-                  style={{ background: '#FF9800', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
+                  onClick={() => { setShowApplicantModal(false); setShowMessageModal(true); }}
+                  style={{ background: '#673AB7', color: 'white', border: 'none', padding: '12px 25px', borderRadius: '5px', cursor: 'pointer' }}
                 >
-                  📋 قيد المراجعة
-                </button>
-                <button 
-                  onClick={() => updateApplicationStatus(selectedApplication._id, 'shortlisted')}
-                  style={{ background: '#9C27B0', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
-                >
-                  ⭐ قائمة مختصرة
-                </button>
-                <button 
-                  onClick={() => updateApplicationStatus(selectedApplication._id, 'interview')}
-                  style={{ background: '#00BCD4', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
-                >
-                  🎤 مقابلة
-                </button>
-                <button 
-                  onClick={() => updateApplicationStatus(selectedApplication._id, 'offered')}
-                  style={{ background: '#4CAF50', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
-                >
-                  ✅ عرض وظيفي
-                </button>
-                <button 
-                  onClick={() => updateApplicationStatus(selectedApplication._id, 'rejected')}
-                  style={{ background: '#F44336', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}
-                >
-                  ❌ رفض
+                  ✉️ إرسال رسالة
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Message Modal */}
+      {showMessageModal && selectedApplication && (
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="modal-content" style={{
+            backgroundColor: 'white',
+            borderRadius: '15px',
+            padding: '30px',
+            maxWidth: '500px',
+            width: '90%'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2>✉️ إرسال رسالة</h2>
+              <button 
+                onClick={() => { setShowMessageModal(false); setMessageText(''); }}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <p style={{ marginBottom: '15px', color: '#666' }}>
+              إرسال رسالة إلى: <strong>{selectedApplication.applicant?.fullName || selectedApplication.applicant?.firstName}</strong>
+            </p>
+            
+            <textarea
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              placeholder="اكتب رسالتك هنا..."
+              style={{
+                width: '100%',
+                minHeight: '150px',
+                padding: '15px',
+                borderRadius: '10px',
+                border: '1px solid #ddd',
+                fontSize: '1rem',
+                resize: 'vertical'
+              }}
+            />
+            
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => { setShowMessageModal(false); setMessageText(''); }}
+                style={{ background: '#9E9E9E', color: 'white', border: 'none', padding: '12px 25px', borderRadius: '5px', cursor: 'pointer' }}
+              >
+                إلغاء
+              </button>
+              <button 
+                onClick={sendMessageToApplicant}
+                disabled={loading || !messageText.trim()}
+                style={{ 
+                  background: loading ? '#ccc' : '#673AB7', 
+                  color: 'white', 
+                  border: 'none', 
+                  padding: '12px 25px', 
+                  borderRadius: '5px', 
+                  cursor: loading ? 'not-allowed' : 'pointer' 
+                }}
+              >
+                {loading ? 'جاري الإرسال...' : '📤 إرسال'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interview Modal */}
+      {showInterviewModal && selectedApplication && (
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="modal-content" style={{
+            backgroundColor: 'white',
+            borderRadius: '15px',
+            padding: '30px',
+            maxWidth: '500px',
+            width: '90%'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2>🎤 جدولة مقابلة</h2>
+              <button 
+                onClick={() => { setShowInterviewModal(false); setInterviewData({ date: '', location: '', notes: '' }); }}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <p style={{ marginBottom: '15px', color: '#666' }}>
+              مقابلة مع: <strong>{selectedApplication.applicant?.fullName || selectedApplication.applicant?.firstName}</strong>
+            </p>
+            
+            <div style={{ display: 'grid', gap: '15px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>📅 موعد المقابلة *</label>
+                <input
+                  type="datetime-local"
+                  value={interviewData.date}
+                  onChange={(e) => setInterviewData({ ...interviewData, date: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #ddd',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>📍 مكان المقابلة</label>
+                <input
+                  type="text"
+                  value={interviewData.location}
+                  onChange={(e) => setInterviewData({ ...interviewData, location: e.target.value })}
+                  placeholder="مثال: مقر النادي - قاعة الاجتماعات"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #ddd',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>📝 ملاحظات</label>
+                <textarea
+                  value={interviewData.notes}
+                  onChange={(e) => setInterviewData({ ...interviewData, notes: e.target.value })}
+                  placeholder="أي ملاحظات إضافية..."
+                  style={{
+                    width: '100%',
+                    minHeight: '80px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #ddd',
+                    fontSize: '1rem',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => { setShowInterviewModal(false); setInterviewData({ date: '', location: '', notes: '' }); }}
+                style={{ background: '#9E9E9E', color: 'white', border: 'none', padding: '12px 25px', borderRadius: '5px', cursor: 'pointer' }}
+              >
+                إلغاء
+              </button>
+              <button 
+                onClick={scheduleInterview}
+                disabled={loading || !interviewData.date}
+                style={{ 
+                  background: loading ? '#ccc' : '#00BCD4', 
+                  color: 'white', 
+                  border: 'none', 
+                  padding: '12px 25px', 
+                  borderRadius: '5px', 
+                  cursor: loading ? 'not-allowed' : 'pointer' 
+                }}
+              >
+                {loading ? 'جاري الحفظ...' : '✅ تأكيد المقابلة'}
+              </button>
             </div>
           </div>
         </div>
