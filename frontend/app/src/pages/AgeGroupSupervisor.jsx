@@ -24,9 +24,15 @@ const AgeGroupSupervisor = () => {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    fetchGroups();
+    // If user is age-group-supervisor, fetch only their assigned groups
+    // If user is club/admin, fetch all groups
+    if (user?.role === 'age-group-supervisor') {
+      fetchMyAssignedGroups();
+    } else {
+      fetchGroups();
+    }
     fetchDashboard();
-  }, []);
+  }, [user]);
 
   const fetchDashboard = async () => {
     try {
@@ -34,6 +40,23 @@ const AgeGroupSupervisor = () => {
       setDashboardStats(res.data.data?.stats || {});
     } catch (err) {
       console.error('Error fetching dashboard:', err);
+    }
+  };
+
+  const fetchMyAssignedGroups = async () => {
+    try {
+      setLoading(true);
+      console.log('📥 Fetching my assigned age groups...');
+      const response = await api.get('/age-group-supervisor/my-groups');
+      console.log('✅ My groups fetched:', response.data);
+      setGroups(response.data.data?.groups || []);
+      setError('');
+    } catch (err) {
+      console.error('❌ Error fetching my groups:', err);
+      // Fallback to all groups if endpoint fails
+      fetchGroups();
+    } finally {
+      setLoading(false);
     }
   };
 

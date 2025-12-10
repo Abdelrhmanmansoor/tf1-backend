@@ -16,7 +16,11 @@ router.put('/groups/:id', controller.updateAgeGroup);
 router.delete('/groups/:id', controller.deleteAgeGroup);
 
 router.post('/groups/:id/assign-coach', controller.assignCoach);
+router.post('/groups/:id/assign-supervisor', controller.assignSupervisor);
 router.get('/groups/:id/players', controller.getGroupPlayers);
+
+// Get groups assigned to current supervisor
+router.get('/my-groups', controller.getMyAssignedGroups);
 
 router.get('/schedule', controller.getSchedule);
 router.post('/schedule', controller.createTrainingSession);

@@ -65,6 +65,7 @@ exports.getAgeGroups = async (req, res) => {
     const clubId = req.user.clubId || req.user._id;
     const groups = await AgeGroup.find({ clubId, isDeleted: { $ne: true } })
       .populate('coachId', 'firstName lastName')
+      .populate('supervisorId', 'firstName lastName')
       .sort({ 'ageRange.min': 1 });
 
     res.json({
@@ -76,7 +77,9 @@ exports.getAgeGroups = async (req, res) => {
           nameAr: g.nameAr,
           ageRange: g.ageRange,
           coachId: g.coachId?._id,
-          coachName: g.coachId ? `${g.coachId.firstName} ${g.coachId.lastName}` : null,
+          coachName: g.coachId ? `${g.coachId.firstName} ${g.coachId.lastName}` : g.coachName,
+          supervisorId: g.supervisorId?._id,
+          supervisorName: g.supervisorId ? `${g.supervisorId.firstName} ${g.supervisorId.lastName}` : g.supervisorName,
           playersCount: g.playersCount,
           status: g.status,
           trainingSchedule: g.trainingSchedule
@@ -334,6 +337,207 @@ exports.assignCoach = async (req, res) => {
         code: 'ASSIGN_COACH_ERROR',
         message: 'Error assigning coach',
         messageAr: 'خطأ في تعيين المدرب'
+      }
+    });
+  }
+};
+
+/**
+ * @route   POST /api/v1/age-group-supervisor/groups/:id/assign-supervisor
+ * @desc    Assign supervisor to age group (Club only)
+ * @access  Private (club)
+ */
+exports.assignSupervisor = async (req, res) => {
+  try {
+    const { supervisorId } = req.body;
+    const clubId = req.user._id;
+
+    // Verify user is a club
+    if (req.user.role !== 'club' && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Only clubs can assign supervisors',
+          messageAr: 'فقط الأندية يمكنها تعيين المشرفين'
+        }
+      });
+    }
+
+    // Verify supervisor exists and has correct role
+    const supervisor = await User.findOne({ 
+      _id: supervisorId, 
+      role: { $in: ['age-group-supervisor', 'coach'] }
+    });
+    
+    if (!supervisor) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'SUPERVISOR_NOT_FOUND',
+          message: 'Supervisor not found',
+          messageAr: 'المشرف غير موجود'
+        }
+      });
+    }
+
+    // Update age group with supervisor
+    const group = await AgeGroup.findOneAndUpdate(
+      { _id: req.params.id, clubId },
+      { 
+        supervisorId,
+        supervisorName: `${supervisor.firstName} ${supervisor.lastName}`
+      },
+      { new: true }
+    );
+
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'GROUP_NOT_FOUND',
+          message: 'Age group not found or not owned by this club',
+          messageAr: 'الفئة العمرية غير موجودة أو لا تنتمي لهذا النادي'
+        }
+      });
+    }
+
+    // Update supervisor's clubId to link them
+    await User.findByIdAndUpdate(supervisorId, { 
+      clubId,
+      assignedAgeGroups: { $addToSet: group._id }
+    });
+
+    res.json({
+      success: true,
+      data: group,
+      message: 'Supervisor assigned successfully',
+      messageAr: 'تم تعيين المشرف بنجاح'
+    });
+  } catch (error) {
+    console.error('Assign supervisor error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'ASSIGN_SUPERVISOR_ERROR',
+        message: 'Error assigning supervisor',
+        messageAr: 'خطأ في تعيين المشرف'
+      }
+    });
+  }
+};
+
+/**
+ * @route   GET /api/v1/age-group-supervisor/my-groups
+ * @desc    Get age groups assigned to current supervisor
+ * @access  Private (age-group-supervisor)
+ */
+exports.getMyAssignedGroups = async (req, res) => {
+  try {
+    const supervisorId = req.user._id;
+    const clubId = req.user.clubId;
+
+    // Get groups where this user is the supervisor
+    const groups = await AgeGroup.find({ 
+      $or: [
+        { supervisorId },
+        { clubId: supervisorId } // If user is also a club
+      ],
+      isDeleted: { $ne: true }
+    })
+    .populate('coachId', 'firstName lastName')
+    .sort({ 'ageRange.min': 1 });
+
+    res.json({
+      success: true,
+      data: {
+        groups: groups.map(g => ({
+          id: g._id,
+          name: g.name,
+          nameAr: g.nameAr,
+          ageRange: g.ageRange,
+          coachId: g.coachId?._id,
+          coachName: g.coachId ? `${g.coachId.firstName} ${g.coachId.lastName}` : null,
+          playersCount: g.playersCount,
+          status: g.status,
+          clubId: g.clubId
+        })),
+        count: groups.length
+      }
+    });
+  } catch (error) {
+    console.error('Get my assigned groups error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'GET_GROUPS_ERROR',
+        message: 'Error fetching assigned groups',
+        messageAr: 'خطأ في جلب الفئات المعينة'
+      }
+    });
+  }
+};
+
+/**
+ * @route   GET /api/v1/age-group-supervisor/groups/:id/players
+ * @desc    Get players in a specific age group
+ * @access  Private
+ */
+exports.getGroupPlayers = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Verify group exists
+    const group = await AgeGroup.findById(id);
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'GROUP_NOT_FOUND',
+          message: 'Age group not found',
+          messageAr: 'الفئة العمرية غير موجودة'
+        }
+      });
+    }
+
+    // Get players registered to this age group
+    const registrations = await PlayerRegistration.find({ 
+      ageGroupId: id,
+      status: 'approved',
+      isDeleted: { $ne: true }
+    }).populate('playerId', 'firstName lastName email phone dateOfBirth');
+
+    const players = registrations.map(r => ({
+      id: r.playerId?._id,
+      firstName: r.playerId?.firstName,
+      lastName: r.playerId?.lastName,
+      email: r.playerId?.email,
+      phone: r.playerId?.phone,
+      dateOfBirth: r.playerId?.dateOfBirth,
+      registeredAt: r.createdAt,
+      status: r.status
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        players,
+        count: players.length,
+        ageGroup: {
+          id: group._id,
+          name: group.name,
+          nameAr: group.nameAr
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get group players error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'GET_PLAYERS_ERROR',
+        message: 'Error fetching players',
+        messageAr: 'خطأ في جلب اللاعبين'
       }
     });
   }

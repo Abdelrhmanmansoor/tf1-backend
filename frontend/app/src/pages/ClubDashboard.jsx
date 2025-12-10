@@ -21,6 +21,10 @@ const ClubDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [teams, setTeams] = useState([]);
   const [ageGroups, setAgeGroups] = useState([]);
+  const [supervisors, setSupervisors] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [showAssignSupervisorModal, setShowAssignSupervisorModal] = useState(false);
+  const [selectedSupervisorId, setSelectedSupervisorId] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -181,6 +185,48 @@ const ClubDashboard = () => {
       setAgeGroups(res.data.data?.groups || []);
     } catch (err) {
       console.error('Error fetching age groups:', err);
+    }
+  };
+
+  const fetchSupervisors = async () => {
+    try {
+      const res = await api.get('/admin/users?role=age-group-supervisor&limit=50');
+      setSupervisors(res.data.data || []);
+    } catch (err) {
+      console.error('Error fetching supervisors:', err);
+      // Try fetching coaches as fallback
+      try {
+        const coachRes = await api.get('/admin/users?role=coach&limit=50');
+        setSupervisors(coachRes.data.data || []);
+      } catch (e) {
+        console.error('Error fetching coaches:', e);
+      }
+    }
+  };
+
+  const assignSupervisorToGroup = async () => {
+    if (!selectedSupervisorId || !selectedGroup) {
+      setError('يرجى اختيار مشرف');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      await api.post(`/age-group-supervisor/groups/${selectedGroup.id}/assign-supervisor`, {
+        supervisorId: selectedSupervisorId
+      });
+      
+      setSuccess('✅ تم تعيين المشرف بنجاح');
+      setShowAssignSupervisorModal(false);
+      setSelectedSupervisorId('');
+      setSelectedGroup(null);
+      fetchAgeGroups();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Error assigning supervisor:', err);
+      setError('❌ خطأ في تعيين المشرف: ' + (err.response?.data?.error?.messageAr || err.message));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -406,14 +452,22 @@ const ClubDashboard = () => {
           <div className="age-groups-tab">
             <div className="users-header">
               <h3>👶 الفئات العمرية</h3>
-              <span className="count-badge">{ageGroups.length} فئة</span>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <span className="count-badge">{ageGroups.length} فئة</span>
+                <button 
+                  onClick={() => { fetchSupervisors(); }}
+                  style={{ padding: '8px 15px', background: '#9C27B0', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                >
+                  👤 تحميل المشرفين
+                </button>
+              </div>
             </div>
             {loading ? (
               <div className="loading">جاري التحميل...</div>
             ) : ageGroups.length === 0 ? (
               <p style={{ textAlign: 'center', padding: '20px', color: '#666' }}>لا توجد فئات عمرية</p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                 {ageGroups.map((group) => (
                   <div key={group.id} style={{ 
                     background: group.status === 'active' ? '#e8f5e9' : '#ffebee', 
@@ -423,9 +477,32 @@ const ClubDashboard = () => {
                   }}>
                     <h4 style={{ color: '#333', marginBottom: '5px' }}>{group.name}</h4>
                     <p style={{ color: '#666', marginBottom: '10px' }}>{group.nameAr}</p>
-                    <p>📅 العمر: {group.ageRange?.min} - {group.ageRange?.max} سنة</p>
-                    <p>👥 اللاعبين: {group.playersCount || 0}</p>
-                    <p>👨‍🏫 المدرب: {group.coachName || 'لم يتم تعيينه'}</p>
+                    <div style={{ display: 'grid', gap: '5px', fontSize: '0.9rem' }}>
+                      <p>📅 العمر: {group.ageRange?.min} - {group.ageRange?.max} سنة</p>
+                      <p>👥 اللاعبين: {group.playersCount || 0}</p>
+                      <p>👨‍🏫 المدرب: {group.coachName || 'لم يتم تعيينه'}</p>
+                      <p>👤 المشرف: {group.supervisorName || 'لم يتم تعيينه'}</p>
+                    </div>
+                    <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+                      <button 
+                        onClick={() => { 
+                          setSelectedGroup(group); 
+                          setShowAssignSupervisorModal(true); 
+                          if (supervisors.length === 0) fetchSupervisors();
+                        }}
+                        style={{ 
+                          padding: '8px 15px', 
+                          background: '#673AB7', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '5px', 
+                          cursor: 'pointer',
+                          fontSize: '0.85rem'
+                        }}
+                      >
+                        👤 تعيين مشرف
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -803,6 +880,96 @@ const ClubDashboard = () => {
                 }}
               >
                 {loading ? 'جاري الحفظ...' : '✅ تأكيد المقابلة'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Supervisor Modal */}
+      {showAssignSupervisorModal && selectedGroup && (
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="modal-content" style={{
+            backgroundColor: 'white',
+            borderRadius: '15px',
+            padding: '30px',
+            maxWidth: '500px',
+            width: '90%'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2>👤 تعيين مشرف للفئة</h2>
+              <button 
+                onClick={() => { setShowAssignSupervisorModal(false); setSelectedSupervisorId(''); }}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div style={{ background: '#f5f5f5', padding: '15px', borderRadius: '10px', marginBottom: '20px' }}>
+              <p><strong>الفئة:</strong> {selectedGroup.name} ({selectedGroup.nameAr})</p>
+              <p><strong>العمر:</strong> {selectedGroup.ageRange?.min} - {selectedGroup.ageRange?.max} سنة</p>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>اختر المشرف:</label>
+              {supervisors.length === 0 ? (
+                <p style={{ color: '#666', textAlign: 'center', padding: '20px' }}>
+                  جاري تحميل المشرفين... أو لا يوجد مشرفين متاحين
+                </p>
+              ) : (
+                <select
+                  value={selectedSupervisorId}
+                  onChange={(e) => setSelectedSupervisorId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #ddd',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <option value="">-- اختر مشرف --</option>
+                  {supervisors.map((sup) => (
+                    <option key={sup._id} value={sup._id}>
+                      {sup.firstName} {sup.lastName} ({sup.email})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => { setShowAssignSupervisorModal(false); setSelectedSupervisorId(''); }}
+                style={{ background: '#9E9E9E', color: 'white', border: 'none', padding: '12px 25px', borderRadius: '5px', cursor: 'pointer' }}
+              >
+                إلغاء
+              </button>
+              <button 
+                onClick={assignSupervisorToGroup}
+                disabled={loading || !selectedSupervisorId}
+                style={{ 
+                  background: loading || !selectedSupervisorId ? '#ccc' : '#673AB7', 
+                  color: 'white', 
+                  border: 'none', 
+                  padding: '12px 25px', 
+                  borderRadius: '5px', 
+                  cursor: loading || !selectedSupervisorId ? 'not-allowed' : 'pointer' 
+                }}
+              >
+                {loading ? 'جاري التعيين...' : '✅ تعيين المشرف'}
               </button>
             </div>
           </div>

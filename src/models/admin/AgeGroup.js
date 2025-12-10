@@ -29,6 +29,11 @@ const ageGroupSchema = new mongoose.Schema({
     ref: 'User'
   },
   coachName: String,
+  supervisorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  supervisorName: String,
   clubId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -78,5 +83,6 @@ const ageGroupSchema = new mongoose.Schema({
 
 ageGroupSchema.index({ clubId: 1, status: 1 });
 ageGroupSchema.index({ coachId: 1 });
+ageGroupSchema.index({ supervisorId: 1 });
 
 module.exports = mongoose.model('AgeGroup', ageGroupSchema);

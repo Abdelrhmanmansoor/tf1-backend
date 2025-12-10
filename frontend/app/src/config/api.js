@@ -139,6 +139,17 @@ export const jobService = {
   getJobs: (filters = {}) => api.get('/jobs', { params: filters }),
   getJob: (id) => api.get(`/jobs/${id}`),
   applyToJob: (id, data) => api.post(`/jobs/${id}/apply`, data),
+  getMyApplications: () => api.get('/jobs/my-applications'),
+  withdrawApplication: (id) => api.delete(`/jobs/applications/${id}/withdraw`),
+  
+  // Club-specific endpoints
+  getJobApplications: (jobId) => api.get(`/jobs/${jobId}/applications`),
+  updateApplicationStatus: (applicationId, status, additionalData = {}) => 
+    api.put(`/jobs/applications/${applicationId}/status`, { status, ...additionalData }),
+  sendMessageToApplicant: (applicationId, message, messageAr) => 
+    api.post(`/jobs/applications/${applicationId}/message`, { message, messageAr }),
+  downloadResume: (applicationId, attachmentIndex) => 
+    api.get(`/jobs/applications/${applicationId}/download/${attachmentIndex}`, { responseType: 'blob' }),
 };
 
 export default api;
