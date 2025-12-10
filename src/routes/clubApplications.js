@@ -14,8 +14,15 @@ router.get('/job/:jobId', controller.getJobApplications);
 // Get single application details
 router.get('/:applicationId', controller.getApplicationDetails);
 
-// Update application status
-router.put('/:applicationId/status', controller.updateStatus);
+// Application status update endpoints
+router.post('/:applicationId/review', controller.reviewApplication);
+router.post('/:applicationId/interview', controller.scheduleInterview);
+router.post('/:applicationId/offer', controller.makeOffer);
+router.post('/:applicationId/hire', controller.hireApplicant);
+router.post('/:applicationId/reject', controller.rejectApplication);
+
+// Legacy status update (kept for backward compatibility)
+router.put('/:applicationId/status', controller.updateStatus || controller.reviewApplication);
 
 // Add admin notes
 router.put('/:applicationId/notes', controller.addNotes);

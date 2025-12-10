@@ -41,6 +41,17 @@ const jobApplicationSchema = new mongoose.Schema({
   videoUrl: {
     type: String
   },
+  
+  // === CONTACT & SOCIAL ===
+  whatsapp: {
+    type: String
+  },
+  portfolio: {
+    type: String
+  },
+  linkedin: {
+    type: String
+  },
 
   // === ATTACHMENTS ===
   attachments: [{
@@ -69,11 +80,15 @@ const jobApplicationSchema = new mongoose.Schema({
   applicantSnapshot: {
     fullName: String,
     email: String,
+    phone: String,
     phoneNumber: String,
+    age: Number,
+    city: String,
     location: {
       city: String,
       country: String
     },
+    qualification: String,
     role: String, // player, coach, specialist
     sport: String,
     position: String,

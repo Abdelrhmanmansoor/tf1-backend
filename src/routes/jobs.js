@@ -36,10 +36,12 @@ router.get('/', jobsController.getJobs);
 
 /**
  * @route   GET /api/v1/jobs/applications/me
+ * @route   GET /api/v1/applications/my-applications
  * @desc    Get my job applications
  * @access  Private
  */
 router.get('/applications/me', authenticate, jobsController.getMyApplications);
+router.get('/my-applications', authenticate, jobsController.getMyApplications);
 
 /**
  * @route   PUT /api/v1/jobs/applications/:applicationId/withdraw

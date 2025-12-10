@@ -693,6 +693,243 @@ class EmailService {
     }
   }
 
+  /**
+   * Send job offer email to applicant
+   * @param {Object} data - Email data
+   * @param {string} data.applicantName - Applicant's name
+   * @param {string} data.applicantEmail - Applicant's email
+   * @param {string} data.jobTitle - Job title
+   * @param {string} data.clubName - Club name
+   * @param {string} data.message - Custom message from club
+   * @param {string} data.contactPhone - Contact phone number
+   * @param {string} data.contactAddress - Contact address
+   * @param {string} data.meetingDate - Meeting date
+   * @param {string} data.meetingTime - Meeting time
+   * @param {string} data.meetingLocation - Meeting location
+   * @param {boolean} data.isHiring - Whether this is a hiring confirmation (vs offer)
+   */
+  async sendJobOfferEmail(data) {
+    if (!this.transporter) {
+      console.log('⚠️  Email service not configured - skipping job offer email');
+      return false;
+    }
+
+    const {
+      applicantName,
+      applicantEmail,
+      jobTitle,
+      clubName,
+      message,
+      contactPhone,
+      contactAddress,
+      meetingDate,
+      meetingTime,
+      meetingLocation,
+      isHiring = false
+    } = data;
+
+    const subject = isHiring 
+      ? `Congratulations! You are Hired - ${jobTitle} | ${clubName}`
+      : `Job Offer from ${clubName} - ${jobTitle}`;
+
+    const subjectAr = isHiring
+      ? `مبروك! تم توظيفك - ${jobTitle} | ${clubName}`
+      : `عرض وظيفة من ${clubName} - ${jobTitle}`;
+
+    const mailOptions = {
+      from: this.getFromAddress(),
+      to: applicantEmail,
+      subject: `${subject} | ${subjectAr}`,
+      html: `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+          <div style="background-color: #ffffff; border-radius: 10px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            ${this.getEmailHeader()}
+
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="font-size: 60px; margin-bottom: 10px;">🎉</div>
+              <h2 style="color: #28a745; font-size: 28px; margin: 10px 0;">
+                ${isHiring ? 'Congratulations!' : 'Job Offer!'}
+              </h2>
+              <h2 style="color: #28a745; font-size: 24px; margin: 5px 0; direction: rtl;">
+                ${isHiring ? 'مبروك!' : 'عرض وظيفة!'}
+              </h2>
+            </div>
+
+            <!-- English Version -->
+            <div style="margin-bottom: 40px;">
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                Dear <strong>${applicantName}</strong>,
+              </p>
+              
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                ${isHiring 
+                  ? `We are pleased to confirm that you have been hired for the position of <strong>${jobTitle}</strong> at <strong>${clubName}</strong>.`
+                  : `We are pleased to offer you the position of <strong>${jobTitle}</strong> at <strong>${clubName}</strong>.`
+                }
+              </p>
+
+              ${message ? `
+                <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 20px; border-radius: 10px; margin: 25px 0; border-left: 4px solid #28a745;">
+                  <p style="color: #333; font-size: 16px; line-height: 1.8; margin: 0; white-space: pre-wrap;">${message}</p>
+                </div>
+              ` : ''}
+
+              ${meetingDate || meetingTime || meetingLocation ? `
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                  <h3 style="color: #333; font-size: 18px; margin-top: 0;">📅 Meeting Details</h3>
+                  ${meetingDate ? `<p style="margin: 8px 0;"><strong>Date:</strong> ${meetingDate}</p>` : ''}
+                  ${meetingTime ? `<p style="margin: 8px 0;"><strong>Time:</strong> ${meetingTime}</p>` : ''}
+                  ${meetingLocation ? `<p style="margin: 8px 0;"><strong>Location:</strong> ${meetingLocation}</p>` : ''}
+                </div>
+              ` : ''}
+
+              ${contactPhone || contactAddress ? `
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                  <h3 style="color: #333; font-size: 18px; margin-top: 0;">📞 Contact Information</h3>
+                  ${contactPhone ? `<p style="margin: 8px 0;"><strong>Phone:</strong> ${contactPhone}</p>` : ''}
+                  ${contactAddress ? `<p style="margin: 8px 0;"><strong>Address:</strong> ${contactAddress}</p>` : ''}
+                </div>
+              ` : ''}
+
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                Please contact us at your earliest convenience to discuss the next steps.
+              </p>
+            </div>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+
+            <!-- Arabic Version -->
+            <div style="direction: rtl; text-align: right;">
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                عزيزنا <strong>${applicantName}</strong>،
+              </p>
+              
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                ${isHiring 
+                  ? `يسعدنا أن نؤكد لك أنه تم توظيفك في منصب <strong>${jobTitle}</strong> في <strong>${clubName}</strong>.`
+                  : `يسعدنا أن نقدم لك عرض وظيفة <strong>${jobTitle}</strong> في <strong>${clubName}</strong>.`
+                }
+              </p>
+
+              ${meetingDate || meetingTime || meetingLocation ? `
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                  <h3 style="color: #333; font-size: 18px; margin-top: 0;">📅 تفاصيل الاجتماع</h3>
+                  ${meetingDate ? `<p style="margin: 8px 0;"><strong>التاريخ:</strong> ${meetingDate}</p>` : ''}
+                  ${meetingTime ? `<p style="margin: 8px 0;"><strong>الوقت:</strong> ${meetingTime}</p>` : ''}
+                  ${meetingLocation ? `<p style="margin: 8px 0;"><strong>المكان:</strong> ${meetingLocation}</p>` : ''}
+                </div>
+              ` : ''}
+
+              ${contactPhone || contactAddress ? `
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                  <h3 style="color: #333; font-size: 18px; margin-top: 0;">📞 معلومات التواصل</h3>
+                  ${contactPhone ? `<p style="margin: 8px 0;"><strong>الهاتف:</strong> ${contactPhone}</p>` : ''}
+                  ${contactAddress ? `<p style="margin: 8px 0;"><strong>العنوان:</strong> ${contactAddress}</p>` : ''}
+                </div>
+              ` : ''}
+
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                يرجى التواصل معنا في أقرب وقت ممكن لمناقشة الخطوات التالية.
+              </p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.FRONTEND_URL}/applications" 
+                 style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px; font-weight: bold;">
+                View Your Applications | عرض طلباتك
+              </a>
+            </div>
+
+            ${this.getEmailFooter()}
+          </div>
+        </div>
+      `,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Job ${isHiring ? 'hiring' : 'offer'} email sent to ${applicantEmail}`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Failed to send job ${isHiring ? 'hiring' : 'offer'} email:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Send application rejection email
+   */
+  async sendApplicationRejectionEmail(applicantEmail, applicantName, jobTitle) {
+    if (!this.transporter) {
+      console.log('⚠️  Email service not configured - skipping rejection email');
+      return false;
+    }
+
+    const mailOptions = {
+      from: this.getFromAddress(),
+      to: applicantEmail,
+      subject: `Application Status Update - ${jobTitle} | TF1`,
+      html: `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+          <div style="background-color: #ffffff; border-radius: 10px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            ${this.getEmailHeader()}
+
+            <!-- English Version -->
+            <div style="margin-bottom: 40px;">
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                Dear <strong>${applicantName}</strong>,
+              </p>
+              
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                Thank you for your interest in the <strong>${jobTitle}</strong> position and for taking the time to apply.
+              </p>
+
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                After careful consideration, we have decided to move forward with other candidates whose qualifications more closely match our current needs.
+              </p>
+
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                We appreciate your interest and encourage you to apply for future opportunities with us. We wish you all the best in your career journey.
+              </p>
+            </div>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+
+            <!-- Arabic Version -->
+            <div style="direction: rtl; text-align: right;">
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                عزيزنا <strong>${applicantName}</strong>،
+              </p>
+              
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                نشكرك على اهتمامك بوظيفة <strong>${jobTitle}</strong> وعلى الوقت الذي قضيته في التقديم.
+              </p>
+
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                بعد دراسة متأنية، قررنا المضي قدماً مع مرشحين آخرين تتطابق مؤهلاتهم بشكل أكبر مع احتياجاتنا الحالية.
+              </p>
+
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">
+                نقدر اهتمامك ونشجعك على التقديم للفرص المستقبلية معنا. نتمنى لك كل التوفيق في مسيرتك المهنية.
+              </p>
+            </div>
+
+            ${this.getEmailFooter()}
+          </div>
+        </div>
+      `,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Rejection email sent to ${applicantEmail}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to send rejection email:', error);
+      return false;
+    }
+  }
+
   async testConnection() {
     try {
       await this.transporter.verify();

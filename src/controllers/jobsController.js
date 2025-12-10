@@ -220,7 +220,17 @@ exports.applyToJob = async (req, res) => {
   try {
     const { id: jobId } = req.params;
     const applicantId = req.user._id;
-    const { coverLetter } = req.body;
+    const { 
+      coverLetter, 
+      phone, 
+      whatsapp, 
+      age, 
+      city, 
+      qualification, 
+      experienceYears, 
+      portfolio, 
+      linkedin 
+    } = req.body;
 
     // 1. Find the job
     const job = await Job.findOne({
@@ -290,12 +300,22 @@ exports.applyToJob = async (req, res) => {
       }
     }
 
-    // 5. Create job application
+    // 5. Create job application with new fields
     const application = new JobApplication({
       jobId,
       clubId: job.clubId._id,
       applicantId,
       coverLetter: coverLetter || '',
+      whatsapp: whatsapp || phone,
+      portfolio: portfolio || '',
+      linkedin: linkedin || '',
+      applicantSnapshot: {
+        phone: phone || req.user.phoneNumber,
+        age: age ? parseInt(age) : undefined,
+        city: city || '',
+        qualification: qualification || '',
+        experienceYears: experienceYears ? parseInt(experienceYears) : undefined,
+      },
       attachments: resumeAttachment ? [resumeAttachment] : [],
       status: 'new',
       source: 'direct',
@@ -487,6 +507,7 @@ exports.applyToJob = async (req, res) => {
 
 /**
  * @route   GET /api/v1/jobs/applications/me
+ * @route   GET /api/v1/applications/my-applications
  * @desc    Get my job applications
  * @access  Private
  */
@@ -498,7 +519,7 @@ exports.getMyApplications = async (req, res) => {
       applicantId,
       isDeleted: false,
     })
-      .populate('jobId', 'title sport category status applicationDeadline')
+      .populate('jobId', 'title titleAr sport category status applicationDeadline')
       .populate('clubId', 'firstName lastName email')
       .sort({ createdAt: -1 });
 
@@ -513,53 +534,52 @@ exports.getMyApplications = async (req, res) => {
       clubProfileMap[profile.userId.toString()] = profile;
     });
 
-    // Format response with club profiles
+    // Format response with club profiles (matching frontend requirements)
     const formattedApplications = applications.map(app => {
       const clubProfile = clubProfileMap[app.clubId?._id?.toString()];
 
       return {
         _id: app._id,
-        job: {
+        jobId: {
           _id: app.jobId?._id,
           title: app.jobId?.title,
+          titleAr: app.jobId?.titleAr,
           sport: app.jobId?.sport,
           category: app.jobId?.category,
           deadline: app.jobId?.applicationDeadline,
+          clubId: {
+            clubName: clubProfile?.clubName || 'Club',
+            clubNameAr: clubProfile?.clubNameAr,
+            logo: clubProfile?.logo,
+          }
         },
-        club: {
-          _id: app.clubId?._id,
-          name: clubProfile?.clubName || 'Club',
-          logo: clubProfile?.logo,
-          location: clubProfile?.location?.city,
+        status: app.status,
+        createdAt: app.createdAt,
+        updatedAt: app.updatedAt,
+        interview: {
+          isScheduled: app.interview?.isScheduled || false,
+          scheduledDate: app.interview?.scheduledDate,
+          type: app.interview?.type,
+          location: app.interview?.location,
         },
-        applicationDetails: {
-          status: app.status,
-          appliedAt: app.createdAt,
-          coverLetter: app.coverLetter,
-          videoUrl: app.videoUrl,
-          // Attachments with proper formatting
-          attachments:
-            app.attachments?.map(att => ({
-              type: att.type,
-              name: att.name,
-              url: att.url,
-              uploadedAt: att.uploadedAt,
-              downloadLink: att.url,
-            })) || [],
-          responses: app.questionnaireResponses || [],
-        },
-        assessment: {
-          interview: app.interview,
-          offer: app.offer,
-          review: app.review,
-          statusHistory: app.statusHistory,
-        },
+        statusHistory: app.statusHistory || [],
+        // Additional details
+        coverLetter: app.coverLetter,
+        whatsapp: app.whatsapp,
+        portfolio: app.portfolio,
+        linkedin: app.linkedin,
+        attachments: app.attachments?.map(att => ({
+          type: att.type,
+          name: att.name,
+          url: att.url,
+          uploadedAt: att.uploadedAt,
+          downloadLink: att.url,
+        })) || [],
       };
     });
 
     res.status(200).json({
       success: true,
-      total: formattedApplications.length,
       applications: formattedApplications,
     });
   } catch (error) {

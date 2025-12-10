@@ -56,6 +56,16 @@ const jobSchema = new mongoose.Schema({
     type: String // For specialists: physio, nutritionist, fitness
   },
 
+  // === LOCATION ===
+  city: {
+    type: String,
+    index: true
+  },
+  country: {
+    type: String,
+    default: 'Saudi Arabia'
+  },
+
   // === REQUIREMENTS ===
   requirements: {
     description: String,
@@ -109,11 +119,22 @@ const jobSchema = new mongoose.Schema({
 
   // === DATES ===
   expectedStartDate: {
-    type: Date
+    type: String // Changed to String for frontend compatibility
   },
   applicationDeadline: {
     type: Date,
     required: true
+  },
+  
+  // === MEETING DETAILS ===
+  meetingDate: {
+    type: String
+  },
+  meetingTime: {
+    type: String
+  },
+  meetingLocation: {
+    type: String
   },
 
   // === POSITIONS ===

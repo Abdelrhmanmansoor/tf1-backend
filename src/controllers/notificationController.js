@@ -16,14 +16,21 @@ exports.getNotifications = async (req, res) => {
       unreadOnly = false,
       priority,
       type,
+      types, // Support comma-separated types
     } = req.query;
 
     const userId = req.user._id.toString();
 
+    // Parse types if provided
+    let typeFilter = type;
+    if (types && typeof types === 'string') {
+      typeFilter = types.split(',').map(t => t.trim());
+    }
+
     // Get from handler (MongoDB or memory)
     const { notifications, source } = await getNotifications(userId, {
       limit: parseInt(limit),
-      filter: { unreadOnly, priority, type },
+      filter: { unreadOnly, priority, type: typeFilter },
     });
 
     console.log(
@@ -52,6 +59,7 @@ exports.getNotifications = async (req, res) => {
       pages: Math.ceil(formattedNotifications.length / parseInt(limit)),
       hasMore: false,
       data: formattedNotifications,
+      unreadCount: formattedNotifications.filter(n => !n.isRead).length,
       source,
     });
   } catch (error) {
@@ -113,14 +121,30 @@ exports.getUnreadNotifications = async (req, res) => {
 
 // @desc    Get unread notification count
 // @route   GET /api/v1/notifications/unread/count
+// @route   GET /api/v1/notifications/unread-count (alias)
 // @access  Private
 exports.getUnreadCount = async (req, res) => {
   try {
-    const count = await Notification.getUnreadCount(req.user._id);
+    const userId = req.user._id.toString();
+    
+    // Try MongoDB first
+    let count = 0;
+    try {
+      count = await Notification.getUnreadCount(req.user._id);
+    } catch (dbError) {
+      // Fallback to in-memory if MongoDB fails
+      const { getNotifications } = require('../middleware/notificationHandler');
+      const { notifications } = await getNotifications(userId, {
+        filter: { unreadOnly: true },
+      });
+      count = notifications.length;
+    }
 
     res.status(200).json({
       success: true,
-      count,
+      data: {
+        count,
+      },
     });
   } catch (error) {
     console.error('Error fetching unread count:', error);

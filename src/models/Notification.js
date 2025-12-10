@@ -52,12 +52,20 @@ const notificationSchema = new mongoose.Schema(
         // Job application notifications
         'new_application',
         'application_received',
+        'application_submitted',
         'application_reviewed',
+        'application_accepted',
+        'application_rejected',
+        'application_offered',
+        'application_hired',
+        'new_job',
+        'urgent_job',
         // Common notifications
         'new_follower',
         'profile_verified',
         'account_warning',
         'system_update',
+        'general',
       ],
     },
 
@@ -185,6 +193,48 @@ const notificationSchema = new mongoose.Schema(
       type: Map,
       of: mongoose.Schema.Types.Mixed,
       default: {},
+    },
+    
+    // Job-related references
+    jobId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Job',
+      index: true,
+    },
+    applicationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'JobApplication',
+      index: true,
+    },
+    clubId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      index: true,
+    },
+    applicantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      index: true,
+    },
+    
+    // Snapshot data for quick access
+    jobData: {
+      title: String,
+      titleAr: String,
+      clubName: String,
+      clubNameAr: String,
+    },
+    applicantData: {
+      name: String,
+      email: String,
+      phone: String,
+    },
+    
+    // Recipient (for clarity in queries)
+    recipientId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      index: true,
     },
   },
   {

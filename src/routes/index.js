@@ -33,6 +33,8 @@ router.use('/jobs', jobsRoutes);
 router.use('/leader', leaderDashboardRoutes);
 router.use('/team', teamDashboardRoutes);
 router.use('/club/applications', clubApplicationsRoutes);
+router.use('/clubs/applications', clubApplicationsRoutes); // Alias for club applications
+router.use('/applications', jobsRoutes); // For /applications/my-applications endpoint
 
 // API documentation endpoint
 router.get('/', (req, res) => {
