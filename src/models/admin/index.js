@@ -11,7 +11,7 @@ const Meeting = require('./Meeting');
 const Document = require('./Document');
 const Task = require('./Task');
 const Alert = require('./Alert');
-const LeaderTeam = require('./LeaderTeam');
+const AdministrativeTeam = require('./AdministrativeTeam');
 const AuditLog = require('./AuditLog');
 const Permission = require('./Permission');
 const SiteSettings = require('./SiteSettings');
@@ -33,7 +33,7 @@ module.exports = {
   Document,
   Task,
   Alert,
-  LeaderTeam,
+  AdministrativeTeam,
   AuditLog,
   Permission,
   SiteSettings,

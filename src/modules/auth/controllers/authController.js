@@ -20,16 +20,16 @@ class AuthController {
 
   async register(req, res) {
     try {
-      const { 
-        email, 
-        password, 
+      const {
+        email,
+        password,
         registrationCode,
-        role, 
+        role,
         phone,
         location,
         // Individual user fields
-        firstName, 
-        lastName, 
+        firstName,
+        lastName,
         birthDate,
         // Club organization fields
         organizationName,
@@ -45,8 +45,8 @@ class AuthController {
       } = req.body;
 
       // Verify registration code (only required for certain roles)
-      const codesRequiredRoles = ['club', 'admin', 'administrator', 'leader', 'sports-director', 'executive-director'];
-      
+      const codesRequiredRoles = ['club', 'admin', 'administrator', 'sports-administrator', 'sports-director', 'executive-director'];
+
       if (codesRequiredRoles.includes(role)) {
         if (!registrationCode) {
           return res.status(400).json({
@@ -57,7 +57,7 @@ class AuthController {
         }
 
         const RegistrationCode = require('../../../models/RegistrationCode');
-        const regCode = await RegistrationCode.findOne({ 
+        const regCode = await RegistrationCode.findOne({
           code: registrationCode.toUpperCase().trim()
         });
 
@@ -172,13 +172,13 @@ class AuthController {
 
     } catch (error) {
       console.error('Registration error:', error);
-      
+
       if (error.name === 'ValidationError') {
         const errors = Object.values(error.errors).map(err => ({
           field: err.path,
           message: err.message
         }));
-        
+
         return res.status(400).json({
           success: false,
           message: 'Validation failed',
@@ -559,7 +559,7 @@ class AuthController {
       await user.save();
 
       const emailSent = await emailService.sendVerificationEmail(user, verificationToken);
-      
+
       if (!emailSent) {
         return res.status(500).json({
           success: false,
@@ -603,7 +603,7 @@ class AuthController {
     try {
       const user = req.user;
       const userObject = user.toSafeObject();
-      
+
       res.status(200).json({
         success: true,
         user: {
@@ -624,7 +624,7 @@ class AuthController {
   async getRoleInfo(req, res) {
     try {
       const { rolePermissions, getRoleHierarchy } = require('../middleware/rbac');
-      
+
       res.status(200).json({
         success: true,
         data: {
@@ -648,7 +648,7 @@ class AuthController {
   async testAccount(req, res) {
     try {
       const testUser = await User.findOne({ email: 'test@example.com' });
-      
+
       if (!testUser) {
         const newTestUser = new User({
           email: 'test@example.com',
@@ -659,7 +659,7 @@ class AuthController {
           role: 'player',
           isVerified: true
         });
-        
+
         await newTestUser.save();
         console.log('✅ Test account created');
       }

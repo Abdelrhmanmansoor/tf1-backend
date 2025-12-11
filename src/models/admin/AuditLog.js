@@ -11,7 +11,7 @@ const auditLogSchema = new mongoose.Schema({
   userRole: String,
   userType: {
     type: String,
-    enum: ['leader', 'team', 'admin', 'user'],
+    enum: ['sports-administrator', 'team', 'admin', 'user'],
     default: 'user'
   },
   action: {
@@ -79,7 +79,7 @@ auditLogSchema.index({ createdAt: -1 });
 auditLogSchema.index({ 'metadata.ip': 1 });
 auditLogSchema.index({ userType: 1, createdAt: -1 });
 
-auditLogSchema.statics.log = async function(data) {
+auditLogSchema.statics.log = async function (data) {
   try {
     return await this.create(data);
   } catch (error) {
@@ -88,30 +88,30 @@ auditLogSchema.statics.log = async function(data) {
   }
 };
 
-auditLogSchema.statics.getRecentLogs = async function(userId, limit = 50) {
+auditLogSchema.statics.getRecentLogs = async function (userId, limit = 50) {
   return this.find({ userId })
     .sort({ createdAt: -1 })
     .limit(limit)
     .lean();
 };
 
-auditLogSchema.statics.getLogsByModule = async function(module, options = {}) {
+auditLogSchema.statics.getLogsByModule = async function (module, options = {}) {
   const { startDate, endDate, limit = 100 } = options;
   const query = { module };
-  
+
   if (startDate || endDate) {
     query.createdAt = {};
     if (startDate) query.createdAt.$gte = new Date(startDate);
     if (endDate) query.createdAt.$lte = new Date(endDate);
   }
-  
+
   return this.find(query)
     .sort({ createdAt: -1 })
     .limit(limit)
     .lean();
 };
 
-auditLogSchema.statics.getSecurityLogs = async function(limit = 100) {
+auditLogSchema.statics.getSecurityLogs = async function (limit = 100) {
   return this.find({
     action: { $in: ['login', 'logout', 'login_failed', 'access_denied', 'permission_granted', 'permission_revoked'] }
   })

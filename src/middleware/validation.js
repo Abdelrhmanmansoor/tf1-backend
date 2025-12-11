@@ -2,10 +2,10 @@ const { body, query, validationResult } = require('express-validator');
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
-  
+
   console.log('📝 Validation check for:', req.path);
   console.log('📝 Request body:', JSON.stringify(req.body, null, 2));
-  
+
   if (!errors.isEmpty()) {
     const errorMessages = errors.array().map(error => ({
       field: error.path,
@@ -21,7 +21,7 @@ const handleValidationErrors = (req, res, next) => {
       code: 'VALIDATION_ERROR',
     });
   }
-  
+
   console.log('✅ Validation passed');
   next();
 };
@@ -35,7 +35,7 @@ const validateRegister = [
 
   body('registrationCode')
     .if((value, { req }) =>
-      ['club', 'admin', 'administrator', 'leader', 'sports-director', 'executive-director'].includes(req.body.role)
+      ['club', 'admin', 'administrator', 'sports-administrator', 'sports-director', 'executive-director'].includes(req.body.role)
     )
     .trim()
     .notEmpty()
@@ -43,7 +43,7 @@ const validateRegister = [
     .isLength({ min: 10 })
     .withMessage('Registration code is invalid')
     .if((value, { req }) =>
-      !['club', 'admin', 'administrator', 'leader', 'sports-director', 'executive-director'].includes(req.body.role)
+      !['club', 'admin', 'administrator', 'sports-administrator', 'sports-director', 'executive-director'].includes(req.body.role)
     )
     .optional()
     .trim(),
@@ -57,13 +57,13 @@ const validateRegister = [
     ),
 
   body('role')
-    .isIn(['player', 'coach', 'club', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary', 'leader'])
-    .withMessage('Role must be one of: player, coach, club, specialist, admin, administrator, age-group-supervisor, sports-director, executive-director, secretary, leader'),
+    .isIn(['player', 'coach', 'club', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary', 'sports-administrator'])
+    .withMessage('Role must be one of: player, coach, club, specialist, admin, administrator, age-group-supervisor, sports-director, executive-director, secretary, sports-administrator'),
 
   // Individual user fields (required for player, coach, specialist, and admin roles)
   body('firstName')
     .if((value, { req }) =>
-      ['player', 'coach', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary', 'leader'].includes(req.body.role)
+      ['player', 'coach', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary', 'sports-administrator'].includes(req.body.role)
     )
     .trim()
     .notEmpty()
@@ -73,7 +73,7 @@ const validateRegister = [
 
   body('lastName')
     .if((value, { req }) =>
-      ['player', 'coach', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary', 'leader'].includes(req.body.role)
+      ['player', 'coach', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary', 'sports-administrator'].includes(req.body.role)
     )
     .trim()
     .notEmpty()

@@ -20,10 +20,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Role is required'],
     enum: [
-      'player', 
-      'coach', 
-      'club', 
+      'player',
+      'coach',
+      'club',
       'specialist',
+      'team',
       'admin',
       'administrator',
       'administrative-officer',
@@ -31,11 +32,11 @@ const userSchema = new mongoose.Schema({
       'sports-director',
       'executive-director',
       'secretary',
-      'leader'
+      'sports-administrator'
     ],
     default: 'player'
   },
-  
+
   // Admin role specific fields
   department: {
     type: String,
@@ -48,19 +49,19 @@ const userSchema = new mongoose.Schema({
   permissions: [{
     type: String
   }],
-  
+
   // Basic account info
   firstName: String,
   lastName: String,
   phone: String,
   avatar: String,
-  
+
   // Account status
   isActive: {
     type: Boolean,
     default: true
   },
-  
+
   // Blocking status (Admin can block users)
   isBlocked: {
     type: Boolean,
@@ -68,7 +69,7 @@ const userSchema = new mongoose.Schema({
   },
   blockReason: String,
   blockedAt: Date,
-  
+
   // Email verification
   isVerified: {
     type: Boolean,
@@ -76,11 +77,11 @@ const userSchema = new mongoose.Schema({
   },
   emailVerificationToken: String,
   emailVerificationTokenExpires: Date,
-  
+
   // Password reset
   passwordResetToken: String,
   passwordResetTokenExpires: Date,
-  
+
   // Login tracking
   lastLogin: Date,
   loginAttempts: {
@@ -100,7 +101,7 @@ userSchema.index({ passwordResetToken: 1 });
 userSchema.index({ role: 1, isVerified: 1 });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   // Track isVerified changes for debugging
   if (this.isModified('isVerified')) {
     console.log(`🔍 [VERIFICATION TRACKING] isVerified changed for ${this.email}`);
@@ -121,7 +122,7 @@ userSchema.pre('save', async function(next) {
 });
 
 // Password comparison method
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   try {
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
@@ -130,7 +131,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 };
 
 // Generate email verification token
-userSchema.methods.generateEmailVerificationToken = function() {
+userSchema.methods.generateEmailVerificationToken = function () {
   const token = crypto.randomBytes(32).toString('hex');
   this.emailVerificationToken = token;
   this.emailVerificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
@@ -138,7 +139,7 @@ userSchema.methods.generateEmailVerificationToken = function() {
 };
 
 // Generate password reset token
-userSchema.methods.generatePasswordResetToken = function() {
+userSchema.methods.generatePasswordResetToken = function () {
   const token = crypto.randomBytes(32).toString('hex');
   this.passwordResetToken = token;
   this.passwordResetTokenExpires = Date.now() + 60 * 60 * 1000; // 60 minutes (1 hour)
@@ -146,24 +147,24 @@ userSchema.methods.generatePasswordResetToken = function() {
 };
 
 // Clear email verification token
-userSchema.methods.clearEmailVerificationToken = function() {
+userSchema.methods.clearEmailVerificationToken = function () {
   this.emailVerificationToken = undefined;
   this.emailVerificationTokenExpires = undefined;
 };
 
 // Clear password reset token
-userSchema.methods.clearPasswordResetToken = function() {
+userSchema.methods.clearPasswordResetToken = function () {
   this.passwordResetToken = undefined;
   this.passwordResetTokenExpires = undefined;
 };
 
 // Virtual for account lock status
-userSchema.virtual('isLocked').get(function() {
+userSchema.virtual('isLocked').get(function () {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 });
 
 // Virtual for full name
-userSchema.virtual('fullName').get(function() {
+userSchema.virtual('fullName').get(function () {
   if (this.firstName && this.lastName) {
     return `${this.firstName} ${this.lastName}`;
   }
@@ -171,7 +172,7 @@ userSchema.virtual('fullName').get(function() {
 });
 
 // Method to get safe user object for responses
-userSchema.methods.toSafeObject = function(includeEmail = false) {
+userSchema.methods.toSafeObject = function (includeEmail = false) {
   const userObject = {
     id: this._id.toString(),
     role: this.role,
@@ -186,16 +187,16 @@ userSchema.methods.toSafeObject = function(includeEmail = false) {
     createdAt: this.createdAt,
     updatedAt: this.updatedAt
   };
-  
+
   if (includeEmail) {
     userObject.email = this.email;
   }
-  
+
   return userObject;
 };
 
 // Method to increment login attempts
-userSchema.methods.incrementLoginAttempts = function() {
+userSchema.methods.incrementLoginAttempts = function () {
   // If we have a previous lock that has expired, restart at 1
   if (this.lockUntil && this.lockUntil < Date.now()) {
     return this.updateOne({
@@ -203,19 +204,19 @@ userSchema.methods.incrementLoginAttempts = function() {
       $set: { loginAttempts: 1 }
     });
   }
-  
+
   const updates = { $inc: { loginAttempts: 1 } };
-  
+
   // Lock account after 5 failed attempts for 2 hours
   if (this.loginAttempts + 1 >= 5 && !this.isLocked) {
     updates.$set = { lockUntil: Date.now() + 2 * 60 * 60 * 1000 }; // 2 hours
   }
-  
+
   return this.updateOne(updates);
 };
 
 // Method to reset login attempts
-userSchema.methods.resetLoginAttempts = function() {
+userSchema.methods.resetLoginAttempts = function () {
   return this.updateOne({
     $unset: { loginAttempts: 1, lockUntil: 1 }
   });

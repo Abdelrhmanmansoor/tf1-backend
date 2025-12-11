@@ -39,16 +39,16 @@ const teamMemberSchema = new mongoose.Schema({
   }
 });
 
-const leaderTeamSchema = new mongoose.Schema({
-  leaderId: {
+const administrativeTeamSchema = new mongoose.Schema({
+  adminId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
     unique: true
   },
-  leaderName: String,
-  leaderEmail: String,
-  leaderAccessKey: {
+  adminName: String,
+  adminEmail: String,
+  adminAccessKey: {
     type: String,
     unique: true
   },
@@ -79,13 +79,13 @@ const leaderTeamSchema = new mongoose.Schema({
   timestamps: true
 });
 
-leaderTeamSchema.methods.generateAccessKey = function() {
+administrativeTeamSchema.methods.generateAccessKey = function () {
   return crypto.randomBytes(16).toString('hex').toUpperCase();
 };
 
-leaderTeamSchema.methods.addTeamMember = async function(userId, name, email, permissions = []) {
+administrativeTeamSchema.methods.addTeamMember = async function (userId, name, email, permissions = []) {
   const accessKey = this.generateAccessKey();
-  
+
   this.teamMembers.push({
     userId,
     name,
@@ -95,11 +95,11 @@ leaderTeamSchema.methods.addTeamMember = async function(userId, name, email, per
     isActive: true,
     addedAt: new Date()
   });
-  
+
   return accessKey;
 };
 
-leaderTeamSchema.methods.updateMemberPermissions = function(memberId, permissions) {
+administrativeTeamSchema.methods.updateMemberPermissions = function (memberId, permissions) {
   const member = this.teamMembers.id(memberId);
   if (member) {
     member.permissions = permissions;
@@ -108,7 +108,7 @@ leaderTeamSchema.methods.updateMemberPermissions = function(memberId, permission
   return false;
 };
 
-leaderTeamSchema.methods.removeMember = function(memberId) {
+administrativeTeamSchema.methods.removeMember = function (memberId) {
   const member = this.teamMembers.id(memberId);
   if (member) {
     member.isActive = false;
@@ -117,6 +117,6 @@ leaderTeamSchema.methods.removeMember = function(memberId) {
   return false;
 };
 
-leaderTeamSchema.index({ 'teamMembers.userId': 1 });
+administrativeTeamSchema.index({ 'teamMembers.userId': 1 });
 
-module.exports = mongoose.model('LeaderTeam', leaderTeamSchema);
+module.exports = mongoose.model('AdministrativeTeam', administrativeTeamSchema);

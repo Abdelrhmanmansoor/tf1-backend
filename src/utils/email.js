@@ -197,12 +197,12 @@ class EmailService {
     const mailOptions = {
       from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`,
       to: user.email,
-      subject: 'Reset Your Password - SportX Platform',
+      subject: 'Reset Your Password - TF1 Platform',
       html: `
         <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
           <h2 style="color: #333; text-align: center;">Password Reset Request</h2>
           <p>Hi ${displayName},</p>
-          <p>You requested to reset your password for your SportX Platform account. Click the button below to reset your password:</p>
+          <p>You requested to reset your password for your TF1 Platform account. Click the button below to reset your password:</p>
           <div style="text-align: center; margin: 30px 0;">
             <a href="${resetUrl}" 
                style="background-color: #dc3545; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
@@ -319,7 +319,7 @@ class EmailService {
 
     const applicantName = applicant.firstName || applicant.fullName || 'Applicant';
     const isArabic = language === 'ar';
-    
+
     const interviewTypeLabels = {
       'in_person': { en: 'In-Person', ar: 'حضوري' },
       'online': { en: 'Online', ar: 'عبر الإنترنت' },
@@ -350,10 +350,10 @@ class EmailService {
               </p>
               
               <p style="color: #555; font-size: 16px; line-height: 1.8;">
-                ${isArabic 
-                  ? `يسعدنا إبلاغك بأنه تم اختيارك لإجراء مقابلة لوظيفة <strong>${jobTitle}</strong> في <strong>${clubName}</strong>.`
-                  : `We are pleased to inform you that you have been selected for an interview for the position of <strong>${jobTitle}</strong> at <strong>${clubName}</strong>.`
-                }
+                ${isArabic
+          ? `يسعدنا إبلاغك بأنه تم اختيارك لإجراء مقابلة لوظيفة <strong>${jobTitle}</strong> في <strong>${clubName}</strong>.`
+          : `We are pleased to inform you that you have been selected for an interview for the position of <strong>${jobTitle}</strong> at <strong>${clubName}</strong>.`
+        }
               </p>
 
               ${customMessage ? `
@@ -373,10 +373,10 @@ class EmailService {
               </div>
 
               <p style="color: #666; font-size: 14px; margin-top: 20px;">
-                ${isArabic 
-                  ? 'يرجى تأكيد حضورك أو التواصل معنا في حال عدم ملاءمة الموعد.'
-                  : 'Please confirm your attendance or contact us if the time is not suitable.'
-                }
+                ${isArabic
+          ? 'يرجى تأكيد حضورك أو التواصل معنا في حال عدم ملاءمة الموعد.'
+          : 'Please confirm your attendance or contact us if the time is not suitable.'
+        }
               </p>
             </div>
 
@@ -426,10 +426,10 @@ class EmailService {
               </p>
               
               <p style="color: #555; font-size: 16px; line-height: 1.8;">
-                ${isArabic 
-                  ? `يسعدنا أن نقدم لك عرضاً رسمياً للانضمام إلى فريقنا في وظيفة <strong>${jobTitle}</strong> في <strong>${clubName}</strong>.`
-                  : `We are delighted to offer you the position of <strong>${jobTitle}</strong> at <strong>${clubName}</strong>.`
-                }
+                ${isArabic
+          ? `يسعدنا أن نقدم لك عرضاً رسمياً للانضمام إلى فريقنا في وظيفة <strong>${jobTitle}</strong> في <strong>${clubName}</strong>.`
+          : `We are delighted to offer you the position of <strong>${jobTitle}</strong> at <strong>${clubName}</strong>.`
+        }
               </p>
 
               ${customMessage ? `
@@ -507,10 +507,10 @@ class EmailService {
               </p>
               
               <p style="color: #555; font-size: 16px; line-height: 1.8;">
-                ${isArabic 
-                  ? `يسعدنا الترحيب بك رسمياً كعضو في فريق <strong>${clubName}</strong> في منصب <strong>${jobTitle}</strong>.`
-                  : `We are thrilled to officially welcome you to the <strong>${clubName}</strong> team as our new <strong>${jobTitle}</strong>.`
-                }
+                ${isArabic
+          ? `يسعدنا الترحيب بك رسمياً كعضو في فريق <strong>${clubName}</strong> في منصب <strong>${jobTitle}</strong>.`
+          : `We are thrilled to officially welcome you to the <strong>${clubName}</strong> team as our new <strong>${jobTitle}</strong>.`
+        }
               </p>
 
               ${customMessage ? `
@@ -529,10 +529,10 @@ class EmailService {
               </div>
 
               <p style="color: #555; font-size: 16px; line-height: 1.8;">
-                ${isArabic 
-                  ? 'نحن متحمسون للعمل معك ونتطلع إلى إنجازاتك المستقبلية معنا!'
-                  : 'We are excited to work with you and look forward to your future achievements with us!'
-                }
+                ${isArabic
+          ? 'نحن متحمسون للعمل معك ونتطلع إلى إنجازاتك المستقبلية معنا!'
+          : 'We are excited to work with you and look forward to your future achievements with us!'
+        }
               </p>
             </div>
 
@@ -580,17 +580,17 @@ class EmailService {
               </p>
               
               <p style="color: #555; font-size: 16px; line-height: 1.8;">
-                ${isArabic 
-                  ? `نشكرك على اهتمامك بوظيفة <strong>${jobTitle}</strong> في <strong>${clubName}</strong> والوقت الذي استثمرته في التقديم.`
-                  : `Thank you for your interest in the <strong>${jobTitle}</strong> position at <strong>${clubName}</strong> and the time you invested in applying.`
-                }
+                ${isArabic
+          ? `نشكرك على اهتمامك بوظيفة <strong>${jobTitle}</strong> في <strong>${clubName}</strong> والوقت الذي استثمرته في التقديم.`
+          : `Thank you for your interest in the <strong>${jobTitle}</strong> position at <strong>${clubName}</strong> and the time you invested in applying.`
+        }
               </p>
 
               <p style="color: #555; font-size: 16px; line-height: 1.8;">
-                ${isArabic 
-                  ? 'بعد دراسة متأنية، قررنا المضي قدماً مع مرشحين آخرين تتوافق مؤهلاتهم بشكل أكبر مع متطلبات هذا الدور في الوقت الحالي.'
-                  : 'After careful consideration, we have decided to move forward with other candidates whose qualifications more closely match our current needs for this role.'
-                }
+                ${isArabic
+          ? 'بعد دراسة متأنية، قررنا المضي قدماً مع مرشحين آخرين تتوافق مؤهلاتهم بشكل أكبر مع متطلبات هذا الدور في الوقت الحالي.'
+          : 'After careful consideration, we have decided to move forward with other candidates whose qualifications more closely match our current needs for this role.'
+        }
               </p>
 
               ${customMessage ? `
@@ -600,10 +600,10 @@ class EmailService {
               ` : ''}
 
               <p style="color: #555; font-size: 16px; line-height: 1.8;">
-                ${isArabic 
-                  ? 'نقدر اهتمامك ونشجعك على متابعة فرص العمل المستقبلية معنا.'
-                  : 'We appreciate your interest and encourage you to apply for future opportunities with us.'
-                }
+                ${isArabic
+          ? 'نقدر اهتمامك ونشجعك على متابعة فرص العمل المستقبلية معنا.'
+          : 'We appreciate your interest and encourage you to apply for future opportunities with us.'
+        }
               </p>
 
               <p style="color: #555; font-size: 16px; line-height: 1.8;">
@@ -655,10 +655,10 @@ class EmailService {
               </p>
               
               <p style="color: #555; font-size: 16px; line-height: 1.8;">
-                ${isArabic 
-                  ? `لقد تلقيت رسالة جديدة بخصوص طلبك لوظيفة <strong>${jobTitle}</strong>:`
-                  : `You have received a new message regarding your application for <strong>${jobTitle}</strong>:`
-                }
+                ${isArabic
+          ? `لقد تلقيت رسالة جديدة بخصوص طلبك لوظيفة <strong>${jobTitle}</strong>:`
+          : `You have received a new message regarding your application for <strong>${jobTitle}</strong>:`
+        }
               </p>
 
               <div style="background: linear-gradient(135deg, #e8f5f1 0%, #d1f0e8 100%); padding: 20px; border-radius: 10px; margin: 25px 0; border-right: 4px solid #20c997;">
@@ -673,10 +673,10 @@ class EmailService {
               </div>
 
               <p style="color: #666; font-size: 14px; margin-top: 20px;">
-                ${isArabic 
-                  ? 'يمكنك الرد على هذه الرسالة من خلال لوحة التحكم الخاصة بك.'
-                  : 'You can respond to this message through your dashboard.'
-                }
+                ${isArabic
+          ? 'يمكنك الرد على هذه الرسالة من خلال لوحة التحكم الخاصة بك.'
+          : 'You can respond to this message through your dashboard.'
+        }
               </p>
             </div>
 
@@ -731,7 +731,7 @@ class EmailService {
       isHiring = false
     } = data;
 
-    const subject = isHiring 
+    const subject = isHiring
       ? `Congratulations! You are Hired - ${jobTitle} | ${clubName}`
       : `Job Offer from ${clubName} - ${jobTitle}`;
 
@@ -765,10 +765,10 @@ class EmailService {
               </p>
               
               <p style="color: #555; font-size: 16px; line-height: 1.8;">
-                ${isHiring 
-                  ? `We are pleased to confirm that you have been hired for the position of <strong>${jobTitle}</strong> at <strong>${clubName}</strong>.`
-                  : `We are pleased to offer you the position of <strong>${jobTitle}</strong> at <strong>${clubName}</strong>.`
-                }
+                ${isHiring
+          ? `We are pleased to confirm that you have been hired for the position of <strong>${jobTitle}</strong> at <strong>${clubName}</strong>.`
+          : `We are pleased to offer you the position of <strong>${jobTitle}</strong> at <strong>${clubName}</strong>.`
+        }
               </p>
 
               ${message ? `
@@ -808,10 +808,10 @@ class EmailService {
               </p>
               
               <p style="color: #555; font-size: 16px; line-height: 1.8;">
-                ${isHiring 
-                  ? `يسعدنا أن نؤكد لك أنه تم توظيفك في منصب <strong>${jobTitle}</strong> في <strong>${clubName}</strong>.`
-                  : `يسعدنا أن نقدم لك عرض وظيفة <strong>${jobTitle}</strong> في <strong>${clubName}</strong>.`
-                }
+                ${isHiring
+          ? `يسعدنا أن نؤكد لك أنه تم توظيفك في منصب <strong>${jobTitle}</strong> في <strong>${clubName}</strong>.`
+          : `يسعدنا أن نقدم لك عرض وظيفة <strong>${jobTitle}</strong> في <strong>${clubName}</strong>.`
+        }
               </p>
 
               ${meetingDate || meetingTime || meetingLocation ? `

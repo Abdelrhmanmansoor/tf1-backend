@@ -1,19 +1,19 @@
-const { LeaderTeam, AuditLog, Permission } = require('../models/admin');
+const { AdministrativeTeam, AuditLog, Permission } = require('../models/admin');
 const User = require('../modules/shared/models/User');
 const crypto = require('crypto');
 
 exports.getDashboard = async (req, res) => {
   try {
     const user = req.user;
-    
-    let leaderTeam = await LeaderTeam.findOne({ leaderId: user._id });
-    
-    if (!leaderTeam) {
-      leaderTeam = await LeaderTeam.create({
-        leaderId: user._id,
-        leaderName: `${user.firstName} ${user.lastName}`,
-        leaderEmail: user.email,
-        leaderAccessKey: crypto.randomBytes(16).toString('hex').toUpperCase(),
+
+    let adminTeam = await AdministrativeTeam.findOne({ adminId: user._id });
+
+    if (!adminTeam) {
+      adminTeam = await AdministrativeTeam.create({
+        adminId: user._id,
+        adminName: `${user.firstName} ${user.lastName}`,
+        adminEmail: user.email,
+        adminAccessKey: crypto.randomBytes(16).toString('hex').toUpperCase(),
         teamMembers: [],
         isActive: true
       });
@@ -23,16 +23,14 @@ exports.getDashboard = async (req, res) => {
       totalTeamMembers,
       activeMembers,
       recentLogs,
-      totalUsers,
       pendingActions
     ] = await Promise.all([
-      leaderTeam.teamMembers.length,
-      leaderTeam.teamMembers.filter(m => m.isActive).length,
-      AuditLog.find({ userType: { $in: ['leader', 'team'] } })
+      adminTeam.teamMembers.length,
+      adminTeam.teamMembers.filter(m => m.isActive).length,
+      AuditLog.find({ userType: { $in: ['sports-administrator', 'team'] }, userId: user._id })
         .sort({ createdAt: -1 })
         .limit(10)
         .lean(),
-      User.countDocuments({ isActive: true }),
       0
     ]);
 
@@ -41,11 +39,11 @@ exports.getDashboard = async (req, res) => {
       userEmail: user.email,
       userName: `${user.firstName} ${user.lastName}`,
       userRole: user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'view',
       module: 'dashboard',
-      description: 'Leader accessed dashboard',
-      descriptionAr: 'دخل القائد إلى لوحة التحكم',
+      description: 'Sports Administrator accessed dashboard',
+      descriptionAr: 'دخل الإداري الرياضي إلى لوحة التحكم',
       route: req.originalUrl,
       method: req.method,
       isSuccess: true,
@@ -55,18 +53,16 @@ exports.getDashboard = async (req, res) => {
     res.json({
       success: true,
       data: {
-        leader: {
+        administrator: {
           id: user._id,
           name: `${user.firstName} ${user.lastName}`,
           email: user.email,
-          accessKey: leaderTeam.leaderAccessKey,
-          role: 'leader',
-          hasFullAccess: true
+          accessKey: adminTeam.adminAccessKey,
+          role: 'sports-administrator'
         },
         stats: {
           totalTeamMembers,
           activeMembers,
-          totalUsers,
           pendingActions
         },
         recentActivity: recentLogs.map(log => ({
@@ -81,17 +77,17 @@ exports.getDashboard = async (req, res) => {
           createdAt: log.createdAt,
           isSuccess: log.isSuccess
         })),
-        settings: leaderTeam.settings
+        settings: adminTeam.settings
       }
     });
   } catch (error) {
-    console.error('Leader dashboard error:', error);
+    console.error('Sports Admin dashboard error:', error);
     res.status(500).json({
       success: false,
       error: {
         code: 'DASHBOARD_ERROR',
-        message: 'Error loading leader dashboard',
-        messageAr: 'خطأ في تحميل لوحة تحكم القائد'
+        message: 'Error loading dashboard',
+        messageAr: 'خطأ في تحميل لوحة التحكم'
       }
     });
   }
@@ -99,10 +95,10 @@ exports.getDashboard = async (req, res) => {
 
 exports.getTeamMembers = async (req, res) => {
   try {
-    const leaderTeam = await LeaderTeam.findOne({ leaderId: req.user._id })
+    const adminTeam = await AdministrativeTeam.findOne({ adminId: req.user._id })
       .populate('teamMembers.userId', 'firstName lastName email role avatar lastLogin');
 
-    if (!leaderTeam) {
+    if (!adminTeam) {
       return res.status(404).json({
         success: false,
         error: {
@@ -116,7 +112,7 @@ exports.getTeamMembers = async (req, res) => {
     res.json({
       success: true,
       data: {
-        members: leaderTeam.teamMembers.map(m => ({
+        members: adminTeam.teamMembers.map(m => ({
           id: m._id,
           userId: m.userId?._id,
           name: m.name || (m.userId ? `${m.userId.firstName} ${m.userId.lastName}` : 'Unknown'),
@@ -127,8 +123,8 @@ exports.getTeamMembers = async (req, res) => {
           lastLogin: m.lastLogin || m.userId?.lastLogin,
           addedAt: m.addedAt
         })),
-        maxMembers: leaderTeam.settings.maxTeamMembers,
-        currentCount: leaderTeam.teamMembers.length
+        maxMembers: adminTeam.settings.maxTeamMembers,
+        currentCount: adminTeam.teamMembers.length
       }
     });
   } catch (error) {
@@ -171,20 +167,20 @@ exports.addTeamMember = async (req, res) => {
       });
     }
 
-    let leaderTeam = await LeaderTeam.findOne({ leaderId: req.user._id });
+    let adminTeam = await AdministrativeTeam.findOne({ adminId: req.user._id });
 
-    if (!leaderTeam) {
-      leaderTeam = await LeaderTeam.create({
-        leaderId: req.user._id,
-        leaderName: `${req.user.firstName} ${req.user.lastName}`,
-        leaderEmail: req.user.email,
-        leaderAccessKey: crypto.randomBytes(16).toString('hex').toUpperCase(),
+    if (!adminTeam) {
+      adminTeam = await AdministrativeTeam.create({
+        adminId: req.user._id,
+        adminName: `${req.user.firstName} ${req.user.lastName}`,
+        adminEmail: req.user.email,
+        adminAccessKey: crypto.randomBytes(16).toString('hex').toUpperCase(),
         teamMembers: [],
         isActive: true
       });
     }
 
-    const existingMember = leaderTeam.teamMembers.find(
+    const existingMember = adminTeam.teamMembers.find(
       m => m.userId.toString() === userToAdd._id.toString()
     );
 
@@ -199,7 +195,7 @@ exports.addTeamMember = async (req, res) => {
       });
     }
 
-    if (leaderTeam.teamMembers.length >= leaderTeam.settings.maxTeamMembers) {
+    if (adminTeam.teamMembers.length >= adminTeam.settings.maxTeamMembers) {
       return res.status(400).json({
         success: false,
         error: {
@@ -212,7 +208,7 @@ exports.addTeamMember = async (req, res) => {
 
     const accessKey = crypto.randomBytes(16).toString('hex').toUpperCase();
 
-    leaderTeam.teamMembers.push({
+    adminTeam.teamMembers.push({
       userId: userToAdd._id,
       name: `${userToAdd.firstName} ${userToAdd.lastName}`,
       email: userToAdd.email,
@@ -223,14 +219,14 @@ exports.addTeamMember = async (req, res) => {
       addedBy: req.user._id
     });
 
-    await leaderTeam.save();
+    await adminTeam.save();
 
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'team_member_added',
       module: 'team',
       description: `Added team member: ${userToAdd.email}`,
@@ -248,7 +244,7 @@ exports.addTeamMember = async (req, res) => {
       success: true,
       data: {
         member: {
-          id: leaderTeam.teamMembers[leaderTeam.teamMembers.length - 1]._id,
+          id: adminTeam.teamMembers[adminTeam.teamMembers.length - 1]._id,
           userId: userToAdd._id,
           name: `${userToAdd.firstName} ${userToAdd.lastName}`,
           email: userToAdd.email,
@@ -278,9 +274,9 @@ exports.updateMemberPermissions = async (req, res) => {
     const { memberId } = req.params;
     const { permissions } = req.body;
 
-    const leaderTeam = await LeaderTeam.findOne({ leaderId: req.user._id });
+    const adminTeam = await AdministrativeTeam.findOne({ adminId: req.user._id });
 
-    if (!leaderTeam) {
+    if (!adminTeam) {
       return res.status(404).json({
         success: false,
         error: {
@@ -291,7 +287,7 @@ exports.updateMemberPermissions = async (req, res) => {
       });
     }
 
-    const member = leaderTeam.teamMembers.id(memberId);
+    const member = adminTeam.teamMembers.id(memberId);
 
     if (!member) {
       return res.status(404).json({
@@ -307,14 +303,14 @@ exports.updateMemberPermissions = async (req, res) => {
     const previousPermissions = [...member.permissions];
     member.permissions = permissions;
 
-    await leaderTeam.save();
+    await adminTeam.save();
 
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'permission_granted',
       module: 'team',
       description: `Updated permissions for: ${member.name}`,
@@ -359,9 +355,9 @@ exports.removeMember = async (req, res) => {
   try {
     const { memberId } = req.params;
 
-    const leaderTeam = await LeaderTeam.findOne({ leaderId: req.user._id });
+    const adminTeam = await AdministrativeTeam.findOne({ adminId: req.user._id });
 
-    if (!leaderTeam) {
+    if (!adminTeam) {
       return res.status(404).json({
         success: false,
         error: {
@@ -372,7 +368,7 @@ exports.removeMember = async (req, res) => {
       });
     }
 
-    const member = leaderTeam.teamMembers.id(memberId);
+    const member = adminTeam.teamMembers.id(memberId);
 
     if (!member) {
       return res.status(404).json({
@@ -390,14 +386,14 @@ exports.removeMember = async (req, res) => {
 
     member.isActive = false;
 
-    await leaderTeam.save();
+    await adminTeam.save();
 
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'team_member_removed',
       module: 'team',
       description: `Removed team member: ${memberEmail}`,
@@ -431,61 +427,20 @@ exports.removeMember = async (req, res) => {
 
 exports.getAvailablePermissions = async (req, res) => {
   try {
+    // Limited permissions for Sports Administrator - scoped only to their management
     const permissions = [
       { code: 'DASHBOARD_VIEW', name: 'View Dashboard', nameAr: 'عرض لوحة التحكم', module: 'dashboard', category: 'dashboard' },
-      { code: 'DASHBOARD_ANALYTICS', name: 'View Analytics', nameAr: 'عرض التحليلات', module: 'dashboard', category: 'dashboard' },
-      
-      { code: 'USERS_VIEW', name: 'View Users', nameAr: 'عرض المستخدمين', module: 'users', category: 'users' },
-      { code: 'USERS_CREATE', name: 'Create Users', nameAr: 'إنشاء مستخدمين', module: 'users', category: 'users' },
-      { code: 'USERS_EDIT', name: 'Edit Users', nameAr: 'تعديل المستخدمين', module: 'users', category: 'users' },
-      { code: 'USERS_DELETE', name: 'Delete Users', nameAr: 'حذف المستخدمين', module: 'users', category: 'users' },
-      { code: 'USERS_BLOCK', name: 'Block Users', nameAr: 'حظر المستخدمين', module: 'users', category: 'users' },
-      
-      { code: 'JOBS_VIEW', name: 'View Jobs', nameAr: 'عرض الوظائف', module: 'jobs', category: 'jobs' },
-      { code: 'JOBS_CREATE', name: 'Create Jobs', nameAr: 'إنشاء وظائف', module: 'jobs', category: 'jobs' },
-      { code: 'JOBS_EDIT', name: 'Edit Jobs', nameAr: 'تعديل الوظائف', module: 'jobs', category: 'jobs' },
-      { code: 'JOBS_DELETE', name: 'Delete Jobs', nameAr: 'حذف الوظائف', module: 'jobs', category: 'jobs' },
-      { code: 'JOBS_APPLICATIONS', name: 'Manage Applications', nameAr: 'إدارة الطلبات', module: 'jobs', category: 'jobs' },
-      
-      { code: 'MATCHES_VIEW', name: 'View Matches', nameAr: 'عرض المباريات', module: 'matches', category: 'matches' },
-      { code: 'MATCHES_CREATE', name: 'Create Matches', nameAr: 'إنشاء مباريات', module: 'matches', category: 'matches' },
-      { code: 'MATCHES_EDIT', name: 'Edit Matches', nameAr: 'تعديل المباريات', module: 'matches', category: 'matches' },
-      { code: 'MATCHES_DELETE', name: 'Delete Matches', nameAr: 'حذف المباريات', module: 'matches', category: 'matches' },
-      
-      { code: 'CONTENT_VIEW', name: 'View Content', nameAr: 'عرض المحتوى', module: 'content', category: 'content' },
-      { code: 'CONTENT_CREATE', name: 'Create Content', nameAr: 'إنشاء محتوى', module: 'content', category: 'content' },
-      { code: 'CONTENT_EDIT', name: 'Edit Content', nameAr: 'تعديل المحتوى', module: 'content', category: 'content' },
-      { code: 'CONTENT_DELETE', name: 'Delete Content', nameAr: 'حذف المحتوى', module: 'content', category: 'content' },
-      { code: 'CONTENT_PUBLISH', name: 'Publish Content', nameAr: 'نشر المحتوى', module: 'content', category: 'content' },
-      
-      { code: 'CATEGORIES_VIEW', name: 'View Categories', nameAr: 'عرض التصنيفات', module: 'categories', category: 'content' },
-      { code: 'CATEGORIES_MANAGE', name: 'Manage Categories', nameAr: 'إدارة التصنيفات', module: 'categories', category: 'content' },
-      
-      { code: 'SETTINGS_VIEW', name: 'View Settings', nameAr: 'عرض الإعدادات', module: 'settings', category: 'settings' },
-      { code: 'SETTINGS_EDIT', name: 'Edit Settings', nameAr: 'تعديل الإعدادات', module: 'settings', category: 'settings' },
-      
+
+      { code: 'TEAM_MANAGE', name: 'Manage Team', nameAr: 'إدارة الفريق', module: 'team', category: 'team' },
+
       { code: 'REPORTS_VIEW', name: 'View Reports', nameAr: 'عرض التقارير', module: 'reports', category: 'reports' },
       { code: 'REPORTS_EXPORT', name: 'Export Reports', nameAr: 'تصدير التقارير', module: 'reports', category: 'reports' },
-      
-      { code: 'NOTIFICATIONS_VIEW', name: 'View Notifications', nameAr: 'عرض الإشعارات', module: 'notifications', category: 'system' },
-      { code: 'NOTIFICATIONS_SEND', name: 'Send Notifications', nameAr: 'إرسال إشعارات', module: 'notifications', category: 'system' },
-      
-      { code: 'LOGS_VIEW', name: 'View Logs', nameAr: 'عرض السجلات', module: 'logs', category: 'system' },
-      { code: 'LOGS_EXPORT', name: 'Export Logs', nameAr: 'تصدير السجلات', module: 'logs', category: 'system' },
-      
-      { code: 'AGE_GROUPS_VIEW', name: 'View Age Groups', nameAr: 'عرض الفئات العمرية', module: 'age-groups', category: 'content' },
-      { code: 'AGE_GROUPS_MANAGE', name: 'Manage Age Groups', nameAr: 'إدارة الفئات العمرية', module: 'age-groups', category: 'content' }
     ];
 
     const categories = [
       { id: 'dashboard', name: 'Dashboard', nameAr: 'لوحة التحكم' },
-      { id: 'users', name: 'Users', nameAr: 'المستخدمين' },
-      { id: 'jobs', name: 'Jobs', nameAr: 'الوظائف' },
-      { id: 'matches', name: 'Matches', nameAr: 'المباريات' },
-      { id: 'content', name: 'Content', nameAr: 'المحتوى' },
-      { id: 'settings', name: 'Settings', nameAr: 'الإعدادات' },
-      { id: 'reports', name: 'Reports', nameAr: 'التقارير' },
-      { id: 'system', name: 'System', nameAr: 'النظام' }
+      { id: 'team', name: 'Team', nameAr: 'الفريق' },
+      { id: 'reports', name: 'Reports', nameAr: 'التقارير' }
     ];
 
     res.json({
@@ -510,13 +465,14 @@ exports.getAvailablePermissions = async (req, res) => {
 
 exports.getAuditLogs = async (req, res) => {
   try {
-    const { page = 1, limit = 50, action, module, userId, startDate, endDate } = req.query;
+    const { page = 1, limit = 50, action, module, startDate, endDate } = req.query;
 
-    const query = {};
+    const query = {
+      userId: req.user._id // STRICTLY SCOPED to this admin
+    };
 
     if (action) query.action = action;
     if (module) query.module = module;
-    if (userId) query.userId = userId;
 
     if (startDate || endDate) {
       query.createdAt = {};
@@ -580,9 +536,9 @@ exports.updateSettings = async (req, res) => {
   try {
     const { allowTeamInvites, requireAccessKey, sessionTimeout, maxTeamMembers } = req.body;
 
-    const leaderTeam = await LeaderTeam.findOne({ leaderId: req.user._id });
+    const adminTeam = await AdministrativeTeam.findOne({ adminId: req.user._id });
 
-    if (!leaderTeam) {
+    if (!adminTeam) {
       return res.status(404).json({
         success: false,
         error: {
@@ -593,27 +549,27 @@ exports.updateSettings = async (req, res) => {
       });
     }
 
-    const previousSettings = { ...leaderTeam.settings.toObject() };
+    const previousSettings = { ...adminTeam.settings.toObject() };
 
-    if (allowTeamInvites !== undefined) leaderTeam.settings.allowTeamInvites = allowTeamInvites;
-    if (requireAccessKey !== undefined) leaderTeam.settings.requireAccessKey = requireAccessKey;
-    if (sessionTimeout !== undefined) leaderTeam.settings.sessionTimeout = sessionTimeout;
-    if (maxTeamMembers !== undefined) leaderTeam.settings.maxTeamMembers = maxTeamMembers;
+    if (allowTeamInvites !== undefined) adminTeam.settings.allowTeamInvites = allowTeamInvites;
+    if (requireAccessKey !== undefined) adminTeam.settings.requireAccessKey = requireAccessKey;
+    if (sessionTimeout !== undefined) adminTeam.settings.sessionTimeout = sessionTimeout;
+    if (maxTeamMembers !== undefined) adminTeam.settings.maxTeamMembers = maxTeamMembers;
 
-    await leaderTeam.save();
+    await adminTeam.save();
 
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'settings_changed',
       module: 'settings',
       description: 'Team settings updated',
       descriptionAr: 'تم تحديث إعدادات الفريق',
       previousValue: previousSettings,
-      newValue: leaderTeam.settings,
+      newValue: adminTeam.settings,
       route: req.originalUrl,
       method: req.method,
       isSuccess: true,
@@ -623,7 +579,7 @@ exports.updateSettings = async (req, res) => {
     res.json({
       success: true,
       data: {
-        settings: leaderTeam.settings
+        settings: adminTeam.settings
       },
       message: 'Settings updated successfully',
       messageAr: 'تم تحديث الإعدادات بنجاح'

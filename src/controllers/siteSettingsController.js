@@ -3,12 +3,12 @@ const { SiteSettings, AuditLog } = require('../models/admin');
 const getFullSettings = async (req, res) => {
   try {
     const settings = await SiteSettings.getSettings();
-    
+
     res.json({
       success: true,
       data: {
         settings,
-        isLeader: req.isLeader || false,
+        isSportsAdmin: req.isSportsAdmin || false,
         hasFullAccess: req.hasFullAccess || false
       }
     });
@@ -28,9 +28,9 @@ const getFullSettings = async (req, res) => {
 const updateBranding = async (req, res) => {
   try {
     const { siteName, siteNameAr, tagline, taglineAr, description, descriptionAr, logo, colors, typography, layout } = req.body;
-    
+
     const updates = { branding: {} };
-    
+
     if (siteName !== undefined) updates.branding.siteName = siteName;
     if (siteNameAr !== undefined) updates.branding.siteNameAr = siteNameAr;
     if (tagline !== undefined) updates.branding.tagline = tagline;
@@ -41,15 +41,15 @@ const updateBranding = async (req, res) => {
     if (colors !== undefined) updates.branding.colors = colors;
     if (typography !== undefined) updates.branding.typography = typography;
     if (layout !== undefined) updates.branding.layout = layout;
-    
+
     const settings = await SiteSettings.updateSettings(updates, req.user._id);
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'update_branding',
       module: 'settings',
       description: 'Updated site branding settings',
@@ -60,12 +60,12 @@ const updateBranding = async (req, res) => {
       newValues: updates.branding,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'branding', data: settings.branding });
     }
-    
+
     res.json({
       success: true,
       message: 'Branding updated successfully',
@@ -88,7 +88,7 @@ const updateBranding = async (req, res) => {
 const updateColors = async (req, res) => {
   try {
     const { colors } = req.body;
-    
+
     if (!colors) {
       return res.status(400).json({
         success: false,
@@ -99,19 +99,19 @@ const updateColors = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
     settings.branding.colors = { ...settings.branding.colors.toObject(), ...colors };
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'update_colors',
       module: 'settings',
       description: 'Updated site color scheme',
@@ -122,12 +122,12 @@ const updateColors = async (req, res) => {
       newValues: colors,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'colors', data: settings.branding.colors });
     }
-    
+
     res.json({
       success: true,
       message: 'Colors updated successfully',
@@ -150,7 +150,7 @@ const updateColors = async (req, res) => {
 const updateLogo = async (req, res) => {
   try {
     const { logo } = req.body;
-    
+
     if (!logo) {
       return res.status(400).json({
         success: false,
@@ -161,19 +161,19 @@ const updateLogo = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
     settings.branding.logo = { ...settings.branding.logo.toObject(), ...logo };
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'update_logo',
       module: 'settings',
       description: 'Updated site logo',
@@ -184,12 +184,12 @@ const updateLogo = async (req, res) => {
       newValues: logo,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'logo', data: settings.branding.logo });
     }
-    
+
     res.json({
       success: true,
       message: 'Logo updated successfully',
@@ -212,43 +212,43 @@ const updateLogo = async (req, res) => {
 const updateContent = async (req, res) => {
   try {
     const { pages, announcements, banners, emailTemplates } = req.body;
-    
+
     const settings = await SiteSettings.getSettings();
-    
+
     if (pages) {
       Object.keys(pages).forEach(key => {
         if (settings.content.pages[key]) {
-          settings.content.pages[key] = { 
-            ...settings.content.pages[key].toObject?.() || settings.content.pages[key], 
-            ...pages[key] 
+          settings.content.pages[key] = {
+            ...settings.content.pages[key].toObject?.() || settings.content.pages[key],
+            ...pages[key]
           };
         }
       });
     }
-    
+
     if (announcements) settings.content.announcements = announcements;
     if (banners) settings.content.banners = banners;
     if (emailTemplates) {
       Object.keys(emailTemplates).forEach(key => {
         if (settings.content.emailTemplates[key]) {
-          settings.content.emailTemplates[key] = { 
-            ...settings.content.emailTemplates[key].toObject?.() || settings.content.emailTemplates[key], 
-            ...emailTemplates[key] 
+          settings.content.emailTemplates[key] = {
+            ...settings.content.emailTemplates[key].toObject?.() || settings.content.emailTemplates[key],
+            ...emailTemplates[key]
           };
         }
       });
     }
-    
+
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'update_content',
       module: 'settings',
       description: 'Updated site content',
@@ -258,12 +258,12 @@ const updateContent = async (req, res) => {
       isSuccess: true,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'content', data: settings.content });
     }
-    
+
     res.json({
       success: true,
       message: 'Content updated successfully',
@@ -286,7 +286,7 @@ const updateContent = async (req, res) => {
 const updateContactInfo = async (req, res) => {
   try {
     const { contactInfo } = req.body;
-    
+
     if (!contactInfo) {
       return res.status(400).json({
         success: false,
@@ -297,19 +297,19 @@ const updateContactInfo = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
     settings.contactInfo = { ...settings.contactInfo.toObject(), ...contactInfo };
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'update_contact',
       module: 'settings',
       description: 'Updated contact information',
@@ -320,12 +320,12 @@ const updateContactInfo = async (req, res) => {
       newValues: contactInfo,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'contactInfo', data: settings.contactInfo });
     }
-    
+
     res.json({
       success: true,
       message: 'Contact info updated successfully',
@@ -348,7 +348,7 @@ const updateContactInfo = async (req, res) => {
 const updateSocialMedia = async (req, res) => {
   try {
     const { socialMedia } = req.body;
-    
+
     if (!socialMedia) {
       return res.status(400).json({
         success: false,
@@ -359,19 +359,19 @@ const updateSocialMedia = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
     settings.socialMedia = { ...settings.socialMedia.toObject(), ...socialMedia };
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'update_social',
       module: 'settings',
       description: 'Updated social media links',
@@ -382,12 +382,12 @@ const updateSocialMedia = async (req, res) => {
       newValues: socialMedia,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'socialMedia', data: settings.socialMedia });
     }
-    
+
     res.json({
       success: true,
       message: 'Social media updated successfully',
@@ -410,7 +410,7 @@ const updateSocialMedia = async (req, res) => {
 const updateFeatures = async (req, res) => {
   try {
     const { features } = req.body;
-    
+
     if (!features) {
       return res.status(400).json({
         success: false,
@@ -421,28 +421,28 @@ const updateFeatures = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
-    
+
     Object.keys(features).forEach(key => {
       if (settings.features[key]) {
-        settings.features[key] = { 
-          ...settings.features[key].toObject?.() || settings.features[key], 
-          ...features[key] 
+        settings.features[key] = {
+          ...settings.features[key].toObject?.() || settings.features[key],
+          ...features[key]
         };
       }
     });
-    
+
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'update_features',
       module: 'settings',
       description: 'Updated feature toggles',
@@ -453,12 +453,12 @@ const updateFeatures = async (req, res) => {
       newValues: features,
       severity: 'warning'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'features', data: settings.features });
     }
-    
+
     res.json({
       success: true,
       message: 'Features updated successfully',
@@ -481,7 +481,7 @@ const updateFeatures = async (req, res) => {
 const updateSeo = async (req, res) => {
   try {
     const { seo } = req.body;
-    
+
     if (!seo) {
       return res.status(400).json({
         success: false,
@@ -492,19 +492,19 @@ const updateSeo = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
     settings.seo = { ...settings.seo.toObject(), ...seo };
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'update_seo',
       module: 'settings',
       description: 'Updated SEO settings',
@@ -515,12 +515,12 @@ const updateSeo = async (req, res) => {
       newValues: seo,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'seo', data: settings.seo });
     }
-    
+
     res.json({
       success: true,
       message: 'SEO updated successfully',
@@ -543,7 +543,7 @@ const updateSeo = async (req, res) => {
 const updateFooter = async (req, res) => {
   try {
     const { footer } = req.body;
-    
+
     if (!footer) {
       return res.status(400).json({
         success: false,
@@ -554,19 +554,19 @@ const updateFooter = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
     settings.footer = { ...settings.footer.toObject(), ...footer };
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'update_footer',
       module: 'settings',
       description: 'Updated footer settings',
@@ -577,12 +577,12 @@ const updateFooter = async (req, res) => {
       newValues: footer,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'footer', data: settings.footer });
     }
-    
+
     res.json({
       success: true,
       message: 'Footer updated successfully',
@@ -605,7 +605,7 @@ const updateFooter = async (req, res) => {
 const updateNavigation = async (req, res) => {
   try {
     const { navigation } = req.body;
-    
+
     if (!navigation) {
       return res.status(400).json({
         success: false,
@@ -616,23 +616,23 @@ const updateNavigation = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
-    
+
     if (navigation.mainMenu) settings.navigation.mainMenu = navigation.mainMenu;
     if (navigation.footerMenu) settings.navigation.footerMenu = navigation.footerMenu;
     if (navigation.mobileMenu) settings.navigation.mobileMenu = navigation.mobileMenu;
-    
+
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'update_navigation',
       module: 'settings',
       description: 'Updated navigation menus',
@@ -642,12 +642,12 @@ const updateNavigation = async (req, res) => {
       isSuccess: true,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'navigation', data: settings.navigation });
     }
-    
+
     res.json({
       success: true,
       message: 'Navigation updated successfully',
@@ -670,7 +670,7 @@ const updateNavigation = async (req, res) => {
 const updateLocalization = async (req, res) => {
   try {
     const { localization } = req.body;
-    
+
     if (!localization) {
       return res.status(400).json({
         success: false,
@@ -681,19 +681,19 @@ const updateLocalization = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
     settings.localization = { ...settings.localization.toObject(), ...localization };
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'update_localization',
       module: 'settings',
       description: 'Updated localization settings',
@@ -704,12 +704,12 @@ const updateLocalization = async (req, res) => {
       newValues: localization,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'localization', data: settings.localization });
     }
-    
+
     res.json({
       success: true,
       message: 'Localization updated successfully',
@@ -732,7 +732,7 @@ const updateLocalization = async (req, res) => {
 const updateSecurity = async (req, res) => {
   try {
     const { security } = req.body;
-    
+
     if (!security) {
       return res.status(400).json({
         success: false,
@@ -743,19 +743,19 @@ const updateSecurity = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
     settings.security = { ...settings.security.toObject(), ...security };
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'update_security',
       module: 'settings',
       description: 'Updated security settings',
@@ -766,12 +766,12 @@ const updateSecurity = async (req, res) => {
       newValues: security,
       severity: 'critical'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'security', data: settings.security });
     }
-    
+
     res.json({
       success: true,
       message: 'Security updated successfully',
@@ -794,7 +794,7 @@ const updateSecurity = async (req, res) => {
 const updateLimits = async (req, res) => {
   try {
     const { limits } = req.body;
-    
+
     if (!limits) {
       return res.status(400).json({
         success: false,
@@ -805,19 +805,19 @@ const updateLimits = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
     settings.limits = { ...settings.limits.toObject(), ...limits };
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'update_limits',
       module: 'settings',
       description: 'Updated system limits',
@@ -828,12 +828,12 @@ const updateLimits = async (req, res) => {
       newValues: limits,
       severity: 'warning'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'limits', data: settings.limits });
     }
-    
+
     res.json({
       success: true,
       message: 'Limits updated successfully',
@@ -856,9 +856,9 @@ const updateLimits = async (req, res) => {
 const addAnnouncement = async (req, res) => {
   try {
     const { title, titleAr, message, messageAr, type, position, showOnPages, dismissible, startsAt, endsAt } = req.body;
-    
+
     const settings = await SiteSettings.getSettings();
-    
+
     const newAnnouncement = {
       title,
       titleAr,
@@ -872,18 +872,18 @@ const addAnnouncement = async (req, res) => {
       endsAt,
       isActive: true
     };
-    
+
     settings.content.announcements.push(newAnnouncement);
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'add_announcement',
       module: 'content',
       description: `Added announcement: ${titleAr || title}`,
@@ -894,12 +894,12 @@ const addAnnouncement = async (req, res) => {
       newValues: newAnnouncement,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'announcements', data: settings.content.announcements });
     }
-    
+
     res.status(201).json({
       success: true,
       message: 'Announcement added successfully',
@@ -922,9 +922,9 @@ const addAnnouncement = async (req, res) => {
 const addBanner = async (req, res) => {
   try {
     const { title, titleAr, subtitle, subtitleAr, image, imageMobile, link, buttonText, buttonTextAr, position, order, showOnPages, startsAt, endsAt } = req.body;
-    
+
     const settings = await SiteSettings.getSettings();
-    
+
     const newBanner = {
       title,
       titleAr,
@@ -942,18 +942,18 @@ const addBanner = async (req, res) => {
       endsAt,
       isActive: true
     };
-    
+
     settings.content.banners.push(newBanner);
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'add_banner',
       module: 'content',
       description: `Added banner: ${titleAr || title}`,
@@ -964,12 +964,12 @@ const addBanner = async (req, res) => {
       newValues: newBanner,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'banners', data: settings.content.banners });
     }
-    
+
     res.status(201).json({
       success: true,
       message: 'Banner added successfully',
@@ -992,9 +992,9 @@ const addBanner = async (req, res) => {
 const toggleMaintenance = async (req, res) => {
   try {
     const { enabled, message, messageAr, allowedIPs, estimatedEndTime } = req.body;
-    
+
     const settings = await SiteSettings.getSettings();
-    
+
     settings.features.maintenance = {
       enabled: enabled !== undefined ? enabled : settings.features.maintenance.enabled,
       message: message || settings.features.maintenance.message,
@@ -1002,17 +1002,17 @@ const toggleMaintenance = async (req, res) => {
       allowedIPs: allowedIPs || settings.features.maintenance.allowedIPs,
       estimatedEndTime: estimatedEndTime || settings.features.maintenance.estimatedEndTime
     };
-    
+
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: enabled ? 'enable_maintenance' : 'disable_maintenance',
       module: 'system',
       description: enabled ? 'Enabled maintenance mode' : 'Disabled maintenance mode',
@@ -1022,7 +1022,7 @@ const toggleMaintenance = async (req, res) => {
       isSuccess: true,
       severity: 'critical'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'maintenance', data: settings.features.maintenance });
@@ -1032,7 +1032,7 @@ const toggleMaintenance = async (req, res) => {
         io.emit('maintenance:disabled');
       }
     }
-    
+
     res.json({
       success: true,
       message: enabled ? 'Maintenance mode enabled' : 'Maintenance mode disabled',
@@ -1055,7 +1055,7 @@ const toggleMaintenance = async (req, res) => {
 const getPublicSettings = async (req, res) => {
   try {
     const settings = await SiteSettings.getPublicSettings();
-    
+
     res.json({
       success: true,
       data: settings
@@ -1076,12 +1076,12 @@ const getPublicSettings = async (req, res) => {
 const resetToDefaults = async (req, res) => {
   try {
     const { section } = req.body;
-    
+
     const settings = await SiteSettings.getSettings();
     const previousValues = settings[section];
-    
+
     const defaultSettings = new SiteSettings();
-    
+
     if (section && defaultSettings[section]) {
       settings[section] = defaultSettings[section];
     } else {
@@ -1094,17 +1094,17 @@ const resetToDefaults = async (req, res) => {
         }
       });
     }
-    
+
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
       userName: `${req.user.firstName} ${req.user.lastName}`,
       userRole: req.user.role,
-      userType: 'leader',
+      userType: 'sports-administrator',
       action: 'reset_settings',
       module: 'settings',
       description: `Reset ${section} to defaults`,
@@ -1115,12 +1115,12 @@ const resetToDefaults = async (req, res) => {
       previousValues,
       severity: 'warning'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: section, data: settings[section] });
     }
-    
+
     res.json({
       success: true,
       message: `${section} reset to defaults`,
@@ -1143,7 +1143,7 @@ const resetToDefaults = async (req, res) => {
 const updateTypography = async (req, res) => {
   try {
     const { typography } = req.body;
-    
+
     if (!typography) {
       return res.status(400).json({
         success: false,
@@ -1154,13 +1154,13 @@ const updateTypography = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
     settings.branding.typography = { ...settings.branding.typography.toObject(), ...typography };
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
@@ -1177,12 +1177,12 @@ const updateTypography = async (req, res) => {
       newValues: typography,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'typography', data: settings.branding.typography });
     }
-    
+
     res.json({
       success: true,
       message: 'Typography updated successfully',
@@ -1205,7 +1205,7 @@ const updateTypography = async (req, res) => {
 const updateLayout = async (req, res) => {
   try {
     const { layout } = req.body;
-    
+
     if (!layout) {
       return res.status(400).json({
         success: false,
@@ -1216,13 +1216,13 @@ const updateLayout = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
     settings.branding.layout = { ...settings.branding.layout.toObject(), ...layout };
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
@@ -1239,12 +1239,12 @@ const updateLayout = async (req, res) => {
       newValues: layout,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'layout', data: settings.branding.layout });
     }
-    
+
     res.json({
       success: true,
       message: 'Layout updated successfully',
@@ -1267,7 +1267,7 @@ const updateLayout = async (req, res) => {
 const updatePages = async (req, res) => {
   try {
     const { pages } = req.body;
-    
+
     if (!pages) {
       return res.status(400).json({
         success: false,
@@ -1278,22 +1278,22 @@ const updatePages = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
-    
+
     Object.keys(pages).forEach(key => {
       if (settings.content.pages[key]) {
-        settings.content.pages[key] = { 
-          ...settings.content.pages[key].toObject?.() || settings.content.pages[key], 
-          ...pages[key] 
+        settings.content.pages[key] = {
+          ...settings.content.pages[key].toObject?.() || settings.content.pages[key],
+          ...pages[key]
         };
       }
     });
-    
+
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
@@ -1309,12 +1309,12 @@ const updatePages = async (req, res) => {
       isSuccess: true,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'pages', data: settings.content.pages });
     }
-    
+
     res.json({
       success: true,
       message: 'Pages updated successfully',
@@ -1338,10 +1338,10 @@ const updateAnnouncement = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
-    
+
     const settings = await SiteSettings.getSettings();
     const announcementIndex = settings.content.announcements.findIndex(a => a.id === id);
-    
+
     if (announcementIndex === -1) {
       return res.status(404).json({
         success: false,
@@ -1352,16 +1352,16 @@ const updateAnnouncement = async (req, res) => {
         }
       });
     }
-    
+
     settings.content.announcements[announcementIndex] = {
       ...settings.content.announcements[announcementIndex].toObject?.() || settings.content.announcements[announcementIndex],
       ...updates
     };
-    
+
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
@@ -1378,12 +1378,12 @@ const updateAnnouncement = async (req, res) => {
       newValues: updates,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'announcements', data: settings.content.announcements });
     }
-    
+
     res.json({
       success: true,
       message: 'Announcement updated successfully',
@@ -1406,10 +1406,10 @@ const updateAnnouncement = async (req, res) => {
 const deleteAnnouncement = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const settings = await SiteSettings.getSettings();
     const announcementIndex = settings.content.announcements.findIndex(a => a.id === id);
-    
+
     if (announcementIndex === -1) {
       return res.status(404).json({
         success: false,
@@ -1420,13 +1420,13 @@ const deleteAnnouncement = async (req, res) => {
         }
       });
     }
-    
+
     const deletedAnnouncement = settings.content.announcements.splice(announcementIndex, 1)[0];
-    
+
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
@@ -1443,12 +1443,12 @@ const deleteAnnouncement = async (req, res) => {
       previousValues: deletedAnnouncement,
       severity: 'warning'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'announcements', data: settings.content.announcements });
     }
-    
+
     res.json({
       success: true,
       message: 'Announcement deleted successfully',
@@ -1471,10 +1471,10 @@ const updateBanner = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
-    
+
     const settings = await SiteSettings.getSettings();
     const bannerIndex = settings.content.banners.findIndex(b => b.id === id);
-    
+
     if (bannerIndex === -1) {
       return res.status(404).json({
         success: false,
@@ -1485,16 +1485,16 @@ const updateBanner = async (req, res) => {
         }
       });
     }
-    
+
     settings.content.banners[bannerIndex] = {
       ...settings.content.banners[bannerIndex].toObject?.() || settings.content.banners[bannerIndex],
       ...updates
     };
-    
+
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
@@ -1511,12 +1511,12 @@ const updateBanner = async (req, res) => {
       newValues: updates,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'banners', data: settings.content.banners });
     }
-    
+
     res.json({
       success: true,
       message: 'Banner updated successfully',
@@ -1539,10 +1539,10 @@ const updateBanner = async (req, res) => {
 const deleteBanner = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const settings = await SiteSettings.getSettings();
     const bannerIndex = settings.content.banners.findIndex(b => b.id === id);
-    
+
     if (bannerIndex === -1) {
       return res.status(404).json({
         success: false,
@@ -1553,13 +1553,13 @@ const deleteBanner = async (req, res) => {
         }
       });
     }
-    
+
     const deletedBanner = settings.content.banners.splice(bannerIndex, 1)[0];
-    
+
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
@@ -1576,12 +1576,12 @@ const deleteBanner = async (req, res) => {
       previousValues: deletedBanner,
       severity: 'warning'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'banners', data: settings.content.banners });
     }
-    
+
     res.json({
       success: true,
       message: 'Banner deleted successfully',
@@ -1603,7 +1603,7 @@ const deleteBanner = async (req, res) => {
 const updateEmailTemplates = async (req, res) => {
   try {
     const { emailTemplates } = req.body;
-    
+
     if (!emailTemplates) {
       return res.status(400).json({
         success: false,
@@ -1614,22 +1614,22 @@ const updateEmailTemplates = async (req, res) => {
         }
       });
     }
-    
+
     const settings = await SiteSettings.getSettings();
-    
+
     Object.keys(emailTemplates).forEach(key => {
       if (settings.content.emailTemplates[key]) {
-        settings.content.emailTemplates[key] = { 
-          ...settings.content.emailTemplates[key].toObject?.() || settings.content.emailTemplates[key], 
-          ...emailTemplates[key] 
+        settings.content.emailTemplates[key] = {
+          ...settings.content.emailTemplates[key].toObject?.() || settings.content.emailTemplates[key],
+          ...emailTemplates[key]
         };
       }
     });
-    
+
     settings.lastUpdatedBy = req.user._id;
     settings.version += 1;
     await settings.save();
-    
+
     await AuditLog.log({
       userId: req.user._id,
       userEmail: req.user.email,
@@ -1645,12 +1645,12 @@ const updateEmailTemplates = async (req, res) => {
       isSuccess: true,
       severity: 'info'
     });
-    
+
     const io = req.app.get('io');
     if (io) {
       io.emit('settings:update', { type: 'emailTemplates', data: settings.content.emailTemplates });
     }
-    
+
     res.json({
       success: true,
       message: 'Email templates updated successfully',
@@ -1673,8 +1673,8 @@ const updateEmailTemplates = async (req, res) => {
 const getVersionHistory = async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
-    
-    const logs = await AuditLog.find({ 
+
+    const logs = await AuditLog.find({
       module: 'settings',
       action: { $regex: /^update_|^reset_|^add_|^delete_/ }
     })
@@ -1683,12 +1683,12 @@ const getVersionHistory = async (req, res) => {
       .limit(parseInt(limit))
       .populate('userId', 'firstName lastName email')
       .lean();
-    
-    const total = await AuditLog.countDocuments({ 
+
+    const total = await AuditLog.countDocuments({
       module: 'settings',
       action: { $regex: /^update_|^reset_|^add_|^delete_/ }
     });
-    
+
     res.json({
       success: true,
       data: {

@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/leaderDashboardController');
-const { authenticate, authorize } = require('../middleware/auth');
-const { requireLeader, logAction } = require('../middleware/rbac');
+const controller = require('../controllers/sportsAdminController');
+const { authenticate } = require('../middleware/auth');
+const { requireSportsAdmin, logAction } = require('../middleware/rbac');
 
 router.use(authenticate);
-router.use(requireLeader);
+router.use(requireSportsAdmin);
 
-router.get('/dashboard', logAction('dashboard', 'view', 'Leader dashboard accessed'), controller.getDashboard);
+router.get('/dashboard', logAction('dashboard', 'view', 'Sports Administrator dashboard accessed'), controller.getDashboard);
 
 router.get('/team', logAction('team', 'view', 'Team members listed'), controller.getTeamMembers);
 router.post('/team', logAction('team', 'create', (req) => `Added team member: ${req.body.email}`), controller.addTeamMember);

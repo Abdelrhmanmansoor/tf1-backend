@@ -1,16 +1,16 @@
-const { LeaderTeam, AuditLog } = require('../models/admin');
+const { AdministrativeTeam, AuditLog } = require('../models/admin');
 const User = require('../modules/shared/models/User');
 
 exports.getDashboard = async (req, res) => {
   try {
     const user = req.user;
 
-    const leaderTeam = await LeaderTeam.findOne({
+    const adminTeam = await AdministrativeTeam.findOne({
       'teamMembers.userId': user._id,
       'teamMembers.isActive': true
-    }).populate('leaderId', 'firstName lastName email');
+    }).populate('adminId', 'firstName lastName email');
 
-    if (!leaderTeam) {
+    if (!adminTeam) {
       return res.status(403).json({
         success: false,
         error: {
@@ -22,7 +22,7 @@ exports.getDashboard = async (req, res) => {
       });
     }
 
-    const teamMember = leaderTeam.teamMembers.find(
+    const teamMember = adminTeam.teamMembers.find(
       m => m.userId.toString() === user._id.toString() && m.isActive
     );
 
@@ -69,9 +69,9 @@ exports.getDashboard = async (req, res) => {
           hasFullAccess: false
         },
         leader: {
-          id: leaderTeam.leaderId._id,
-          name: `${leaderTeam.leaderId.firstName} ${leaderTeam.leaderId.lastName}`,
-          email: leaderTeam.leaderId.email
+          id: adminTeam.adminId._id,
+          name: `${adminTeam.adminId.firstName} ${adminTeam.adminId.lastName}`,
+          email: adminTeam.adminId.email
         },
         permissions: teamMember.permissions,
         allowedModules,
@@ -95,12 +95,12 @@ exports.getMyPermissions = async (req, res) => {
   try {
     const user = req.user;
 
-    const leaderTeam = await LeaderTeam.findOne({
+    const adminTeam = await AdministrativeTeam.findOne({
       'teamMembers.userId': user._id,
       'teamMembers.isActive': true
     });
 
-    if (!leaderTeam) {
+    if (!adminTeam) {
       return res.status(403).json({
         success: false,
         error: {
@@ -112,7 +112,7 @@ exports.getMyPermissions = async (req, res) => {
       });
     }
 
-    const teamMember = leaderTeam.teamMembers.find(
+    const teamMember = adminTeam.teamMembers.find(
       m => m.userId.toString() === user._id.toString() && m.isActive
     );
 
@@ -153,14 +153,14 @@ exports.checkModuleAccess = async (req, res) => {
       });
     }
 
-    const leaderTeam = await LeaderTeam.findOne({
+    const adminTeam = await AdministrativeTeam.findOne({
       $or: [
-        { leaderId: user._id },
+        { adminId: user._id },
         { 'teamMembers.userId': user._id, 'teamMembers.isActive': true }
       ]
     });
 
-    if (!leaderTeam) {
+    if (!adminTeam) {
       return res.json({
         success: true,
         data: {
@@ -173,7 +173,7 @@ exports.checkModuleAccess = async (req, res) => {
       });
     }
 
-    if (leaderTeam.leaderId.toString() === user._id.toString()) {
+    if (adminTeam.adminId.toString() === user._id.toString()) {
       return res.json({
         success: true,
         data: {
@@ -184,7 +184,7 @@ exports.checkModuleAccess = async (req, res) => {
       });
     }
 
-    const teamMember = leaderTeam.teamMembers.find(
+    const teamMember = adminTeam.teamMembers.find(
       m => m.userId.toString() === user._id.toString() && m.isActive
     );
 

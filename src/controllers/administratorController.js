@@ -21,7 +21,7 @@ exports.getDashboard = async (req, res) => {
       User.countDocuments({ role: 'club', isDeleted: { $ne: true } }),
       User.countDocuments({ role: 'coach', isDeleted: { $ne: true } }),
       User.countDocuments({ role: 'player', isDeleted: { $ne: true } }),
-      User.countDocuments({ 
+      User.countDocuments({
         createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
         isDeleted: { $ne: true }
       }),
@@ -379,7 +379,7 @@ exports.getSettings = async (req, res) => {
 exports.updateSettings = async (req, res) => {
   try {
     const updates = req.body;
-    
+
     let settings = await Setting.findOne();
     if (!settings) {
       settings = new Setting();

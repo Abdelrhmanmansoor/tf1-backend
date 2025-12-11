@@ -11,9 +11,10 @@ const notificationRoutes = require('./notifications');
 const reviewRoutes = require('./reviews');
 const globalRoutes = require('./global');
 const jobsRoutes = require('./jobs');
-const leaderDashboardRoutes = require('./leaderDashboard');
+const sportsAdminRoutes = require('./sportsAdmin');
 const teamDashboardRoutes = require('./teamDashboard');
 const clubApplicationsRoutes = require('./clubApplications');
+const ownerRoutes = require('./owner');
 
 const router = express.Router();
 
@@ -30,17 +31,20 @@ router.use('/notifications', notificationRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/global', globalRoutes);
 router.use('/jobs', jobsRoutes);
-router.use('/leader', leaderDashboardRoutes);
+router.use('/sports-admin', sportsAdminRoutes);
 router.use('/team', teamDashboardRoutes);
 router.use('/club/applications', clubApplicationsRoutes);
 router.use('/clubs/applications', clubApplicationsRoutes); // Alias for club applications
 router.use('/applications', jobsRoutes); // For /applications/my-applications endpoint
 
+// Platform Owner System (Isolated)
+router.use('/platform-control', ownerRoutes);
+
 // API documentation endpoint
 router.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'SportX Platform API',
+    message: 'TF1 Sports Platform API',
     version: process.env.API_VERSION || 'v1',
     timestamp: new Date().toISOString(),
     endpoints: {
@@ -59,10 +63,10 @@ router.get('/', (req, res) => {
         matches: '/matches',
         profile: '/profile'
       },
-      leadershipEndpoints: {
+      administrativeEndpoints: {
         description: 'Separate leadership control panel - not for regular users',
         descriptionAr: 'لوحة تحكم القيادة المنفصلة - ليست للمستخدمين العاديين',
-        leader: '/leader',
+        sportsAdmin: '/sports-admin',
         team: '/team',
         settings: '/settings',
         administrativeOfficer: '/administrative-officer'

@@ -1,4 +1,4 @@
-const { LeaderTeam, AuditLog } = require('../models/admin');
+const { AdministrativeTeam, AuditLog } = require('../models/admin');
 
 const rolePermissions = {
   player: [
@@ -56,7 +56,7 @@ const rolePermissions = {
     'services:create',
     'services:manage',
   ],
-  admin: ['*'],
+  admin: ['*'], // This is legacy admin, not Platform Owner
   'administrative-officer': [
     'profile:read',
     'profile:update',
@@ -64,6 +64,10 @@ const rolePermissions = {
     'messages:send',
     'messages:read',
   ],
+  'sports-administrator': [
+    'team:manage',
+    'dashboard:view'
+  ]
 };
 
 const hasPermission = (userRole, requiredPermission) => {
@@ -172,6 +176,7 @@ const getRoleHierarchy = () => {
     specialist: 3,
     club: 4,
     'administrative-officer': 5,
+    'sports-administrator': 6,
     admin: 10,
   };
 };
@@ -211,7 +216,7 @@ const checkTeamPermission = (requiredPermissions) => {
   return async (req, res, next) => {
     try {
       const user = req.user;
-      
+
       if (!user) {
         return res.status(401).json({
           success: false,
@@ -223,31 +228,31 @@ const checkTeamPermission = (requiredPermissions) => {
         });
       }
 
+      // Admin can bypass team checks if explicitly required, but generally logic should be separate
       if (user.role === 'admin') {
-        req.isLeader = true;
-        req.hasFullAccess = true;
+        req.isTeamAdmin = true;
         return next();
       }
 
-      const leaderTeam = await LeaderTeam.findOne({
+      const adminTeam = await AdministrativeTeam.findOne({
         $or: [
-          { leaderId: user._id },
+          { adminId: user._id },
           { 'teamMembers.userId': user._id }
         ]
       });
 
-      if (!leaderTeam) {
+      if (!adminTeam) {
+        // Not part of any team
         return next();
       }
 
-      if (leaderTeam.leaderId.toString() === user._id.toString()) {
-        req.isLeader = true;
-        req.hasFullAccess = true;
-        req.leaderTeam = leaderTeam;
-        return next();
+      if (adminTeam.adminId.toString() === user._id.toString()) {
+        req.isTeamAdmin = true;
+        req.adminTeam = adminTeam;
+        return next(); // Admins have all permissions for their team
       }
 
-      const teamMember = leaderTeam.teamMembers.find(
+      const teamMember = adminTeam.teamMembers.find(
         m => m.userId.toString() === user._id.toString() && m.isActive
       );
 
@@ -263,20 +268,19 @@ const checkTeamPermission = (requiredPermissions) => {
         });
       }
 
-      req.isLeader = false;
-      req.hasFullAccess = false;
+      req.isTeamAdmin = false;
       req.teamMember = teamMember;
-      req.leaderTeam = leaderTeam;
+      req.adminTeam = adminTeam;
 
       if (!requiredPermissions || requiredPermissions.length === 0) {
         return next();
       }
 
-      const userPermissions = teamMember.permissions.flatMap(p => 
+      const userPermissions = teamMember.permissions.flatMap(p =>
         p.actions.map(a => `${p.module.toUpperCase()}_${a.toUpperCase()}`)
       );
 
-      const hasPermissionCheck = requiredPermissions.some(rp => 
+      const hasPermissionCheck = requiredPermissions.some(rp =>
         userPermissions.includes(rp.toUpperCase())
       );
 
@@ -317,10 +321,10 @@ const checkTeamPermission = (requiredPermissions) => {
   };
 };
 
-const requireLeader = async (req, res, next) => {
+const requireSportsAdmin = async (req, res, next) => {
   try {
     const user = req.user;
-    
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -332,54 +336,37 @@ const requireLeader = async (req, res, next) => {
       });
     }
 
-    if (user.role === 'admin' || user.role === 'leader' || user.role === 'administrator') {
-      req.isLeader = true;
-      req.hasFullAccess = true;
-      return next();
-    }
-
-    const leaderTeam = await LeaderTeam.findOne({ leaderId: user._id });
-
-    if (!leaderTeam) {
-      await AuditLog.log({
-        userId: user._id,
-        userEmail: user.email,
-        userName: `${user.firstName} ${user.lastName}`,
-        userRole: user.role,
-        userType: 'team',
-        action: 'access_denied',
-        module: 'leader',
-        description: 'Non-leader tried to access leader-only resource',
-        descriptionAr: 'حاول مستخدم غير قائد الوصول إلى مورد خاص بالقادة',
-        route: req.originalUrl,
-        method: req.method,
-        isSuccess: false,
-        severity: 'warning'
-      });
-
+    // Strictly check for sports-administrator role
+    if (user.role !== 'sports-administrator' && user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         error: {
-          code: 'LEADER_ONLY',
-          message: 'This action is restricted to Leaders only',
-          messageAr: 'هذا الإجراء مقتصر على القادة فقط',
-          redirectTo: '/team-dashboard'
+          code: 'FORBIDDEN',
+          message: 'Access restricted to Sports Administrators',
+          messageAr: 'الوصول مقتصر على الإداريين الرياضيين'
         }
       });
     }
 
-    req.isLeader = true;
-    req.hasFullAccess = true;
-    req.leaderTeam = leaderTeam;
+    // Try to find if they have a team
+    const adminTeam = await AdministrativeTeam.findOne({ adminId: user._id });
+
+    // Even if they don't have a team yet, we allow them through so the controller can create one
+    // But we strictly tag them as sports-admin
+    req.isSportsAdmin = true;
+    if (adminTeam) {
+      req.adminTeam = adminTeam;
+    }
+
     next();
   } catch (error) {
-    console.error('Leader check error:', error);
+    console.error('Sports Admin check error:', error);
     res.status(500).json({
       success: false,
       error: {
         code: 'CHECK_ERROR',
-        message: 'Leader check failed',
-        messageAr: 'فشل التحقق من القيادة'
+        message: 'Role check failed',
+        messageAr: 'فشل التحقق من الصلاحية'
       }
     });
   }
@@ -390,13 +377,13 @@ const logAction = (module, action, descriptionFn) => {
     const originalSend = res.send;
     const startTime = Date.now();
 
-    res.send = function(body) {
+    res.send = function (body) {
       const responseTime = Date.now() - startTime;
       const statusCode = res.statusCode;
       const isSuccess = statusCode >= 200 && statusCode < 400;
 
-      const description = typeof descriptionFn === 'function' 
-        ? descriptionFn(req, res, body) 
+      const description = typeof descriptionFn === 'function'
+        ? descriptionFn(req, res, body)
         : descriptionFn;
 
       AuditLog.log({
@@ -404,7 +391,7 @@ const logAction = (module, action, descriptionFn) => {
         userEmail: req.user?.email,
         userName: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'Unknown',
         userRole: req.user?.role,
-        userType: req.isLeader ? 'leader' : 'team',
+        userType: req.isSportsAdmin ? 'sports-administrator' : (req.teamMember ? 'team' : 'user'),
         action,
         module,
         description,
@@ -436,6 +423,6 @@ module.exports = {
   getRoleHierarchy,
   requireMinimumRole,
   checkTeamPermission,
-  requireLeader,
+  requireSportsAdmin,
   logAction
 };
