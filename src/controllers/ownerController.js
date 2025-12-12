@@ -1,7 +1,7 @@
 const User = require('../modules/shared/models/User');
 const { AdministrativeTeam, AuditLog } = require('../models/admin');
 const RegistrationCode = require('../models/RegistrationCode');
-const ClubApplication = require('../models/ClubApplication'); // Assuming this exists or similar model
+const Job = require('../modules/club/models/Job'); // Corrected import path
 
 // ==========================================
 // SYSTEM STATS & MONITORING
@@ -22,7 +22,7 @@ exports.getSystemStats = async (req, res) => {
             User.countDocuments({ role: 'player' }),
             User.countDocuments({ role: 'sports-administrator' }),
             AdministrativeTeam.countDocuments({ isActive: true }),
-            ClubApplication.countDocuments({}) // Count calls/jobs
+            Job.countDocuments({}) // Count jobs
         ]);
 
         res.json({
@@ -160,7 +160,7 @@ exports.getAllClubs = async (req, res) => {
 
 exports.getAllJobs = async (req, res) => {
     try {
-        const jobs = await ClubApplication.find({}).sort({ createdAt: -1 });
+        const jobs = await Job.find({}).sort({ createdAt: -1 });
         res.json({ success: true, data: jobs });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
