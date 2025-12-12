@@ -44,14 +44,14 @@ class AuthController {
       // Send verification email (reusing existing service)
       try {
         const emailSent = await emailService.sendVerificationEmail(
-          { 
-            email: user.email, 
+          {
+            email: user.email,
             firstName: user.name,
             role: 'MatchUser'
-          }, 
+          },
           verificationToken
         );
-        
+
         res.status(201).json({
           success: true,
           message: emailSent
@@ -232,6 +232,8 @@ class AuthController {
       res.status(200).json({
         success: true,
         message: 'Login successful',
+        token, // Required for localStorage
+        accessToken: token, // Alias
         user: {
           id: user._id,
           email: user.email,
@@ -322,7 +324,7 @@ class AuthController {
 
       // Find user by email
       const user = await MatchUser.findOne({ email: email.toLowerCase() });
-      
+
       if (!user) {
         // Don't reveal if email exists for security
         return res.status(200).json({
@@ -346,14 +348,14 @@ class AuthController {
       // Send verification email
       try {
         const emailSent = await emailService.sendVerificationEmail(
-          { 
-            email: user.email, 
+          {
+            email: user.email,
             firstName: user.name,
             role: 'MatchUser'
-          }, 
+          },
           verificationToken
         );
-        
+
         res.status(200).json({
           success: true,
           message: emailSent
