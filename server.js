@@ -23,7 +23,7 @@ const matchHubRoutes = require('./src/routes/matchHub');
 const matchesSystemRoutes = require('./src/modules/matches/routes');
 const profileRoutes = require('./src/routes/profile');
 const jobsRoutes = require('./src/routes/jobs');
-const leaderDashboardRoutes = require('./src/routes/leaderDashboard');
+const sportsAdminRoutes = require('./src/routes/sportsAdmin');
 const teamDashboardRoutes = require('./src/routes/teamDashboard');
 const administrativeOfficerRoutes = require('./src/routes/administrativeOfficer');
 const siteSettingsRoutes = require('./src/routes/siteSettings');
@@ -299,7 +299,7 @@ app.use(`/api/${API_VERSION}/profile`, profileRoutes);
 app.use(`/api/${API_VERSION}/jobs`, jobsRoutes);
 
 // Leader & Team Dashboard Routes
-app.use(`/api/${API_VERSION}/leader`, leaderDashboardRoutes);
+app.use(`/api/${API_VERSION}/sports-admin`, sportsAdminRoutes);
 app.use(`/api/${API_VERSION}/team`, teamDashboardRoutes);
 app.use(
   `/api/${API_VERSION}/administrative-officer`,
@@ -410,13 +410,13 @@ const startServer = async () => {
       console.log(chalk.bold('  🌐 Endpoints:'));
       console.log(
         chalk.gray('  ├─') +
-          ' API Base: ' +
-          chalk.blue.underline(`http://localhost:${PORT}/api/${API_VERSION}`)
+        ' API Base: ' +
+        chalk.blue.underline(`http://localhost:${PORT}/api/${API_VERSION}`)
       );
       console.log(
         chalk.gray('  ├─') +
-          ' Health Check: ' +
-          chalk.blue.underline(`http://localhost:${PORT}/health`)
+        ' Health Check: ' +
+        chalk.blue.underline(`http://localhost:${PORT}/health`)
       );
       console.log(
         chalk.gray('  └─') + ' Socket.io: ' + chalk.green('✓ Enabled')
@@ -441,15 +441,15 @@ const startServer = async () => {
       console.log(chalk.bold('  📊 System Status:'));
       console.log(
         chalk.gray('  ├─') +
-          ' Database: ' +
-          (dbConnected
-            ? chalk.green('✓ Connected')
-            : chalk.yellow('⚠ Not Connected'))
+        ' Database: ' +
+        (dbConnected
+          ? chalk.green('✓ Connected')
+          : chalk.yellow('⚠ Not Connected'))
       );
       console.log(
         chalk.gray('  ├─') +
-          ' Search Indexes: ' +
-          (dbConnected ? chalk.green('✓ Ready') : chalk.yellow('⚠ Disabled'))
+        ' Search Indexes: ' +
+        (dbConnected ? chalk.green('✓ Ready') : chalk.yellow('⚠ Disabled'))
       );
       console.log(
         chalk.gray('  ├─') + ' Socket.io: ' + chalk.green('✓ Active')
