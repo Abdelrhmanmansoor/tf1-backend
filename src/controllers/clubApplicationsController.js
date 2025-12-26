@@ -541,8 +541,8 @@ async function sendStatusNotification(application, status, extraData = {}) {
         type: 'application_reviewed',
         title: 'Interview Scheduled',
         titleAr: 'تم تحديد موعد المقابلة',
-        message: `An interview has been scheduled for your application to ${job?.title}.`,
-        messageAr: `تم تحديد موعد مقابلة لطلبك على وظيفة ${job?.titleAr || job?.title}.`
+        message: `An interview has been scheduled for your application to ${job?.title}. Check details in the application.`,
+        messageAr: `تم تحديد موعد مقابلة لطلبك على وظيفة ${job?.titleAr || job?.title}. تفقد التفاصيل في الطلب.`
       },
       offered: {
         type: 'application_offered',
