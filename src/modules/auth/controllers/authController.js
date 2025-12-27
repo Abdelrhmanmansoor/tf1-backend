@@ -45,7 +45,7 @@ class AuthController {
       } = req.body;
 
       // Verify registration code (only required for certain roles)
-      const codesRequiredRoles = ['club', 'admin', 'administrator', 'sports-administrator', 'sports-director', 'executive-director'];
+      const codesRequiredRoles = ['admin', 'administrator', 'sports-administrator', 'sports-director', 'executive-director'];
 
       if (codesRequiredRoles.includes(role)) {
         if (!registrationCode) {

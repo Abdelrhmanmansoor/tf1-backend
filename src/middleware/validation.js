@@ -35,7 +35,7 @@ const validateRegister = [
 
   body('registrationCode')
     .if((value, { req }) =>
-      ['club', 'admin', 'administrator', 'sports-administrator', 'sports-director', 'executive-director'].includes(req.body.role)
+      ['admin', 'administrator', 'sports-administrator', 'sports-director', 'executive-director'].includes(req.body.role)
     )
     .trim()
     .notEmpty()
@@ -43,7 +43,7 @@ const validateRegister = [
     .isLength({ min: 10 })
     .withMessage('Registration code is invalid')
     .if((value, { req }) =>
-      !['club', 'admin', 'administrator', 'sports-administrator', 'sports-director', 'executive-director'].includes(req.body.role)
+      !['admin', 'administrator', 'sports-administrator', 'sports-director', 'executive-director'].includes(req.body.role)
     )
     .optional()
     .trim(),
