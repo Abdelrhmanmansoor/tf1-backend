@@ -1,9 +1,19 @@
-const puppeteer = require('puppeteer');
+let puppeteer;
+try {
+  puppeteer = require('puppeteer');
+} catch (e) {
+  puppeteer = null;
+}
+
 const fs = require('fs');
 const path = require('path');
 
 class PDFService {
   async generatePDF(cvData) {
+    if (!puppeteer) {
+        throw new Error('Puppeteer is not installed. PDF generation is not available. Please install it using "npm install puppeteer".');
+    }
+
     const browser = await puppeteer.launch({
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox']
