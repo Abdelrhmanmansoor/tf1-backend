@@ -482,20 +482,27 @@ exports.rejectApplication = async (req, res) => {
     // Send notification to applicant
     await sendStatusNotification(application, 'rejected', { reason });
 
-    // Send email notification
+    // Send email notification (include club custom message if provided)
     try {
       const emailService = require('../utils/email');
-      if (emailService.sendApplicationRejectionEmail) {
-        const applicant = await User.findById(application.applicantId);
-        const job = await Job.findById(application.jobId);
-        
-        if (applicant && job) {
-          await emailService.sendApplicationRejectionEmail(
-            applicant.email,
-            applicant.fullName || `${applicant.firstName} ${applicant.lastName}`,
-            job.title
-          );
-        }
+      const applicant = await User.findById(application.applicantId);
+      const job = await Job.findById(application.jobId);
+      const ClubProfile = require('../modules/club/models/ClubProfile');
+      const clubProfile = await ClubProfile.findOne({ userId: application.clubId });
+      const customMessage = reason || '';
+
+      if (applicant && job && emailService.sendRejectionEmail) {
+        await emailService.sendRejectionEmail(
+          {
+            firstName: applicant.firstName,
+            fullName: applicant.fullName,
+            email: applicant.email,
+          },
+          job.title,
+          clubProfile?.clubName || 'Club',
+          customMessage,
+          req.body.language || 'ar'
+        );
       }
     } catch (emailError) {
       console.error('Email send error (non-critical):', emailError.message);
