@@ -6,10 +6,10 @@ class MatchController {
   async createMatch(req, res) {
     try {
       const userId = req.matchUser._id;
-      const { title, sport, city, area, location, date, time, level, max_players, notes, starts_at, venue, team_size, mode } = req.body;
+      const { title, sport, city, area, location, date, time, level, max_players, notes, starts_at, venue, team_size, mode, location_id } = req.body;
 
       // Check if using new API format (title, sport, etc.) or legacy format (starts_at, venue, etc.)
-      const isNewFormat = title && sport && city && area && location && date && time && level;
+      const isNewFormat = title && sport && date && time && level;
       const isLegacyFormat = starts_at && venue && team_size && mode;
 
       if (!isNewFormat && !isLegacyFormat) {
@@ -17,6 +17,18 @@ class MatchController {
           success: false,
           message: 'Missing required fields. New format requires: title, sport, city, area, location, date, time, level, max_players. Legacy format requires: starts_at, venue, max_players, team_size, mode'
         });
+      }
+
+      if (isNewFormat) {
+        const dateObj = new Date(date);
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        if (isNaN(dateObj.getTime()) || dateObj < today) {
+          return res.status(400).json({
+            success: false,
+            message: 'date must be a valid future date'
+          });
+        }
       }
 
       // Validate max_players
@@ -35,6 +47,51 @@ class MatchController {
         });
       }
 
+      // Validate location_id and derive area/city/location strings
+      let resolvedArea = area;
+      let resolvedCity = city;
+      let resolvedLocation = location;
+      if (isNewFormat) {
+        const Location = require('../../../models/Location');
+        if (!location_id) {
+          return res.status(400).json({
+            success: false,
+            message: 'location_id is required'
+          });
+        }
+        const loc = await Location.findById(location_id);
+        if (!loc) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid location_id'
+          });
+        }
+        if (loc.level === 'region') {
+          resolvedArea = loc.name_ar || loc.name_en || 'منطقة';
+          resolvedCity = loc.name_ar || loc.name_en || 'مدينة';
+          resolvedLocation = loc.slug || (loc.name_en || loc.name_ar);
+        } else if (loc.level === 'city' || loc.level === 'governorate') {
+          resolvedCity = loc.name_ar || loc.name_en || 'مدينة';
+          if (loc.parent_id) {
+            const parent = await Location.findById(loc.parent_id);
+            resolvedArea = parent?.name_ar || parent?.name_en || 'منطقة';
+          } else {
+            resolvedArea = 'منطقة';
+          }
+          resolvedLocation = loc.slug || (loc.name_en || loc.name_ar);
+        } else if (loc.level === 'district') {
+          resolvedLocation = loc.name_ar || loc.name_en || 'حي';
+          if (loc.parent_id) {
+            const cityParent = await Location.findById(loc.parent_id);
+            resolvedCity = cityParent?.name_ar || cityParent?.name_en || 'مدينة';
+            if (cityParent?.parent_id) {
+              const regionParent = await Location.findById(cityParent.parent_id);
+              resolvedArea = regionParent?.name_ar || regionParent?.name_en || 'منطقة';
+            }
+          }
+        }
+      }
+
       // Create match data
       let matchData;
       if (isNewFormat) {
@@ -42,16 +99,17 @@ class MatchController {
           owner_id: userId,
           title,
           sport,
-          city,
-          area,
-          location,
+          city: resolvedCity,
+          area: resolvedArea,
+          location: resolvedLocation,
           date: new Date(date),
           time,
           level,
           max_players,
           notes: notes || '',
           status: 'open',
-          current_players: 0
+          current_players: 0,
+          location_id
         };
       } else {
         // Legacy format
@@ -108,18 +166,25 @@ class MatchController {
 
   async listMatches(req, res) {
     try {
-      const { state, visibility, limit } = req.query;
+      const { state, visibility, limit = '20', page = '1', sport, city, area, level, dateFrom, dateTo } = req.query;
 
       const filters = {};
       if (state) filters.state = state;
       if (visibility) filters.visibility = visibility;
-      if (limit) filters.limit = parseInt(limit);
+      filters.limit = parseInt(limit);
+      filters.page = parseInt(page);
+      if (sport) filters.sport = sport;
+      if (city) filters.city = city;
+      if (area) filters.area = area;
+      if (level) filters.level = level;
+      if (dateFrom) filters.dateFrom = dateFrom;
+      if (dateTo) filters.dateTo = dateTo;
 
-      const matches = await matchService.listMatches(filters);
+      const { matches, total } = await matchService.listMatches(filters);
 
       res.status(200).json({
         success: true,
-        data: { matches }
+        data: { matches, total, page: filters.page, pages: Math.ceil(total / filters.limit) }
       });
     } catch (error) {
       console.error('List matches error:', error);

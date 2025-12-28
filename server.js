@@ -27,6 +27,8 @@ const sportsAdminRoutes = require('./src/routes/sportsAdmin');
 const teamDashboardRoutes = require('./src/routes/teamDashboard');
 const administrativeOfficerRoutes = require('./src/routes/administrativeOfficer');
 const siteSettingsRoutes = require('./src/routes/siteSettings');
+const locationsRoutes = require('./src/routes/locations');
+const { seedRegions } = require('./src/utils/seedLocations');
 const { createSearchIndexes } = require('./src/config/searchIndexes');
 const configureSocket = require('./src/config/socket');
 const logger = require('./src/utils/logger');
@@ -297,6 +299,7 @@ app.use(`/api/${API_VERSION}/matches`, matchesSystemRoutes); // Support /api/v1/
 
 app.use(`/api/${API_VERSION}/profile`, profileRoutes);
 app.use(`/api/${API_VERSION}/jobs`, jobsRoutes);
+app.use(`/api/${API_VERSION}/locations`, locationsRoutes);
 
 // Leader & Team Dashboard Routes
 app.use(`/api/${API_VERSION}/sports-admin`, sportsAdminRoutes);
@@ -379,6 +382,16 @@ const startServer = async () => {
     }
 
     if (dbConnected) {
+      try {
+        const seedResult = await seedRegions();
+        if (seedResult.success) {
+          logger.info(chalk.green(`✅ Locations seed: ${seedResult.message}`));
+        } else {
+          logger.warn(chalk.yellow(`⚠️  Locations seed failed: ${seedResult.message}`));
+        }
+      } catch (seedError) {
+        logger.warn(chalk.yellow('⚠️  Locations seed error'));
+      }
       logger.info('🔍 Initializing search indexes...');
       const indexResult = await createSearchIndexes();
       if (indexResult.success) {

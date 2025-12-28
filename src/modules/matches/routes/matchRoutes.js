@@ -6,14 +6,14 @@ const historyController = require('../controllers/historyController');
 const { authenticate, optionalAuth } = require('../middleware/auth');
 const { matchesLimiter, joinLeaveLimiter, chatLimiter } = require('../middleware/rateLimiter');
 
-// Public list endpoint (no auth required)
-router.get('/matches', optionalAuth, matchesLimiter, matchController.listMatches);
-router.get('/matches/:id', optionalAuth, matchesLimiter, matchController.getMatch);
+// Public list endpoints (no auth required)
+router.get('/', optionalAuth, matchesLimiter, matchController.listMatches);
+router.get('/:id', optionalAuth, matchesLimiter, matchController.getMatch);
 
 // Protected match endpoints
-router.post('/matches', authenticate, matchesLimiter, matchController.createMatch);
-router.post('/matches/:id/join', authenticate, joinLeaveLimiter, matchController.joinMatch);
-router.post('/matches/:id/leave', authenticate, joinLeaveLimiter, matchController.leaveMatch);
+router.post('/', authenticate, matchesLimiter, matchController.createMatch);
+router.post('/:id/join', authenticate, joinLeaveLimiter, matchController.joinMatch);
+router.post('/:id/leave', authenticate, joinLeaveLimiter, matchController.leaveMatch);
 router.get('/my-matches', authenticate, matchesLimiter, matchController.getMyMatches);
 
 // Legacy routes for backward compatibility

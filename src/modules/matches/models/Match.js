@@ -31,6 +31,11 @@ const matchSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  location_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Location',
+    index: true
+  },
   date: {
     type: Date,
     required: true

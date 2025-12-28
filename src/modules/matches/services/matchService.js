@@ -92,13 +92,18 @@ class MatchService {
       }
     }
 
-    const matches = await Match.find(query)
+    const skip = Math.max(((filters.page || 1) - 1) * (filters.limit || 50), 0);
+    const [matches, total] = await Promise.all([
+      Match.find(query)
       .populate('created_by', 'name email')
       .populate('owner_id', 'name email')
       .sort({ created_at: -1 })
-      .limit(filters.limit || 50);
+      .skip(skip)
+      .limit(filters.limit || 50),
+      Match.countDocuments(query)
+    ]);
 
-    return matches;
+    return { matches, total };
   }
 
   async getMyMatches(userId) {
