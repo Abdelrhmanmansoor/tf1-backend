@@ -943,6 +943,81 @@ class EmailService {
       return false;
     }
   }
+
+  async sendNotificationEmail({ toEmail, toName, title, titleAr, message, messageAr }) {
+    if (!this.transporter) {
+      return false;
+    }
+    const mailOptions = {
+      from: this.getFromAddress(),
+      to: toEmail,
+      subject: `${title} | TF1`,
+      html: `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+          <div style="background-color: #ffffff; border-radius: 10px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            ${this.getEmailHeader()}
+            <div style="margin-bottom: 30px;">
+              <h2 style="color: #333; font-size: 22px; margin: 0 0 15px 0;">${title}</h2>
+              <p style="color: #555; font-size: 16px; line-height: 1.7;">${message}</p>
+            </div>
+            <div style="direction: rtl; text-align: right;">
+              <h2 style="color: #333; font-size: 22px; margin: 0 0 15px 0;">${titleAr || title}</h2>
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">${messageAr || message}</p>
+            </div>
+            ${this.getEmailFooter()}
+          </div>
+        </div>
+      `,
+    };
+    try {
+      await this.transporter.sendMail(mailOptions);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async sendRejectionEmail(applicant, jobTitle, clubName, customMessage, language = 'ar') {
+    if (!this.transporter) {
+      return false;
+    }
+    const name = applicant.fullName || `${applicant.firstName || ''}`.trim() || 'Applicant';
+    const subject = language === 'ar' ? 'تحديث حالة الطلب' : 'Application Status Update';
+    const title = language === 'ar' ? 'تم رفض الطلب' : 'Application Rejected';
+    const baseEn = `Thank you for your interest in ${jobTitle} at ${clubName}.`;
+    const baseAr = `شكراً لاهتمامك بوظيفة ${jobTitle} في ${clubName}.`;
+    const mailOptions = {
+      from: this.getFromAddress(),
+      to: applicant.email,
+      subject: `${subject} - ${jobTitle} | TF1`,
+      html: `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+          <div style="background-color: #ffffff; border-radius: 10px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            ${this.getEmailHeader()}
+            <div style="margin-bottom: 30px;">
+              <h2 style="color: #333; font-size: 22px; margin: 0 0 15px 0;">${title}</h2>
+              <p style="color: #555; font-size: 16px; line-height: 1.7;">Dear ${name},</p>
+              <p style="color: #555; font-size: 16px; line-height: 1.7;">${baseEn}</p>
+              ${customMessage ? `<div style="background:#f8f9fa;padding:16px;border-radius:8px;margin:16px 0;"><p style="margin:0;color:#333;">${customMessage}</p></div>` : ''}
+            </div>
+            <div style="direction: rtl; text-align: right;">
+              <h2 style="color: #333; font-size: 22px; margin: 0 0 15px 0;">${language === 'ar' ? 'تم رفض الطلب' : title}</h2>
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">${name} العزيز،</p>
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">${baseAr}</p>
+              ${customMessage ? `<div style="background:#f8f9fa;padding:16px;border-radius:8px;margin:16px 0;"><p style="margin:0;color:#333;">${customMessage}</p></div>` : ''}
+            </div>
+            ${this.getEmailFooter()}
+          </div>
+        </div>
+      `,
+    };
+    try {
+      await this.transporter.sendMail(mailOptions);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
 }
 
 module.exports = new EmailService();

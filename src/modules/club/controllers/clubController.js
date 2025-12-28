@@ -893,6 +893,21 @@ exports.reviewApplication = async (req, res) => {
         priority: 'high'
       });
 
+      try {
+        const emailService = require('../../../utils/email');
+        const applicant = application.applicantId;
+        if (applicant?.email) {
+          await emailService.sendNotificationEmail({
+            toEmail: applicant.email,
+            toName: applicant.fullName || `${applicant.firstName || ''}`.trim(),
+            title: 'Application Under Review',
+            titleAr: 'طلبك قيد المراجعة',
+            message: `Your application for ${application.jobId.title} at ${application.clubId.clubName} is now under review.`,
+            messageAr: `طلبك لوظيفة ${application.jobId.titleAr || application.jobId.title} في ${application.clubId.clubName} قيد المراجعة الآن.`,
+          });
+        }
+      } catch (emailError) {}
+
       // Send real-time notification via Socket.io
       const io = req.app.get('io');
       if (io) {
@@ -971,6 +986,21 @@ exports.scheduleInterview = async (req, res) => {
         actionUrl: `/jobs/${application.jobId._id}/application/${application._id}`,
         priority: 'high'
       });
+
+      try {
+        const emailService = require('../../../utils/email');
+        const applicant = application.applicantId;
+        if (applicant?.email) {
+          await emailService.sendNotificationEmail({
+            toEmail: applicant.email,
+            toName: applicant.fullName || `${applicant.firstName || ''}`.trim(),
+            title: 'Interview Scheduled',
+            titleAr: 'تم جدولة المقابلة',
+            message: `Interview scheduled for ${application.jobId.title} at ${application.clubId.clubName} on ${new Date(req.body.date).toLocaleDateString()}.`,
+            messageAr: `تم جدولة مقابلة لوظيفة ${application.jobId.titleAr || application.jobId.title} في ${application.clubId.clubName} بتاريخ ${new Date(req.body.date).toLocaleDateString()}.`,
+          });
+        }
+      } catch (emailError) {}
 
       // Send real-time notification via Socket.io
       const io = req.app.get('io');
