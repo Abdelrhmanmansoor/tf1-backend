@@ -1,4 +1,3 @@
-const axios = require('axios'); // Assuming axios might be available or I can use fetch
 const AppError = require('../../../utils/appError');
 
 class AIService {
