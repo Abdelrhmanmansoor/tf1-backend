@@ -1,5 +1,7 @@
 const jwtService = require('../utils/jwtService');
+const platformJwt = require('../../../utils/jwt');
 const MatchUser = require('../models/MatchUser');
+const User = require('../../shared/models/User');
 
 const authenticate = async (req, res, next) => {
   try {
@@ -22,27 +24,66 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    const decoded = jwtService.verifyAccessToken(token);
-
-    // Verify it's a matches token
-    if (decoded.type !== 'matches') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token type.',
-        code: 'INVALID_TOKEN_TYPE',
-      });
+    let decoded;
+    let matchUser = null;
+    try {
+      decoded = jwtService.verifyAccessToken(token);
+      if (decoded.type === 'matches') {
+        matchUser = await MatchUser.findById(decoded.userId).select('-password_hash');
+      }
+    } catch (e) {
+      decoded = null;
     }
 
-    const user = await MatchUser.findById(decoded.userId).select('-password_hash');
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token. User not found.',
-        code: 'USER_NOT_FOUND',
-      });
+    // Fallback: accept main platform JWT and bridge to MatchUser
+    if (!matchUser) {
+      let platformDecoded;
+      try {
+        platformDecoded = platformJwt.verifyAccessToken(token);
+      } catch (e) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid token.',
+          code: 'INVALID_TOKEN',
+        });
+      }
+
+      const platformUser = await User.findById(platformDecoded.userId);
+      if (!platformUser) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not found.',
+          code: 'USER_NOT_FOUND',
+        });
+      }
+      if (!platformUser.isVerified) {
+        return res.status(403).json({
+          success: false,
+          message: 'Please verify your email before accessing matches',
+          code: 'EMAIL_NOT_VERIFIED',
+        });
+      }
+
+      // Find or create shadow MatchUser
+      matchUser = await MatchUser.findOne({ email: platformUser.email });
+      if (!matchUser) {
+        const crypto = require('crypto');
+        const randomPass = crypto.randomBytes(16).toString('hex');
+        matchUser = await MatchUser.create({
+          email: platformUser.email.toLowerCase(),
+          password_hash: randomPass,
+          name: platformUser.fullName || `${platformUser.firstName || ''} ${platformUser.lastName || ''}`.trim() || platformUser.email,
+          phone: platformUser.phone || null,
+          verified: true,
+          role: 'MatchUser'
+        });
+      } else if (!matchUser.verified) {
+        matchUser.verified = true;
+        await matchUser.save();
+      }
     }
 
-    req.matchUser = user;
+    req.matchUser = matchUser;
     req.token = token;
     next();
   } catch (error) {
@@ -82,15 +123,46 @@ const optionalAuth = async (req, res, next) => {
       return next();
     }
 
-    const decoded = jwtService.verifyAccessToken(token);
-
-    if (decoded.type === 'matches') {
-      const user = await MatchUser.findById(decoded.userId).select('-password_hash');
-      req.matchUser = user || null;
-      req.token = token;
-    } else {
-      req.matchUser = null;
+    let decoded;
+    let matchUser = null;
+    try {
+      decoded = jwtService.verifyAccessToken(token);
+      if (decoded.type === 'matches') {
+        matchUser = await MatchUser.findById(decoded.userId).select('-password_hash');
+      }
+    } catch (e) {
+      decoded = null;
     }
+
+    if (!matchUser) {
+      try {
+        const platformDecoded = platformJwt.verifyAccessToken(token);
+        const platformUser = await User.findById(platformDecoded.userId);
+        if (platformUser && platformUser.isVerified) {
+          matchUser = await MatchUser.findOne({ email: platformUser.email });
+          if (!matchUser) {
+            const crypto = require('crypto');
+            const randomPass = crypto.randomBytes(16).toString('hex');
+            matchUser = await MatchUser.create({
+              email: platformUser.email.toLowerCase(),
+              password_hash: randomPass,
+              name: platformUser.fullName || `${platformUser.firstName || ''} ${platformUser.lastName || ''}`.trim() || platformUser.email,
+              phone: platformUser.phone || null,
+              verified: true,
+              role: 'MatchUser'
+            });
+          } else if (!matchUser.verified) {
+            matchUser.verified = true;
+            await matchUser.save();
+          }
+        }
+      } catch (e) {
+        // ignore optional auth failures
+      }
+    }
+
+    req.matchUser = matchUser || null;
+    req.token = token;
 
     next();
   } catch (error) {
