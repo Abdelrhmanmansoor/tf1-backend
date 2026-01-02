@@ -284,14 +284,14 @@ class AuthController {
       // Allow login even if email not verified, but include flag
       res.status(200).json({
         success: true,
-        message: 'Login successful',
+        message: user.isVerified ? 'Login successful' : 'Login successful, please verify your email',
         user: {
           ...userObject,
           permissions: getUserPermissions(user.role)
         },
         accessToken,
         refreshToken,
-        requiresVerification: false // BYPASS VERIFICATION FOR OLD ACCOUNTS
+        requiresVerification: !user.isVerified
       });
 
     } catch (error) {
@@ -481,27 +481,20 @@ class AuthController {
         }
       }
 
-      // Find user with this verification token
+      // Find user with this verification token (ignore expiry for now)
       const user = await User.findOne({
-        emailVerificationToken: token,
-        emailVerificationTokenExpires: { $gt: Date.now() }
+        emailVerificationToken: token
       });
 
-      // Invalid or expired token
+      // Invalid token (not found)
       if (!user) {
-        console.log('❌ [EMAIL VERIFICATION] Invalid or expired token');
+        console.log('❌ [EMAIL VERIFICATION] Invalid token (not found)');
 
         const errorResponse = {
           success: false,
-          message: 'This verification link is invalid or has expired. Please request a new verification email.',
+          message: 'This verification link is invalid. If you have already verified your email, please try logging in.',
           code: 'INVALID_TOKEN'
         };
-
-        // Cache error response to prevent spam retries
-        verificationCache.set(token, {
-          timestamp: Date.now(),
-          response: errorResponse
-        });
 
         return res.status(400).json(errorResponse);
       }
@@ -510,17 +503,9 @@ class AuthController {
       if (user.isVerified) {
         console.log(`✅ [EMAIL VERIFICATION] User ${user.email} already verified`);
 
-        const { accessToken } = jwtService.generateTokenPair(user);
-        const userObject = user.toSafeObject(true); // Include email
-
         const alreadyVerifiedResponse = {
           success: true,
-          message: 'Your email is already verified! Redirecting you to the platform...',
-          user: {
-            ...userObject,
-            permissions: getUserPermissions(user.role)
-          },
-          accessToken,
+          message: 'Your email is already verified! You can now login.',
           alreadyVerified: true
         };
 
@@ -533,11 +518,30 @@ class AuthController {
         return res.status(200).json(alreadyVerifiedResponse);
       }
 
+      // Check expiry ONLY if not verified
+      if (user.emailVerificationTokenExpires < Date.now()) {
+         console.log('❌ [EMAIL VERIFICATION] Token expired');
+         
+         const errorResponse = {
+          success: false,
+          message: 'This verification link has expired. Please request a new one.',
+          code: 'TOKEN_EXPIRED'
+        };
+        
+        return res.status(400).json(errorResponse);
+      }
+
       // VERIFY THE USER - This is the first time verification
       console.log(`🎉 [EMAIL VERIFICATION] Verifying user ${user.email}`);
 
       user.isVerified = true;
-      user.clearEmailVerificationToken();
+      // CRITICAL FIX: Do NOT clear the token immediately to prevent "Failed" on refresh
+      // user.clearEmailVerificationToken(); 
+      
+      // Expire the token immediately so it can't be used again for verification
+      // But keep it in DB so we can find the user and show "Already Verified"
+      user.emailVerificationTokenExpires = Date.now();
+      
       await user.save();
 
       const { accessToken } = jwtService.generateTokenPair(user);
