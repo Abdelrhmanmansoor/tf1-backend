@@ -153,10 +153,20 @@ const checkAnyPermission = (permissions) => {
   };
 };
 
+/**
+ * Helper to get permissions for a role (used in login response)
+ * @param {string} role - The user's role
+ * @returns {string[]} - Array of permissions
+ */
+const getUserPermissions = (role) => {
+  return ROLE_PERMISSIONS[role] || [];
+};
+
 module.exports = {
   checkPermission,
   checkAnyPermission,
   requireSportsAdmin,
   checkTeamPermission,
-  logAction
+  logAction,
+  getUserPermissions
 };

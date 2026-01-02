@@ -9,6 +9,12 @@ class AIService {
   async generateText(prompt, systemInstruction = '') {
     if (!this.apiKey) {
       console.warn('AI_API_KEY or OPENAI_API_KEY is not set. Returning mock response.');
+      
+      // Smart mock response based on instruction
+      if (systemInstruction && (systemInstruction.includes('comma-separated') || systemInstruction.includes('skills'))) {
+          return "Communication, Leadership, Teamwork, Problem Solving, Time Management, Adaptability, Work Ethic, Technical Skills, Creativity, Organization";
+      }
+      
       return "This is a mock AI response. Please configure AI_API_KEY in your .env file.";
     }
 

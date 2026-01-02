@@ -12,7 +12,19 @@ const {
   handleUploadError
 } = require('../../../middleware/cloudinaryUpload');
 
-// All routes require authentication
+// Verify National Address - Public for registration
+router.post('/verify-address', clubController.verifyNationalAddress);
+
+// Search clubs - Public
+router.get('/search', clubController.searchClubs);
+
+// Get nearby clubs - Public
+router.get('/nearby', clubController.getNearbyClubs);
+
+// Get club profile by ID - Public
+router.get('/profile/:id', clubController.getProfileById);
+
+// All routes below require authentication
 router.use(authenticate);
 
 // ============================================
@@ -22,33 +34,17 @@ router.use(authenticate);
 // Create club profile
 router.post('/profile', authorize('club'), clubController.createProfile);
 
-// Verify National Address - Public for registration
-router.post('/verify-address', clubController.verifyNationalAddress);
-
 // Retry Verification - Authenticated for profile update
 router.post('/profile/verify-address', authorize('club'), clubController.retryVerification);
 
 // Get my club profile
 router.get('/profile/me', authorize('club'), clubController.getMyProfile);
 
-// Get club profile by ID
-router.get('/profile/:id', clubController.getProfileById);
-
 // Update club profile
 router.put('/profile', authorize('club'), clubController.updateProfile);
 
 // Delete club profile
 router.delete('/profile', authorize('club'), clubController.deleteProfile);
-
-// ============================================
-// SEARCH & DISCOVERY
-// ============================================
-
-// Search clubs
-router.get('/search', clubController.searchClubs);
-
-// Get nearby clubs
-router.get('/nearby', clubController.getNearbyClubs);
 
 // ============================================
 // MEMBER MANAGEMENT
