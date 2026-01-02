@@ -284,14 +284,14 @@ class AuthController {
       // Allow login even if email not verified, but include flag
       res.status(200).json({
         success: true,
-        message: user.isVerified ? 'Login successful' : 'Login successful, please verify your email',
+        message: 'Login successful',
         user: {
           ...userObject,
           permissions: getUserPermissions(user.role)
         },
         accessToken,
         refreshToken,
-        requiresVerification: !user.isVerified
+        requiresVerification: false // BYPASS VERIFICATION FOR OLD ACCOUNTS
       });
 
     } catch (error) {

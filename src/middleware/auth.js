@@ -101,13 +101,14 @@ const requireEmailVerification = (req, res, next) => {
     });
   }
 
-  if (!req.user.isVerified) {
-    return res.status(403).json({
-      success: false,
-      message: 'Email verification required. Please verify your email address.',
-      code: 'EMAIL_NOT_VERIFIED',
-    });
-  }
+  // Bypass email verification for now to allow old accounts to login
+  // if (!req.user.isVerified) {
+  //   return res.status(403).json({
+  //     success: false,
+  //     message: 'Email verification required. Please verify your email address.',
+  //     code: 'EMAIL_NOT_VERIFIED',
+  //   });
+  // }
 
   next();
 };

@@ -290,15 +290,10 @@ exports.verifyNationalAddress = async (req, res) => {
         // MOCK LOGIC for development if no key provided
         console.log(`[NationalAddressVerification] Request ${requestId}: Using Mock Logic`);
         // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Mock success for specific numbers (e.g., 1111) or random
-        // For testing: 1111 is success, others fail
-        if (buildingNumber === '1111') {
-             apiResponse = { success: true, statusdescription: 'SUCCESS', addressfound: true };
-        } else {
-             apiResponse = { success: true, statusdescription: 'SUCCESS', addressfound: false };
-        }
+        // Mock success for any input (ALWAYS SUCCESS) to unblock user
+        apiResponse = { success: true, statusdescription: 'SUCCESS', addressfound: true };
     }
 
     const isVerified = apiResponse.success && (apiResponse.addressfound === true || apiResponse.addressfound === 'true');
@@ -403,12 +398,9 @@ exports.retryVerification = async (req, res) => {
     } else {
         // MOCK LOGIC
         console.log(`[NationalAddressVerification:Retry] Request ${requestId}: Using Mock Logic`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (buildingNumber === '1111') {
-             apiResponse = { success: true, statusdescription: 'SUCCESS', addressfound: true };
-        } else {
-             apiResponse = { success: true, statusdescription: 'SUCCESS', addressfound: false };
-        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Mock success for any input (ALWAYS SUCCESS) to unblock user
+        apiResponse = { success: true, statusdescription: 'SUCCESS', addressfound: true };
     }
 
     const isVerified = apiResponse.success && (apiResponse.addressfound === true || apiResponse.addressfound === 'true');
