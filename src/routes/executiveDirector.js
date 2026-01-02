@@ -1,30 +1,37 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/executiveDirectorController');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
+const { checkPermission } = require('../middleware/rbac');
+const { PERMISSIONS } = require('../config/roles');
 
 router.use(authenticate);
-router.use(authorize('admin', 'administrator', 'executive-director', 'club'));
 
-router.get('/dashboard', controller.getDashboard);
+// Dashboard
+router.get('/dashboard', checkPermission(PERMISSIONS.VIEW_DASHBOARD), controller.getDashboard);
 
-router.get('/kpis', controller.getKPIs);
-router.patch('/kpis/:id', controller.updateKPI);
+// KPIs & Strategy
+router.get('/kpis', checkPermission(PERMISSIONS.MANAGE_STRATEGY), controller.getKPIs);
+router.patch('/kpis/:id', checkPermission(PERMISSIONS.MANAGE_STRATEGY), controller.updateKPI);
 
-router.get('/initiatives', controller.getInitiatives);
-router.post('/initiatives', controller.createInitiative);
-router.patch('/initiatives/:id', controller.updateInitiative);
-router.delete('/initiatives/:id', controller.deleteInitiative);
+// Initiatives
+router.get('/initiatives', checkPermission(PERMISSIONS.MANAGE_STRATEGY), controller.getInitiatives);
+router.post('/initiatives', checkPermission(PERMISSIONS.MANAGE_STRATEGY), controller.createInitiative);
+router.patch('/initiatives/:id', checkPermission(PERMISSIONS.MANAGE_STRATEGY), controller.updateInitiative);
+router.delete('/initiatives/:id', checkPermission(PERMISSIONS.MANAGE_STRATEGY), controller.deleteInitiative);
 
-router.get('/partnerships', controller.getPartnerships);
-router.post('/partnerships', controller.createPartnership);
-router.patch('/partnerships/:id', controller.updatePartnership);
+// Partnerships
+router.get('/partnerships', checkPermission(PERMISSIONS.MANAGE_PARTNERSHIPS), controller.getPartnerships);
+router.post('/partnerships', checkPermission(PERMISSIONS.MANAGE_PARTNERSHIPS), controller.createPartnership);
+router.patch('/partnerships/:id', checkPermission(PERMISSIONS.MANAGE_PARTNERSHIPS), controller.updatePartnership);
 
-router.get('/reports/financial', controller.getFinancialReports);
+// Financial Reports
+router.get('/reports/financial', checkPermission(PERMISSIONS.VIEW_FINANCIALS), controller.getFinancialReports);
 
-router.get('/announcements', controller.getAnnouncements);
-router.post('/announcements', controller.createAnnouncement);
-router.patch('/announcements/:id', controller.updateAnnouncement);
-router.delete('/announcements/:id', controller.deleteAnnouncement);
+// Announcements (Internal)
+router.get('/announcements', checkPermission(PERMISSIONS.MANAGE_CONTENT), controller.getAnnouncements);
+router.post('/announcements', checkPermission(PERMISSIONS.MANAGE_CONTENT), controller.createAnnouncement);
+router.patch('/announcements/:id', checkPermission(PERMISSIONS.MANAGE_CONTENT), controller.updateAnnouncement);
+router.delete('/announcements/:id', checkPermission(PERMISSIONS.MANAGE_CONTENT), controller.deleteAnnouncement);
 
 module.exports = router;

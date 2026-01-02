@@ -149,11 +149,21 @@ exports.getArticles = async (req, res) => {
 exports.getArticle = async (req, res) => {
   try {
     const { id } = req.params;
+    const mongoose = require('mongoose');
 
-    const article = await Article.findOne({
-      $or: [{ _id: id }, { slug: id }],
-      isDeleted: false,
-    }).populate('author', 'firstName lastName profilePicture email');
+    let query;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query = { 
+        $or: [{ _id: id }, { slug: id }],
+        isDeleted: false 
+      };
+    } else {
+      query = { slug: id, isDeleted: false };
+    }
+
+    const article = await Article.findOne(query)
+      .populate('author', 'firstName lastName profilePicture email');
+
 
     if (!article) {
       return res.status(404).json({

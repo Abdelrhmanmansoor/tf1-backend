@@ -6,11 +6,11 @@ class MatchController {
   async createMatch(req, res) {
     try {
       const userId = req.matchUser._id;
-      const { title, sport, city, area, location, date, time, level, max_players, notes, starts_at, venue, team_size, mode, location_id } = req.body;
+      const { title, sport, city, area, location, date, time, level, max_players, cost_per_player, currency, notes, starts_at, venue, team_size, mode, location_id } = req.body;
 
       // Check if using new API format (title, sport, etc.) or legacy format (starts_at, venue, etc.)
-      const isNewFormat = title && sport && date && time && level;
-      const isLegacyFormat = starts_at && venue && team_size && mode;
+      const isNewFormat = !!(title && sport && date && time && level);
+      const isLegacyFormat = !!(starts_at && venue && team_size && mode);
 
       if (!isNewFormat && !isLegacyFormat) {
         return res.status(400).json({
@@ -106,7 +106,10 @@ class MatchController {
           time,
           level,
           max_players,
+          cost_per_player,
+          currency,
           notes: notes || '',
+          venue: venue || '',
           status: 'open',
           current_players: 0,
           location_id

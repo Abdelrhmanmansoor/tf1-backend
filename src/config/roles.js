@@ -1,0 +1,127 @@
+const ROLES = {
+  ADMIN: 'admin',
+  ADMINISTRATOR: 'administrator',
+  ADMINISTRATIVE_OFFICER: 'administrative-officer',
+  AGE_GROUP_SUPERVISOR: 'age-group-supervisor',
+  SPORTS_DIRECTOR: 'sports-director',
+  EXECUTIVE_DIRECTOR: 'executive-director',
+  SECRETARY: 'secretary',
+  SPORTS_ADMINISTRATOR: 'sports-administrator',
+  PLAYER: 'player',
+  COACH: 'coach',
+  CLUB: 'club',
+  SPECIALIST: 'specialist',
+  TEAM: 'team'
+};
+
+const PERMISSIONS = {
+  // System & Settings
+  MANAGE_SYSTEM: 'manage_system',
+  VIEW_LOGS: 'view_logs',
+  MANAGE_SETTINGS: 'manage_settings',
+  
+  // User Management
+  MANAGE_USERS: 'manage_users',
+  VIEW_USERS: 'view_users',
+  BLOCK_USERS: 'block_users',
+  DELETE_USERS: 'delete_users',
+  
+  // Content Management
+  MANAGE_CONTENT: 'manage_content', // Articles, announcements
+  
+  // Sports Management
+  MANAGE_PROGRAMS: 'manage_programs',
+  VIEW_PROGRAMS: 'view_programs',
+  MANAGE_COACHES: 'manage_coaches',
+  VIEW_COACH_PERFORMANCE: 'view_coach_performance',
+  MANAGE_COACH_EVALUATIONS: 'manage_coach_evaluations',
+  MANAGE_ATHLETES: 'manage_athletes',
+  VIEW_ATHLETES: 'view_athletes',
+  MANAGE_RECRUITMENT: 'manage_recruitment',
+  
+  // Analytics
+  VIEW_ANALYTICS: 'view_analytics',
+  VIEW_TRAINING_ANALYTICS: 'view_training_analytics',
+  
+  // Age Groups
+  MANAGE_AGE_GROUPS: 'manage_age_groups',
+  
+  // Administrative
+  APPROVE_REQUESTS: 'approve_requests',
+  MANAGE_DOCUMENTS: 'manage_documents',
+  MANAGE_MEETINGS: 'manage_meetings',
+
+  // Strategy & Partnerships
+  MANAGE_STRATEGY: 'manage_strategy', // KPIs, Initiatives
+  MANAGE_PARTNERSHIPS: 'manage_partnerships',
+  VIEW_FINANCIALS: 'view_financials',
+};
+
+const ROLE_PERMISSIONS = {
+  [ROLES.ADMIN]: Object.values(PERMISSIONS),
+  
+  [ROLES.EXECUTIVE_DIRECTOR]: [
+    PERMISSIONS.VIEW_ANALYTICS,
+    PERMISSIONS.VIEW_TRAINING_ANALYTICS,
+    PERMISSIONS.VIEW_PROGRAMS,
+    PERMISSIONS.VIEW_COACH_PERFORMANCE,
+    PERMISSIONS.VIEW_ATHLETES,
+    PERMISSIONS.APPROVE_REQUESTS,
+    PERMISSIONS.VIEW_USERS,
+    PERMISSIONS.MANAGE_MEETINGS,
+    PERMISSIONS.MANAGE_STRATEGY,
+    PERMISSIONS.MANAGE_PARTNERSHIPS,
+    PERMISSIONS.VIEW_FINANCIALS,
+    PERMISSIONS.MANAGE_CONTENT,
+    PERMISSIONS.VIEW_DASHBOARD
+  ],
+  
+  [ROLES.SPORTS_DIRECTOR]: [
+    PERMISSIONS.MANAGE_PROGRAMS,
+    PERMISSIONS.MANAGE_COACHES,
+    PERMISSIONS.VIEW_COACH_PERFORMANCE,
+    PERMISSIONS.MANAGE_COACH_EVALUATIONS,
+    PERMISSIONS.MANAGE_ATHLETES,
+    PERMISSIONS.VIEW_TRAINING_ANALYTICS,
+    PERMISSIONS.MANAGE_RECRUITMENT,
+    PERMISSIONS.VIEW_ANALYTICS,
+    PERMISSIONS.VIEW_DASHBOARD
+  ],
+  
+  [ROLES.AGE_GROUP_SUPERVISOR]: [
+    PERMISSIONS.MANAGE_AGE_GROUPS,
+    PERMISSIONS.VIEW_ATHLETES,
+    PERMISSIONS.VIEW_COACH_PERFORMANCE,
+    PERMISSIONS.MANAGE_COACH_EVALUATIONS,
+    PERMISSIONS.VIEW_DASHBOARD
+  ],
+  
+  [ROLES.ADMINISTRATOR]: [
+    PERMISSIONS.MANAGE_USERS,
+    PERMISSIONS.VIEW_LOGS,
+    PERMISSIONS.MANAGE_CONTENT,
+    PERMISSIONS.MANAGE_DOCUMENTS
+  ],
+  
+  [ROLES.ADMINISTRATIVE_OFFICER]: [
+    PERMISSIONS.MANAGE_DOCUMENTS,
+    PERMISSIONS.MANAGE_MEETINGS,
+    PERMISSIONS.VIEW_USERS
+  ],
+
+  [ROLES.SECRETARY]: [
+    PERMISSIONS.MANAGE_MEETINGS,
+    PERMISSIONS.MANAGE_DOCUMENTS
+  ],
+  
+  [ROLES.SPORTS_ADMINISTRATOR]: [
+    PERMISSIONS.MANAGE_PROGRAMS,
+    PERMISSIONS.MANAGE_RECRUITMENT
+  ]
+};
+
+module.exports = {
+  ROLES,
+  PERMISSIONS,
+  ROLE_PERMISSIONS
+};

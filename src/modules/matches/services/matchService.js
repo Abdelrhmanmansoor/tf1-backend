@@ -18,11 +18,15 @@ class MatchService {
         city: data.city,
         area: data.area,
         location: data.location,
+        location_id: data.location_id, // Ensure location_id is passed
         date: data.date,
         time: data.time,
         level: data.level,
         max_players: data.max_players,
+        cost_per_player: data.cost_per_player,
+        currency: data.currency,
         notes: data.notes || '',
+        venue: data.venue || '', // Include venue if provided
         status: data.status || 'open',
         current_players: 0
       };

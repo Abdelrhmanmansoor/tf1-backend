@@ -102,7 +102,7 @@ exports.getAgeGroups = async (req, res) => {
 exports.createAgeGroup = async (req, res) => {
   try {
     const clubId = req.user.clubId || req.user._id;
-    const { name, nameAr, ageRange, status = 'active', sport = 'football' } = req.body;
+    const { name, nameAr, ageRange, status = 'active', sport = 'football', coachId, supervisorId } = req.body;
 
     // Validate required fields
     if (!name || !nameAr || !ageRange || !ageRange.min || !ageRange.max) {
@@ -114,6 +114,43 @@ exports.createAgeGroup = async (req, res) => {
           messageAr: 'الاسم والاسم بالعربية ونطاق العمر مطلوبان'
         }
       });
+    }
+
+    // Validate coach if provided
+    let coachName;
+    if (coachId) {
+      const coach = await User.findOne({ _id: coachId, role: 'coach' });
+      if (!coach) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_COACH',
+            message: 'Invalid coach ID',
+            messageAr: 'معرف المدرب غير صحيح'
+          }
+        });
+      }
+      coachName = `${coach.firstName} ${coach.lastName}`;
+    }
+
+    // Validate supervisor if provided
+    let supervisorName;
+    if (supervisorId) {
+      const supervisor = await User.findOne({ 
+        _id: supervisorId, 
+        role: { $in: ['age-group-supervisor', 'coach'] } 
+      });
+      if (!supervisor) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_SUPERVISOR',
+            message: 'Invalid supervisor ID',
+            messageAr: 'معرف المشرف غير صحيح'
+          }
+        });
+      }
+      supervisorName = `${supervisor.firstName} ${supervisor.lastName}`;
     }
 
     const groupData = {
@@ -128,10 +165,22 @@ exports.createAgeGroup = async (req, res) => {
       clubId,
       createdBy: req.user._id,
       playersCount: 0,
-      maxPlayers: 30
+      maxPlayers: 30,
+      coachId,
+      coachName,
+      supervisorId,
+      supervisorName
     };
 
     const group = await AgeGroup.create(groupData);
+
+    // If supervisor assigned, update their profile
+    if (supervisorId) {
+      await User.findByIdAndUpdate(supervisorId, {
+        clubId,
+        $addToSet: { assignedAgeGroups: group._id }
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -963,15 +1012,55 @@ exports.approveRegistration = async (req, res) => {
       });
     }
 
-    registration.approve(req.user._id, notes, assignedTeamId || registration.requestedAgeGroupId);
+    // Verify age group capacity and age requirements
+    const targetGroupId = assignedTeamId || registration.requestedAgeGroupId;
+    const ageGroup = await AgeGroup.findById(targetGroupId);
+    
+    if (!ageGroup) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'GROUP_NOT_FOUND',
+          message: 'Target age group not found',
+          messageAr: 'الفئة العمرية المستهدفة غير موجودة'
+        }
+      });
+    }
+
+    // Check capacity
+    if (ageGroup.playersCount >= ageGroup.maxPlayers) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'GROUP_FULL',
+          message: 'Age group is full',
+          messageAr: 'الفئة العمرية ممتلئة'
+        }
+      });
+    }
+
+    // Check age compatibility (optional, but recommended)
+    // Assuming registration has dateOfBirth or age
+    if (registration.age) {
+      if (registration.age < ageGroup.ageRange.min || registration.age > ageGroup.ageRange.max) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'AGE_MISMATCH',
+            message: `Player age (${registration.age}) is not within group range (${ageGroup.ageRange.min}-${ageGroup.ageRange.max})`,
+            messageAr: `عمر اللاعب (${registration.age}) غير متوافق مع الفئة العمرية (${ageGroup.ageRange.min}-${ageGroup.ageRange.max})`
+          }
+        });
+      }
+    }
+
+    registration.approve(req.user._id, notes, targetGroupId);
     await registration.save();
 
-    if (registration.requestedAgeGroupId) {
-      await AgeGroup.findByIdAndUpdate(
-        assignedTeamId || registration.requestedAgeGroupId,
-        { $inc: { playersCount: 1 } }
-      );
-    }
+    await AgeGroup.findByIdAndUpdate(
+      targetGroupId,
+      { $inc: { playersCount: 1 } }
+    );
 
     res.json({
       success: true,

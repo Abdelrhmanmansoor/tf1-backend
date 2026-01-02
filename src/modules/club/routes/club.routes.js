@@ -22,6 +22,12 @@ router.use(authenticate);
 // Create club profile
 router.post('/profile', authorize('club'), clubController.createProfile);
 
+// Verify National Address - Public for registration
+router.post('/verify-address', clubController.verifyNationalAddress);
+
+// Retry Verification - Authenticated for profile update
+router.post('/profile/verify-address', authorize('club'), clubController.retryVerification);
+
 // Get my club profile
 router.get('/profile/me', authorize('club'), clubController.getMyProfile);
 

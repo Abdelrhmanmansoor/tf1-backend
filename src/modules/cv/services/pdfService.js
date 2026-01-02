@@ -14,32 +14,50 @@ class PDFService {
         throw new Error('Puppeteer is not installed. PDF generation is not available. Please install it using "npm install puppeteer".');
     }
 
-    const browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-    const page = await browser.newPage();
+    let browser;
+    try {
+      browser = await puppeteer.launch({
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      const page = await browser.newPage();
 
-    const htmlContent = this.generateHTML(cvData);
-    
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-    
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20mm',
-        bottom: '20mm',
-        left: '20mm',
-        right: '20mm'
-      }
-    });
+      const htmlContent = this.generateHTML(cvData);
+      
+      await page.setContent(htmlContent, { 
+        waitUntil: 'networkidle0',
+        timeout: 30000 
+      });
 
-    await browser.close();
-    return pdfBuffer;
+      // Ensure fonts are loaded
+      await page.evaluateHandle('document.fonts.ready');
+      
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '20mm',
+          bottom: '20mm',
+          left: '20mm',
+          right: '20mm'
+        }
+      });
+
+      return pdfBuffer;
+    } catch (error) {
+      console.error('PDF Generation Error:', error);
+      throw error;
+    } finally {
+      if (browser) await browser.close();
+    }
   }
 
   generateHTML(data) {
+    // Validate essential data
+    if (!data || !data.personalInfo) {
+      throw new Error('Invalid CV data: Personal Info is missing');
+    }
+
     const isRTL = data.language === 'ar';
     const direction = isRTL ? 'rtl' : 'ltr';
     const fontFamily = isRTL ? "'Noto Sans Arabic', sans-serif" : "'Arial', sans-serif";

@@ -35,6 +35,10 @@ const jobEventSchema = new mongoose.Schema({
     default: false,
     index: true
   },
+  nationalAddressVerified: {
+    type: Boolean,
+    default: false
+  },
   description: String,
   descriptionAr: String,
   category: {

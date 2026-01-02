@@ -3,13 +3,13 @@ const AppError = require('../../../utils/appError');
 class AIService {
   constructor() {
     this.provider = process.env.AI_PROVIDER || 'openai'; // 'openai' or 'gemini'
-    this.apiKey = process.env.AI_API_KEY;
+    this.apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
   }
 
   async generateText(prompt, systemInstruction = '') {
     if (!this.apiKey) {
-      console.warn('AI_API_KEY is not set. Returning mock response.');
-      return "This is a mock AI response. Please configure AI_API_KEY.";
+      console.warn('AI_API_KEY or OPENAI_API_KEY is not set. Returning mock response.');
+      return "This is a mock AI response. Please configure AI_API_KEY in your .env file.";
     }
 
     try {
@@ -32,7 +32,7 @@ class AIService {
         'Authorization': `Bearer ${this.apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini', // or gpt-3.5-turbo
+        model: 'gpt-4o-mini', 
         messages: [
           { role: 'system', content: systemInstruction },
           { role: 'user', content: prompt }

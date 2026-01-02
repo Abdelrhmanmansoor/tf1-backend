@@ -3,32 +3,32 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const settingsController = require('../controllers/settingsController');
 const { authenticate } = require('../middleware/auth');
-const { isAdmin } = require('../middleware/adminCheck');
+const { checkPermission } = require('../middleware/rbac');
+const { PERMISSIONS } = require('../config/roles');
 
-// All admin routes require authentication and admin role
+// All admin routes require authentication
 router.use(authenticate);
-router.use(isAdmin);
 
 // Dashboard
-router.get('/dashboard', adminController.getDashboardStats);
+router.get('/dashboard', checkPermission(PERMISSIONS.VIEW_DASHBOARD), adminController.getDashboardStats);
 
 // Articles management
-router.get('/articles', adminController.getAllArticles);
-router.patch('/articles/:articleId/feature', adminController.featureArticle);
+router.get('/articles', checkPermission(PERMISSIONS.MANAGE_CONTENT), adminController.getAllArticles);
+router.patch('/articles/:articleId/feature', checkPermission(PERMISSIONS.MANAGE_CONTENT), adminController.featureArticle);
 
 // Users management
-router.get('/users', adminController.getAllUsers);
-router.delete('/users/:userId', adminController.deleteUser);
-router.patch('/users/:userId/block', settingsController.blockUser);
-router.get('/user-activity/:userId', settingsController.getUserActivity);
+router.get('/users', checkPermission(PERMISSIONS.VIEW_USERS), adminController.getAllUsers);
+router.delete('/users/:userId', checkPermission(PERMISSIONS.DELETE_USERS), adminController.deleteUser);
+router.patch('/users/:userId/block', checkPermission(PERMISSIONS.BLOCK_USERS), settingsController.blockUser);
+router.get('/user-activity/:userId', checkPermission(PERMISSIONS.VIEW_LOGS), settingsController.getUserActivity);
 
 // Settings & System Config
-router.get('/settings', settingsController.getSettings);
-router.patch('/settings', settingsController.updateSettings);
+router.get('/settings', checkPermission(PERMISSIONS.MANAGE_SETTINGS), settingsController.getSettings);
+router.patch('/settings', checkPermission(PERMISSIONS.MANAGE_SETTINGS), settingsController.updateSettings);
 
 // Activity & Logs
-router.get('/logs', settingsController.getActivityLogs);
-router.get('/user-logins', settingsController.getUserLoginHistory);
-router.get('/analytics', settingsController.getAnalytics);
+router.get('/logs', checkPermission(PERMISSIONS.VIEW_LOGS), settingsController.getActivityLogs);
+router.get('/user-logins', checkPermission(PERMISSIONS.VIEW_LOGS), settingsController.getUserLoginHistory);
+router.get('/analytics', checkPermission(PERMISSIONS.VIEW_ANALYTICS), settingsController.getAnalytics);
 
 module.exports = router;

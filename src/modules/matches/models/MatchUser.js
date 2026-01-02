@@ -17,7 +17,18 @@ const matchUserSchema = new mongoose.Schema({
   },
   password_hash: {
     type: String,
-    required: true
+    required: true,
+    validate: {
+      validator: function(v) {
+        // Skip validation if password is already hashed (starts with $2)
+        if (v.startsWith('$2')) return true;
+        // Check for min length 8
+        if (v.length < 8) return false;
+        // Check for complexity
+        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(v);
+      },
+      message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number'
+    }
   },
   verified: {
     type: Boolean,
@@ -52,7 +63,6 @@ const matchUserSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-matchUserSchema.index({ email: 1 });
 matchUserSchema.index({ emailVerificationToken: 1 });
 
 // Generate email verification token

@@ -1,23 +1,13 @@
 module.exports = {
-  preset: 'ts-jest',
   testEnvironment: 'node',
-  roots: ['<rootDir>/src', '<rootDir>/tests'],
-  testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
-  transform: {
-    '^.+\\.ts$': 'ts-jest',
+  testMatch: ['**/?(*.)+(spec|test).js'],
+  transform: {},
+  verbose: true,
+  forceExit: true,
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true,
+  moduleNameMapper: {
+    '^uuid$': '<rootDir>/src/__mocks__/uuid.js',
   },
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!src/**/__tests__/**',
-    '!src/**/*.test.ts',
-    '!src/**/*.spec.ts',
-  ],
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
-  moduleNameMapping: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-  },
-  testTimeout: 30000,
 };

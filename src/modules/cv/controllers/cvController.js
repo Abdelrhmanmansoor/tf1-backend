@@ -74,11 +74,23 @@ exports.generatePDF = catchAsync(async (req, res, next) => {
         cvData = cv.toObject();
     }
 
-    const pdfBuffer = await pdfService.generatePDF(cvData);
+    // Validate required fields for PDF generation
+    if (!cvData || !cvData.personalInfo || !cvData.personalInfo.fullName) {
+        return next(new AppError('Incomplete CV data: Full Name is required for PDF generation', 400));
+    }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=cv-${cvData.personalInfo.fullName.replace(/\s+/g, '-')}.pdf`);
-    res.send(pdfBuffer);
+    try {
+        const pdfBuffer = await pdfService.generatePDF(cvData);
+
+        const safeFilename = (cvData.personalInfo.fullName || 'CV').replace(/[^a-zA-Z0-9]/g, '-');
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        // Use proper encoding for filename to avoid header issues
+        res.setHeader('Content-Disposition', `attachment; filename="cv-${safeFilename}.pdf"`);
+        res.send(pdfBuffer);
+    } catch (error) {
+        return next(new AppError('Error generating PDF: ' + error.message, 500));
+    }
 });
 
 exports.aiGenerate = catchAsync(async (req, res, next) => {

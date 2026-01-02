@@ -95,3 +95,6 @@ coverage/
 # Git
 .git/
 .gitconfig
+
+# Cache
+.cache/

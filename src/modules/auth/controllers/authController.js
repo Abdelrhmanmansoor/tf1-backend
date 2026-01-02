@@ -1,4 +1,5 @@
 const User = require('../../shared/models/User');
+const ClubProfile = require('../../club/models/ClubProfile');
 const jwtService = require('../../../utils/jwt');
 const emailService = require('../../../utils/email');
 const { getUserPermissions } = require('../../../middleware/rbac');
@@ -150,6 +151,47 @@ class AuthController {
       const user = new User(userData);
       const verificationToken = user.generateEmailVerificationToken();
       await user.save();
+
+      // Create Club Profile if role is club
+      if (role === 'club') {
+        try {
+          // Extract national address from request body or construct it
+          const nationalAddressData = req.body.nationalAddress || {
+            buildingNumber: req.body.buildingNumber,
+            additionalNumber: req.body.additionalNumber,
+            zipCode: req.body.zipCode,
+            verificationAttempted: false
+          };
+
+          const clubProfile = new ClubProfile({
+            userId: user._id,
+            clubName: organizationName,
+            organizationType,
+            establishedDate: new Date(establishedDate),
+            businessRegistrationNumber,
+            sportsLicenseNumber: licenseNumber,
+            description,
+            facilityDetails: {
+              facilitySizeSqm: facilitySize,
+              capacity: capacity
+            },
+            contactInfo: {
+              website,
+              socialMedia
+            },
+            location: {
+              nationalAddress: nationalAddressData
+            },
+            status: 'active'
+          });
+
+          await clubProfile.save();
+          console.log(`✅ Club profile created for user ${user._id} with address verification status: ${nationalAddressData.isVerified}`);
+        } catch (profileError) {
+          console.error('❌ Failed to create club profile:', profileError);
+          // We don't fail the registration, but this should be investigated
+        }
+      }
 
       // Try to send verification email, but don't fail registration if it fails
       try {

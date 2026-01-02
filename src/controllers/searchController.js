@@ -813,7 +813,7 @@ exports.searchJobs = async (req, res) => {
     }
 
     const jobs = await Job.find(query)
-      .populate('clubId', 'organizationName logo location')
+      .populate('clubId', 'organizationName logo location nationalAddress')
       .sort(sort)
       .limit(parseInt(limit))
       .skip(skip);
@@ -828,6 +828,7 @@ exports.searchJobs = async (req, res) => {
         _id: job.clubId._id,
         name: job.clubId.organizationName,
         logo: job.clubId.logo,
+        nationalAddress: job.clubId.location?.nationalAddress,
       },
       jobType: job.jobType,
       sport: job.sport,
@@ -1282,7 +1283,7 @@ exports.getRecentJobs = async (req, res) => {
       isDeleted: false,
       applicationDeadline: { $gte: new Date() },
     })
-      .populate('clubId', 'organizationName logo location')
+      .populate('clubId', 'organizationName logo location nationalAddress')
       .sort({ createdAt: -1 })
       .limit(parseInt(limit));
 
@@ -1300,6 +1301,7 @@ exports.getRecentJobs = async (req, res) => {
         name: job.clubId.organizationName,
         logo: job.clubId.logo,
         location: job.clubId.location,
+        nationalAddress: job.clubId.nationalAddress,
       },
       jobType: job.jobType,
       category: job.category,
@@ -1350,7 +1352,7 @@ exports.getJobById = async (req, res) => {
     const job = await Job.findById(id)
       .populate(
         'clubId',
-        'organizationName nameAr logo location email phone website description verified'
+        'organizationName nameAr logo location email phone website description verified nationalAddress'
       )
       .populate('postedBy', 'firstName lastName email');
 
@@ -1394,6 +1396,7 @@ exports.getJobById = async (req, res) => {
         website: job.clubId.website,
         description: job.clubId.description,
         verified: job.clubId.verified,
+        nationalAddress: job.clubId.location?.nationalAddress,
       },
       jobType: job.jobType,
       category: job.category,

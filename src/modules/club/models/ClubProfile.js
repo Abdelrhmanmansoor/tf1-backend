@@ -44,6 +44,9 @@ const clubProfileSchema = new mongoose.Schema({
     enum: ['registered', 'licensed', 'certified', 'pending'],
     default: 'pending'
   },
+  description: {
+    type: String
+  },
 
   // === CONTACT & LOCATION ===
   location: {
@@ -81,6 +84,15 @@ const clubProfileSchema = new mongoose.Schema({
     },
     postalCode: {
       type: String
+    },
+    nationalAddress: {
+      buildingNumber: { type: String },
+      additionalNumber: { type: String },
+      zipCode: { type: String },
+      isVerified: { type: Boolean, default: false }, // national_address_verified
+      verifiedAt: { type: Date },
+      verificationAttempted: { type: Boolean, default: false },
+      apiVersion: { type: String, default: 'v3.1' }
     },
     coordinates: {
       type: {
