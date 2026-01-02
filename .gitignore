@@ -85,6 +85,8 @@ uploads/
 # Test files
 test-results/
 coverage/
+test-cv.pdf
+*.pdf
 
 # Sentry
 .sentryclirc
