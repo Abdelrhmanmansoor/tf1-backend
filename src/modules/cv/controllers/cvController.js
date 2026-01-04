@@ -3,6 +3,7 @@ const aiService = require('../services/aiService');
 const pdfService = require('../services/pdfService');
 const catchAsync = require('../../../utils/catchAsync');
 const AppError = require('../../../utils/appError');
+const logger = require('../../../utils/logger');
 
 exports.createOrUpdateCV = catchAsync(async (req, res, next) => {
   // Assuming req.user exists if authenticated, or use session/cookie for guest
@@ -95,24 +96,36 @@ exports.generatePDF = catchAsync(async (req, res, next) => {
 
 exports.aiGenerate = catchAsync(async (req, res, next) => {
     const { type, data, language } = req.body;
+    const userId = req.user?._id || req.ip;
+    const provider = process.env.AI_PROVIDER || 'openai';
+    
+    logger.info(`🤖 AI Request: User=${userId}, Type=${type}, Language=${language}, Provider=${provider}`);
     
     let result;
-    switch (type) {
-        case 'summary':
-            result = await aiService.generateSummary(data, language);
-            break;
-        case 'description':
-            result = await aiService.improveDescription(data, language);
-            break;
-        case 'skills':
-            result = await aiService.suggestSkills(data, language);
-            break;
-        default:
-            return next(new AppError('Invalid generation type', 400));
-    }
+    try {
+        switch (type) {
+            case 'summary':
+                result = await aiService.generateSummary(data, language);
+                break;
+            case 'description':
+                result = await aiService.improveDescription(data, language);
+                break;
+            case 'skills':
+                result = await aiService.suggestSkills(data, language);
+                break;
+            default:
+                logger.warn(`⚠️ Invalid AI generation type: ${type}, User=${userId}`);
+                return next(new AppError('نوع العملية غير صالح', 400));
+        }
 
-    res.status(200).json({
-        status: 'success',
-        data: { result }
-    });
+        logger.logAIRequest(userId, type, provider, true);
+
+        res.status(200).json({
+            status: 'success',
+            data: { result }
+        });
+    } catch (error) {
+        logger.logAIRequest(userId, type, provider, false, error.message);
+        throw error;
+    }
 });

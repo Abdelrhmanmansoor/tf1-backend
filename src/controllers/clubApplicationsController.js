@@ -4,6 +4,7 @@ const User = require('../modules/shared/models/User');
 const Notification = require('../models/Notification');
 const path = require('path');
 const fs = require('fs');
+const logger = require('../utils/logger');
 
 /**
  * @route   GET /api/v1/clubs/applications
@@ -643,7 +644,7 @@ exports.downloadResume = async (req, res) => {
     const { applicationId } = req.params;
     const userId = req.user._id;
 
-    console.log('📥 Download resume request for application:', applicationId);
+    logger.info(`📥 Download resume request: User=${userId}, Application=${applicationId}`);
 
     // Find application and verify club ownership
     const application = await JobApplication.findOne({
@@ -653,7 +654,7 @@ exports.downloadResume = async (req, res) => {
     });
 
     if (!application) {
-      console.log('❌ Application not found or unauthorized');
+      logger.warn(`❌ Application not found or unauthorized: ${applicationId}, User=${userId}`);
       return res.status(404).json({
         success: false,
         message: 'Application not found',
@@ -663,7 +664,7 @@ exports.downloadResume = async (req, res) => {
 
     // Check if attachments exist
     if (!application.attachments || application.attachments.length === 0) {
-      console.log('❌ No attachments found');
+      logger.warn(`❌ No attachments: Application=${applicationId}`);
       return res.status(404).json({
         success: false,
         message: 'No resume found for this application',
@@ -674,31 +675,24 @@ exports.downloadResume = async (req, res) => {
     // Find resume attachment
     const resume = application.attachments.find(att => att.type === 'resume' || att.type === 'cv') || application.attachments[0];
     
-    console.log('📄 Resume found:', {
-      name: resume.name,
-      url: resume.url,
-      localPath: resume.localPath,
-      size: resume.size
-    });
+    logger.debug(`📄 Resume found: ${resume.name || resume.originalName}`);
 
     // If URL exists, redirect to it
     if (resume.url) {
       // Check if it's a full URL (http/https)
       if (resume.url.startsWith('http://') || resume.url.startsWith('https://')) {
-        console.log('🔗 Redirecting to URL:', resume.url);
+        logger.info(`🔗 Redirecting to URL: ${resume.url}`);
+        logger.logFileDownload(userId, applicationId, resume.name, true);
         return res.redirect(resume.url);
       }
       
       // If it's a relative URL, try to serve it
-      const path = require('path');
       const absolutePath = path.isAbsolute(resume.url) 
         ? resume.url 
         : path.join(process.cwd(), resume.url.replace(/^\//, ''));
       
-      console.log('📂 Checking local path:', absolutePath);
-      
       if (fs.existsSync(absolutePath)) {
-        console.log('✅ File found locally, streaming...');
+        logger.info(`✅ Streaming file from URL path: ${absolutePath}`);
         
         // Set proper headers
         res.setHeader('Content-Type', resume.mimeType || 'application/pdf');
@@ -712,7 +706,8 @@ exports.downloadResume = async (req, res) => {
         const fileStream = fs.createReadStream(absolutePath);
         
         fileStream.on('error', (error) => {
-          console.error('❌ File stream error:', error);
+          logger.error(`❌ File stream error: ${error.message}`);
+          logger.logFileDownload(userId, applicationId, resume.name, false);
           if (!res.headersSent) {
             res.status(500).json({
               success: false,
@@ -722,21 +717,22 @@ exports.downloadResume = async (req, res) => {
           }
         });
         
+        fileStream.on('end', () => {
+          logger.logFileDownload(userId, applicationId, resume.name, true);
+        });
+        
         return fileStream.pipe(res);
       }
     }
 
     // Try localPath if exists
     if (resume.localPath) {
-      const path = require('path');
       const absolutePath = path.isAbsolute(resume.localPath) 
         ? resume.localPath 
         : path.join(process.cwd(), resume.localPath);
       
-      console.log('📂 Checking localPath:', absolutePath);
-      
       if (fs.existsSync(absolutePath)) {
-        console.log('✅ File found at localPath, streaming...');
+        logger.info(`✅ Streaming file from localPath: ${absolutePath}`);
         
         res.setHeader('Content-Type', resume.mimeType || 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(resume.originalName || resume.name)}"`);
@@ -748,7 +744,8 @@ exports.downloadResume = async (req, res) => {
         const fileStream = fs.createReadStream(absolutePath);
         
         fileStream.on('error', (error) => {
-          console.error('❌ File stream error:', error);
+          logger.error(`❌ File stream error: ${error.message}`);
+          logger.logFileDownload(userId, applicationId, resume.name, false);
           if (!res.headersSent) {
             res.status(500).json({
               success: false,
@@ -758,13 +755,17 @@ exports.downloadResume = async (req, res) => {
           }
         });
         
+        fileStream.on('end', () => {
+          logger.logFileDownload(userId, applicationId, resume.name, true);
+        });
+        
         return fileStream.pipe(res);
       }
     }
 
     // If we reach here, file not found anywhere
-    console.log('❌ File not found in any location');
-    console.log('Resume data:', JSON.stringify(resume, null, 2));
+    logger.error(`❌ File not found in any location: Application=${applicationId}`);
+    logger.logFileDownload(userId, applicationId, resume.name, false);
     
     return res.status(404).json({
       success: false,
@@ -778,7 +779,7 @@ exports.downloadResume = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Download resume error:', error);
+    logger.error(`❌ Download resume error: ${error.message}`);
     res.status(500).json({
       success: false,
       message: 'Error downloading resume',

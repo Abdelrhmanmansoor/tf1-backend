@@ -60,7 +60,12 @@ const jobApplicationSchema = new mongoose.Schema({
       enum: ['resume', 'cv', 'certificate', 'portfolio', 'video', 'other']
     },
     name: String,
+    originalName: String, // Original filename from upload
     url: String,
+    localPath: String, // Relative path for local files
+    mimeType: String, // MIME type (application/pdf, etc.)
+    format: String, // File extension (pdf, doc, docx)
+    size: Number, // File size in bytes
     uploadedAt: {
       type: Date,
       default: Date.now
