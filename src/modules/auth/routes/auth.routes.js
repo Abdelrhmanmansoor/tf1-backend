@@ -52,7 +52,14 @@ router.post('/forgot-password', authLimiter, validateForgotPassword, authControl
 
 router.post('/reset-password', authLimiter, validateResetPassword, authController.resetPassword);
 
+// Support both GET and POST for email verification to handle different client flows
 router.get('/verify-email', validateEmailVerification, authController.verifyEmail);
+router.post('/verify-email', (req, res, next) => {
+  if (req.body && req.body.token && !req.query.token) {
+    req.query.token = req.body.token;
+  }
+  next();
+}, validateEmailVerification, authController.verifyEmail);
 
 router.post('/resend-verification', validateResendVerification, authController.resendVerification);
 

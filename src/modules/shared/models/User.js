@@ -145,7 +145,8 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 userSchema.methods.generateEmailVerificationToken = function () {
   const token = crypto.randomBytes(32).toString('hex');
   this.emailVerificationToken = token;
-  this.emailVerificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  // Set expiry to 7 days (168 hours) instead of 24 hours for better user experience
+  this.emailVerificationTokenExpires = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
   return token;
 };
 

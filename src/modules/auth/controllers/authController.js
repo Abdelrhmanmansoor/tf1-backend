@@ -481,18 +481,51 @@ class AuthController {
         }
       }
 
-      // Find user with this verification token (ignore expiry for now)
-      const user = await User.findOne({
+      // Find user with this verification token
+      // Try exact match first
+      let user = await User.findOne({
         emailVerificationToken: token
       });
+
+      // If not found, try case-insensitive search (some email clients may modify URLs)
+      if (!user) {
+        const allUsers = await User.find({
+          emailVerificationToken: { $exists: true, $ne: null }
+        }).select('email emailVerificationToken emailVerificationTokenExpires isVerified role');
+        
+        // Try to find user with token that matches (case-insensitive or URL-encoded)
+        user = allUsers.find(u => {
+          if (!u.emailVerificationToken) return false;
+          // Exact match
+          if (u.emailVerificationToken === token) return true;
+          // Case-insensitive match
+          if (u.emailVerificationToken.toLowerCase() === token.toLowerCase()) return true;
+          // URL decoded match
+          try {
+            const decodedToken = decodeURIComponent(token);
+            if (u.emailVerificationToken === decodedToken) return true;
+          } catch (e) {
+            // Ignore decode errors
+          }
+          return false;
+        });
+        
+        if (user) {
+          // Found user, but need to fetch full document
+          user = await User.findById(user._id);
+        }
+      }
 
       // Invalid token (not found)
       if (!user) {
         console.log('❌ [EMAIL VERIFICATION] Invalid token (not found)');
+        console.log('📝 [DEBUG] Token searched:', token?.substring(0, 20) + '...');
+        console.log('📝 [DEBUG] Total users with tokens:', await User.countDocuments({ emailVerificationToken: { $exists: true, $ne: null } }));
 
         const errorResponse = {
           success: false,
           message: 'This verification link is invalid. If you have already verified your email, please try logging in.',
+          messageAr: 'رابط التحقق هذا غير صالح. إذا كنت قد قمت بتفعيل بريدك الإلكتروني بالفعل، يرجى محاولة تسجيل الدخول.',
           code: 'INVALID_TOKEN'
         };
 
@@ -519,15 +552,22 @@ class AuthController {
       }
 
       // Check expiry ONLY if not verified
-      if (user.emailVerificationTokenExpires < Date.now()) {
+      if (!user.emailVerificationTokenExpires || user.emailVerificationTokenExpires < Date.now()) {
          console.log('❌ [EMAIL VERIFICATION] Token expired');
+         console.log('📝 [DEBUG] Token expires:', user.emailVerificationTokenExpires);
+         console.log('📝 [DEBUG] Current time:', Date.now());
+         console.log('📝 [DEBUG] User email:', user.email);
+         console.log('📝 [DEBUG] User role:', user.role);
          
+         // For expired tokens, offer to resend verification email
          const errorResponse = {
-          success: false,
-          message: 'This verification link has expired. Please request a new one.',
-          code: 'TOKEN_EXPIRED'
-        };
-        
+           success: false,
+           message: 'This verification link has expired. Please request a new one.',
+           messageAr: 'انتهت صلاحية رابط التحقق. يرجى طلب رابط جديد.',
+           code: 'TOKEN_EXPIRED',
+           canResend: true
+         };
+         
         return res.status(400).json(errorResponse);
       }
 
