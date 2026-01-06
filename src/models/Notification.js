@@ -11,7 +11,7 @@ const notificationSchema = new mongoose.Schema(
 
     userRole: {
       type: String,
-      enum: ['player', 'coach', 'club', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary'],
+      enum: ['player', 'coach', 'club', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary', 'applicant', 'job-publisher'],
       required: true,
     },
 
@@ -60,6 +60,7 @@ const notificationSchema = new mongoose.Schema(
         'application_hired',
         'new_job',
         'urgent_job',
+        'job_published',
         // Common notifications
         'new_follower',
         'profile_verified',

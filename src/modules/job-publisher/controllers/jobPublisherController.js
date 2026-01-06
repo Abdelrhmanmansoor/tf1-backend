@@ -129,6 +129,54 @@ exports.createJob = catchAsync(async (req, res) => {
 
   logger.info(`Job ${job._id} created by publisher ${publisherId}`);
 
+  // Send notification to potential applicants (if job is active)
+  if (job.status === 'active') {
+    try {
+      const { saveNotification } = require('../../../middleware/notificationHandler');
+      const User = require('../../shared/models/User');
+      
+      // Get all applicants who might be interested
+      const applicants = await User.find({ role: 'applicant' }).select('_id').limit(100); // Limit to avoid overwhelming
+      
+      // Create notifications for applicants (in batches)
+      const batchSize = 50;
+      let notifiedCount = 0;
+      for (let i = 0; i < applicants.length; i += batchSize) {
+        const batch = applicants.slice(i, i + batchSize);
+        await Promise.all(batch.map(async (applicant) => {
+          try {
+            await saveNotification({
+              userId: applicant._id,
+              userRole: 'applicant',
+              type: 'new_job',
+              title: 'New Job Opportunity',
+              titleAr: 'فرصة وظيفية جديدة',
+              message: `A new job "${job.title}" has been posted. Apply now!`,
+              messageAr: `تم نشر وظيفة جديدة "${job.titleAr || job.title}". تقدم الآن!`,
+              relatedTo: {
+                entityType: 'job',
+                entityId: job._id
+              },
+              actionUrl: `/jobs/${job._id}`,
+              priority: 'normal'
+            });
+            notifiedCount++;
+          } catch (err) {
+            // Silent fail for individual notifications
+            logger.error(`Failed to notify applicant ${applicant._id}:`, err);
+          }
+        }));
+      }
+      
+      if (notifiedCount > 0) {
+        logger.info(`Notifications sent to ${notifiedCount} applicants for new job ${job._id}`);
+      }
+    } catch (notifError) {
+      logger.error('Error sending job notifications:', notifError);
+      // Don't fail the request if notification fails
+    }
+  }
+
   res.status(201).json({
     success: true,
     message: 'Job created successfully',
@@ -278,8 +326,99 @@ exports.updateApplicationStatus = catchAsync(async (req, res) => {
     throw new AppError('Invalid status', 400);
   }
 
+  const previousStatus = application.status;
+  application.status = status;
   application.addStatusHistory(status, publisherId, notes || `Status changed to ${status}`);
   await application.save();
+
+  // Send notification to applicant
+  try {
+    const { saveNotification } = require('../../../middleware/notificationHandler');
+    const User = require('../../shared/models/User');
+    const applicant = await User.findById(application.applicantId).select('firstName lastName role');
+    const job = application.jobId;
+
+    const statusMessages = {
+      'under_review': {
+        title: 'Application Under Review',
+        titleAr: 'طلبك قيد المراجعة',
+        message: `Your application for ${job.title} is now under review.`,
+        messageAr: `طلبك لوظيفة ${job.titleAr || job.title} قيد المراجعة الآن.`
+      },
+      'interviewed': {
+        title: 'Interview Scheduled',
+        titleAr: 'تم تحديد موعد المقابلة',
+        message: `An interview has been scheduled for your application to ${job.title}.`,
+        messageAr: `تم تحديد موعد مقابلة لطلبك على وظيفة ${job.titleAr || job.title}.`
+      },
+      'offered': {
+        title: 'Job Offer Received!',
+        titleAr: 'تم قبول طلبك!',
+        message: `Congratulations! You have received a job offer for ${job.title}.`,
+        messageAr: `مبروك! لقد تم قبول طلبك لوظيفة ${job.titleAr || job.title}.`
+      },
+      'hired': {
+        title: 'You are Hired!',
+        titleAr: 'تم توظيفك!',
+        message: `Congratulations! You have been hired for ${job.title}.`,
+        messageAr: `تهانينا! تم توظيفك لوظيفة ${job.titleAr || job.title}.`
+      },
+      'rejected': {
+        title: 'Application Status Update',
+        titleAr: 'تحديث حالة الطلب',
+        message: `Thank you for your interest in ${job.title}. Unfortunately, we have decided to move forward with other candidates.`,
+        messageAr: `شكراً لاهتمامك بوظيفة ${job.titleAr || job.title}. للأسف تم اختيار مرشحين آخرين.`
+      }
+    };
+
+    const notifData = statusMessages[status];
+    if (notifData) {
+      const { notification, source } = await saveNotification({
+        userId: application.applicantId,
+        userRole: applicant?.role || 'applicant',
+        type: `application_${status}`,
+        title: notifData.title,
+        titleAr: notifData.titleAr,
+        message: notifData.message,
+        messageAr: notifData.messageAr,
+        relatedTo: {
+          entityType: 'job_application',
+          entityId: application._id
+        },
+        actionUrl: `/dashboard/applicant/applications/${application._id}`,
+        priority: status === 'offered' || status === 'hired' ? 'high' : 'normal'
+      });
+
+      logger.info(`Notification saved to ${source} for applicant ${application.applicantId}`);
+
+      // Send real-time notification via Socket.io
+      const io = req.app.get('io');
+      if (io) {
+        io.to(application.applicantId.toString()).emit('new_notification', {
+          _id: notification._id,
+          type: `application_${status}`,
+          notificationType: `application_${status}`,
+          applicationId: application._id,
+          jobId: job._id,
+          jobTitle: job.title,
+          previousStatus,
+          newStatus: status,
+          title: notifData.title,
+          titleAr: notifData.titleAr,
+          message: notifData.message,
+          messageAr: notifData.messageAr,
+          actionUrl: `/dashboard/applicant/applications/${application._id}`,
+          priority: status === 'offered' || status === 'hired' ? 'high' : 'normal',
+          isRead: false,
+          createdAt: notification.createdAt
+        });
+        logger.info(`Real-time notification sent to applicant ${application.applicantId}`);
+      }
+    }
+  } catch (notifError) {
+    logger.error('Error sending status notification:', notifError);
+    // Don't fail the request if notification fails
+  }
 
   logger.info(`Application ${applicationId} status updated to ${status} by publisher ${publisherId}`);
 
