@@ -93,7 +93,8 @@ exports.getComprehensiveStats = async (req, res) => {
     // ========== JOB APPLICATIONS STATISTICS ==========
     const [
       totalApplications,
-      pendingApplications,
+      newApplications,
+      underReviewApplications,
       acceptedApplications,
       rejectedApplications,
       applicationsToday,
@@ -101,7 +102,8 @@ exports.getComprehensiveStats = async (req, res) => {
       applicationsByStatus,
     ] = await Promise.all([
       JobApplication.countDocuments({ isDeleted: { $ne: true } }),
-      JobApplication.countDocuments({ status: 'pending', isDeleted: { $ne: true } }),
+      JobApplication.countDocuments({ status: 'new', isDeleted: { $ne: true } }),
+      JobApplication.countDocuments({ status: 'under_review', isDeleted: { $ne: true } }),
       JobApplication.countDocuments({ status: 'accepted', isDeleted: { $ne: true } }),
       JobApplication.countDocuments({ status: 'rejected', isDeleted: { $ne: true } }),
       JobApplication.countDocuments({
@@ -254,7 +256,8 @@ exports.getComprehensiveStats = async (req, res) => {
       },
       applications: {
         total: totalApplications,
-        pending: pendingApplications,
+        new: newApplications,
+        underReview: underReviewApplications,
         accepted: acceptedApplications,
         rejected: rejectedApplications,
         today: applicationsToday,
