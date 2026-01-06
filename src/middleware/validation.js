@@ -57,13 +57,13 @@ const validateRegister = [
     ),
 
   body('role')
-    .isIn(['player', 'coach', 'club', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary', 'sports-administrator'])
-    .withMessage('Role must be one of: player, coach, club, specialist, admin, administrator, age-group-supervisor, sports-director, executive-director, secretary, sports-administrator'),
+    .isIn(['player', 'coach', 'club', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary', 'sports-administrator', 'applicant'])
+    .withMessage('Role must be one of: player, coach, club, specialist, admin, administrator, age-group-supervisor, sports-director, executive-director, secretary, sports-administrator, applicant'),
 
   // Individual user fields (required for player, coach, specialist, and admin roles)
   body('firstName')
     .if((value, { req }) =>
-      ['player', 'coach', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary', 'sports-administrator'].includes(req.body.role)
+      ['player', 'coach', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary', 'sports-administrator', 'applicant'].includes(req.body.role)
     )
     .trim()
     .notEmpty()
@@ -73,7 +73,7 @@ const validateRegister = [
 
   body('lastName')
     .if((value, { req }) =>
-      ['player', 'coach', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary', 'sports-administrator'].includes(req.body.role)
+      ['player', 'coach', 'specialist', 'admin', 'administrator', 'age-group-supervisor', 'sports-director', 'executive-director', 'secretary', 'sports-administrator', 'applicant'].includes(req.body.role)
     )
     .trim()
     .notEmpty()
