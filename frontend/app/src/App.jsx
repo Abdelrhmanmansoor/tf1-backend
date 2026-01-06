@@ -143,6 +143,15 @@ function App() {
                   </RoleProtectedRoute>
                 } 
               />
+              {/* System Admin Secure Panel - alternative path */}
+              <Route 
+                path="/sys-admin-secure-panel" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['admin', 'administrator', 'leader']}>
+                    <AdminDashboard />
+                  </RoleProtectedRoute>
+                } 
+              />
               {/* Leader Dashboard - restricted to leader role */}
               <Route 
                 path="/dashboard/leader"
