@@ -462,6 +462,7 @@ exports.downloadCVFile = catchAsync(async (req, res, next) => {
 
 /**
  * AI-powered features
+ * Enhanced with comprehensive error handling and fallback system
  */
 exports.aiGenerate = catchAsync(async (req, res, next) => {
   const { type, data, language = 'ar' } = req.body;
@@ -476,7 +477,8 @@ exports.aiGenerate = catchAsync(async (req, res, next) => {
     userId,
     type,
     language,
-    provider 
+    provider,
+    hasApiKey: !!process.env.AI_API_KEY
   });
   
   let result;
@@ -559,18 +561,29 @@ exports.aiGenerate = catchAsync(async (req, res, next) => {
   } catch (error) {
     logger.logAIRequest(userId, type, provider, false, error.message);
     
-    // Return error but don't throw (to allow fallback responses)
-    if (error.statusCode === 503 && process.env.AI_ENABLE_FALLBACK !== 'false') {
-      // Fallback response was used
+    // Enhanced error handling with fallback
+    if (process.env.AI_ENABLE_FALLBACK !== 'false') {
+      // Use intelligent fallback
+      const fallbackResult = aiService._generateIntelligentFallback('', data, type);
+      
+      logger.info('Using fallback response', { type, userId });
+      
       res.status(200).json({
         success: true,
         status: 'success',
-        message: 'AI service unavailable, using fallback response',
-        messageAr: 'خدمة الذكاء الاصطناعي غير متاحة، تم استخدام استجابة بديلة',
-        data: { result: error.message },
-        fallback: true
+        message: 'AI service unavailable, using intelligent fallback system',
+        messageAr: 'خدمة الذكاء الاصطناعي غير متاحة، تم استخدام نظام بديل ذكي',
+        data: { result: fallbackResult },
+        fallback: true,
+        warning: error.message
       });
     } else {
+      // No fallback - return error
+      if (error.statusCode === 401) {
+        return next(new AppError('Invalid AI API key. Please configure AI_API_KEY in environment variables.', 401));
+      } else if (error.statusCode === 503) {
+        return next(new AppError('AI service temporarily unavailable. Please try again later.', 503));
+      }
       throw error;
     }
   }

@@ -252,6 +252,12 @@ ${candidateName}`;
     }
 
     try {
+      // Validate API key format
+      if (!this.apiKey || !this.apiKey.startsWith('sk-')) {
+        logger.error('Invalid OpenAI API key format', { hasKey: !!this.apiKey, keyPrefix: this.apiKey?.substring(0, 3) });
+        throw new AppError('Invalid OpenAI API key format. Key must start with "sk-"', 401);
+      }
+
       const response = await this.openai.chat.completions.create({
         model: this.model,
         messages: [
@@ -269,9 +275,28 @@ ${candidateName}`;
         model: this.model 
       });
 
+      if (!response.choices || !response.choices[0] || !response.choices[0].message) {
+        throw new AppError('Invalid response from OpenAI API', 500);
+      }
+
       return response.choices[0].message.content.trim();
     } catch (error) {
-      logger.error('OpenAI API Error', { error: error.message });
+      logger.error('OpenAI API Error', { 
+        error: error.message,
+        status: error.status,
+        code: error.code,
+        type: error.type
+      });
+      
+      // Handle specific OpenAI errors
+      if (error.status === 401 || error.code === 'invalid_api_key') {
+        throw new AppError('Invalid OpenAI API key. Please check your AI_API_KEY in environment variables.', 401);
+      } else if (error.status === 429) {
+        throw new AppError('OpenAI API rate limit exceeded. Please try again later.', 429);
+      } else if (error.status === 500 || error.status === 503) {
+        throw new AppError('OpenAI API service temporarily unavailable. Please try again later.', 503);
+      }
+      
       const statusCode = error.status || 500;
       const appError = new AppError(error.message || 'OpenAI API Error', statusCode);
       appError.errorData = error;
