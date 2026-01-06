@@ -5,6 +5,12 @@ const {
   checkPermission,
 } = require('../middleware/adminAuthDev');  // Use development middleware (no MongoDB required)
 
+// Import controllers
+const dashboardController = require('../controllers/dashboardController');
+const comprehensiveStatsController = require('../controllers/comprehensiveStatsController');
+const usersController = require('../controllers/usersController');
+const settingsController = require('../controllers/settingsController');
+
 // Mock controller response helper
 const mockResponse = (req, res, endpoint) => {
   res.status(200).json({
@@ -22,44 +28,27 @@ router.use(authenticateAdminKey);
 router.get(
   '/overview',
   checkPermission('view_dashboard'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      message: 'Dashboard Overview',
-      data: {
-        totalActions: 1250,
-        successfulActions: 1200,
-        failedActions: 50,
-        systemStatus: { database: '⚠️ Not Connected', api: '✅ Active', socketio: '✅ Active' }
-      },
-      timestamp: new Date().toISOString()
-    });
-  }
+  dashboardController.getDashboardOverview
+);
+
+// Comprehensive statistics endpoint - THE SCARY ONE
+router.get(
+  '/stats/comprehensive',
+  checkPermission('view_dashboard'),
+  comprehensiveStatsController.getComprehensiveStats
 );
 
 // ==================== ACTIVITY LOGS ROUTES ====================
 router.get(
   '/logs',
   checkPermission('view_logs'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      data: [
-        { id: '1', actionType: 'LOGIN', status: 'SUCCESS', ip: '192.168.1.1', timestamp: new Date().toISOString() }
-      ],
-      pagination: { page: 1, limit: 20, total: 1 }
-    });
-  }
+  dashboardController.getActivityLogs
 );
 
 router.get(
   '/logs/export',
   checkPermission('export_data'),
-  (req, res) => {
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="logs.csv"');
-    res.send('Action,Status,IP,Timestamp\nLOGIN,SUCCESS,192.168.1.1,' + new Date().toISOString());
-  }
+  dashboardController.exportLogs
 );
 
 // ==================== ADMIN KEY MANAGEMENT ROUTES ====================
@@ -252,147 +241,75 @@ router.get(
 router.get(
   '/users',
   checkPermission('manage_users'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      data: [
-        { id: 'user1', name: 'Ahmed', email: 'ahmed@example.com', role: 'player' },
-        { id: 'user2', name: 'Fatima', email: 'fatima@example.com', role: 'coach' }
-      ]
-    });
-  }
+  usersController.getUsers
 );
 
 router.get(
   '/users/:userId',
   checkPermission('manage_users'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      data: { id: req.params.userId, name: 'User', email: 'user@example.com' }
-    });
-  }
+  usersController.getUserDetails
 );
 
 router.put(
   '/users/:userId',
   checkPermission('manage_users'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      message: 'User updated'
-    });
-  }
+  usersController.updateUser
 );
 
 router.post(
   '/users/:userId/deactivate',
   checkPermission('manage_users'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      message: 'User deactivated'
-    });
-  }
+  usersController.deactivateUser
 );
 
 router.get(
   '/users/statistics/overview',
   checkPermission('manage_users'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      data: { totalUsers: 150, activeUsers: 120, newUsers: 15 }
-    });
-  }
+  usersController.getUserStatistics
 );
 
 // ==================== SYSTEM SETTINGS ROUTES ====================
 router.get(
   '/settings',
   checkPermission('manage_system_settings'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      data: {
-        siteName: 'SportX Platform',
-        siteUrl: 'https://www.tf1one.com',
-        adminEmail: 'admin@tf1one.com'
-      }
-    });
-  }
+  settingsController.getSystemSettings
 );
 
 router.put(
   '/settings',
   checkPermission('manage_system_settings'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      message: 'Settings updated'
-    });
-  }
+  settingsController.updateSystemSettings
 );
 
 router.get(
   '/settings/health',
   checkPermission('manage_system_settings'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      data: {
-        database: '⚠️ Not Connected',
-        api: '✅ Active',
-        socketio: '✅ Active',
-        memory: '45%'
-      }
-    });
-  }
+  settingsController.getSystemHealth
 );
 
 // ==================== BACKUP ROUTES ====================
 router.get(
   '/backups',
   checkPermission('manage_backups'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      data: []
-    });
-  }
+  settingsController.getBackups
 );
 
 router.post(
   '/backups/create',
   checkPermission('manage_backups'),
-  (req, res) => {
-    res.status(201).json({
-      success: true,
-      message: 'Backup created'
-    });
-  }
+  settingsController.createBackup
 );
 
 router.delete(
   '/backups/:backupName',
   checkPermission('manage_backups'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      message: 'Backup deleted'
-    });
-  }
+  settingsController.deleteBackup
 );
 
 router.get(
   '/backups/:backupName/download',
   checkPermission('manage_backups'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      message: 'Backup download link'
-    });
-  }
+  settingsController.downloadBackup
 );
 
 module.exports = router;
