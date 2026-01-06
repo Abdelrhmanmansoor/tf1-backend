@@ -7,13 +7,16 @@ const authenticate = async (req, res, next) => {
   try {
     let token;
 
-    // Try to get token from cookie first (new method)
-    if (req.cookies && req.cookies.matches_token) {
-      token = req.cookies.matches_token;
-    } 
-    // Fallback to Bearer token for backward compatibility
-    else if (req.headers.authorization) {
+    // Try to get token from Authorization header first (most reliable)
+    if (req.headers.authorization) {
       token = jwtService.extractTokenFromHeader(req.headers.authorization);
+    }
+    // Fallback to cookies
+    else if (req.cookies && req.cookies.matches_token) {
+      token = req.cookies.matches_token;
+    }
+    else if (req.cookies && req.cookies.auth_token) {
+      token = req.cookies.auth_token;
     }
 
     if (!token) {
@@ -109,13 +112,16 @@ const optionalAuth = async (req, res, next) => {
   try {
     let token;
 
-    // Try to get token from cookie first
-    if (req.cookies && req.cookies.matches_token) {
-      token = req.cookies.matches_token;
-    } 
-    // Fallback to Bearer token
-    else if (req.headers.authorization) {
+    // Try to get token from Authorization header first
+    if (req.headers.authorization) {
       token = jwtService.extractTokenFromHeader(req.headers.authorization);
+    }
+    // Fallback to cookies
+    else if (req.cookies && req.cookies.matches_token) {
+      token = req.cookies.matches_token;
+    }
+    else if (req.cookies && req.cookies.auth_token) {
+      token = req.cookies.auth_token;
     }
 
     if (!token) {

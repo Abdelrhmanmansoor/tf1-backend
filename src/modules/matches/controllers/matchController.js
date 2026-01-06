@@ -48,24 +48,13 @@ class MatchController {
       }
 
       // Validate location_id and derive area/city/location strings
-      let resolvedArea = area;
-      let resolvedCity = city;
-      let resolvedLocation = location;
-      if (isNewFormat) {
+      let resolvedArea = area || 'منطقة';
+      let resolvedCity = city || 'مدينة';
+      let resolvedLocation = location || venue || 'موقع';
+      if (isNewFormat && location_id) {
         const Location = require('../../../models/Location');
-        if (!location_id) {
-          return res.status(400).json({
-            success: false,
-            message: 'location_id is required'
-          });
-        }
         const loc = await Location.findById(location_id);
-        if (!loc) {
-          return res.status(400).json({
-            success: false,
-            message: 'Invalid location_id'
-          });
-        }
+        if (loc) {
         if (loc.level === 'region') {
           resolvedArea = loc.name_ar || loc.name_en || 'منطقة';
           resolvedCity = loc.name_ar || loc.name_en || 'مدينة';
@@ -90,7 +79,8 @@ class MatchController {
             }
           }
         }
-      }
+        } // end if (loc)
+      } // end if location_id
 
       // Create match data
       let matchData;
