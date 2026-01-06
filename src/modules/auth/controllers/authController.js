@@ -150,7 +150,25 @@ class AuthController {
 
       const user = new User(userData);
       const verificationToken = user.generateEmailVerificationToken();
+      
+      // Log token generation for debugging
+      console.log(`📧 [REGISTRATION] Generated verification token for ${user.email} (role: ${user.role})`);
+      console.log(`📧 [REGISTRATION] Token (first 20 chars): ${verificationToken.substring(0, 20)}...`);
+      console.log(`📧 [REGISTRATION] Token expires at: ${new Date(user.emailVerificationTokenExpires).toISOString()}`);
+      
       await user.save();
+      
+      // Verify token was saved correctly
+      const savedUser = await User.findById(user._id);
+      if (!savedUser.emailVerificationToken) {
+        console.error('❌ [REGISTRATION] Token was not saved!');
+        // Regenerate and save again
+        savedUser.generateEmailVerificationToken();
+        await savedUser.save();
+        console.log('✅ [REGISTRATION] Token regenerated and saved');
+      } else {
+        console.log('✅ [REGISTRATION] Token saved successfully');
+      }
 
       // Create Club Profile if role is club
       if (role === 'club') {
@@ -554,8 +572,8 @@ class AuthController {
       // Check expiry ONLY if not verified
       if (!user.emailVerificationTokenExpires || user.emailVerificationTokenExpires < Date.now()) {
          console.log('❌ [EMAIL VERIFICATION] Token expired');
-         console.log('📝 [DEBUG] Token expires:', user.emailVerificationTokenExpires);
-         console.log('📝 [DEBUG] Current time:', Date.now());
+         console.log('📝 [DEBUG] Token expires:', user.emailVerificationTokenExpires ? new Date(user.emailVerificationTokenExpires).toISOString() : 'null');
+         console.log('📝 [DEBUG] Current time:', new Date().toISOString());
          console.log('📝 [DEBUG] User email:', user.email);
          console.log('📝 [DEBUG] User role:', user.role);
          
@@ -624,11 +642,21 @@ class AuthController {
     try {
       const { email } = req.body;
 
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email address is required',
+          messageAr: 'البريد الإلكتروني مطلوب',
+          code: 'EMAIL_REQUIRED'
+        });
+      }
+
       const user = await User.findOne({ email: email.toLowerCase() });
       if (!user) {
         return res.status(404).json({
           success: false,
           message: 'No account found with that email address',
+          messageAr: 'لم يتم العثور على حساب بهذا البريد الإلكتروني',
           code: 'USER_NOT_FOUND'
         });
       }
@@ -637,12 +665,30 @@ class AuthController {
         return res.status(400).json({
           success: false,
           message: 'Email address is already verified',
+          messageAr: 'البريد الإلكتروني مفعّل بالفعل',
           code: 'ALREADY_VERIFIED'
         });
       }
 
+      // Generate new verification token
       const verificationToken = user.generateEmailVerificationToken();
+      
+      console.log(`📧 [RESEND VERIFICATION] Generated new token for ${user.email} (role: ${user.role})`);
+      console.log(`📧 [RESEND VERIFICATION] Token (first 20 chars): ${verificationToken.substring(0, 20)}...`);
+      console.log(`📧 [RESEND VERIFICATION] Token expires at: ${new Date(user.emailVerificationTokenExpires).toISOString()}`);
+      
       await user.save();
+
+      // Verify token was saved
+      const savedUser = await User.findById(user._id);
+      if (!savedUser.emailVerificationToken) {
+        console.error('❌ [RESEND VERIFICATION] Token was not saved!');
+        savedUser.generateEmailVerificationToken();
+        await savedUser.save();
+        console.log('✅ [RESEND VERIFICATION] Token regenerated and saved');
+      } else {
+        console.log('✅ [RESEND VERIFICATION] Token saved successfully');
+      }
 
       const emailSent = await emailService.sendVerificationEmail(user, verificationToken);
 
@@ -650,13 +696,15 @@ class AuthController {
         return res.status(500).json({
           success: false,
           message: 'Failed to send verification email. Please try again.',
+          messageAr: 'فشل إرسال بريد التحقق. يرجى المحاولة مرة أخرى.',
           code: 'EMAIL_SEND_FAILED'
         });
       }
 
       res.status(200).json({
         success: true,
-        message: 'Verification email sent. Please check your email.'
+        message: 'Verification email sent. Please check your email.',
+        messageAr: 'تم إرسال بريد التحقق. يرجى التحقق من بريدك الإلكتروني.'
       });
 
     } catch (error) {
@@ -664,6 +712,7 @@ class AuthController {
       res.status(500).json({
         success: false,
         message: 'Failed to resend verification email. Please try again.',
+        messageAr: 'فشل إعادة إرسال بريد التحقق. يرجى المحاولة مرة أخرى.',
         code: 'RESEND_VERIFICATION_FAILED'
       });
     }

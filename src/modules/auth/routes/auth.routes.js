@@ -8,7 +8,8 @@ const {
   validateForgotPassword,
   validateResetPassword,
   validateEmailVerification,
-  validateResendVerification
+  validateResendVerification,
+  validateResendVerificationByToken
 } = require('../../../middleware/validation');
 
 // Auth-specific rate limiter - more lenient
@@ -62,6 +63,7 @@ router.post('/verify-email', (req, res, next) => {
 }, validateEmailVerification, authController.verifyEmail);
 
 router.post('/resend-verification', validateResendVerification, authController.resendVerification);
+router.post('/resend-verification-by-token', validateResendVerificationByToken, authController.resendVerificationByToken);
 
 router.post('/logout', authenticate, authController.logout);
 

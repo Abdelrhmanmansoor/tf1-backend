@@ -234,6 +234,11 @@ const validateResendVerification = [
   handleValidationErrors,
 ];
 
+const validateResendVerificationByToken = [
+  body('token').notEmpty().withMessage('Verification token is required'),
+  handleValidationErrors,
+];
+
 module.exports = {
   validateRegister,
   validateLogin,
@@ -241,5 +246,6 @@ module.exports = {
   validateResetPassword,
   validateEmailVerification,
   validateResendVerification,
+  validateResendVerificationByToken,
   handleValidationErrors,
 };
