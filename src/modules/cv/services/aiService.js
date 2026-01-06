@@ -187,67 +187,41 @@ class AIService {
   async callOpenAI(prompt, systemInstruction) {
     const startTime = Date.now();
     
+    if (!this.openai) {
+      throw new AppError('OpenAI SDK not initialized. Missing API Key.', 500);
+    }
+
     try {
-      const response = await this.fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [
-            { role: 'system', content: systemInstruction },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.7,
-          max_tokens: parseInt(process.env.AI_MAX_TOKENS) || 500,
-          top_p: 1,
-          frequency_penalty: 0,
-          presence_penalty: 0
-        })
+      const response = await this.openai.chat.completions.create({
+        model: this.model,
+        messages: [
+          { role: 'system', content: systemInstruction },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: parseInt(process.env.AI_MAX_TOKENS) || 500,
+        top_p: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0
       });
 
       const duration = Date.now() - startTime;
       logger.debug('OpenAI API call completed', { duration, model: this.model });
 
-      if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch {
-          errorData = { error: { message: `HTTP ${response.status}` } };
-        }
-        
-        const error = new Error(errorData.error?.message || 'OpenAI API Error');
-        error.statusCode = response.status;
-        error.errorData = errorData;
-        throw error;
-      }
-
-      const data = await response.json();
-      
-      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-        logger.error('Invalid OpenAI response structure', { data });
-        throw new Error('استجابة غير متوقعة من OpenAI API');
-      }
-
-      const result = data.choices[0].message.content.trim();
+      const result = response.choices[0].message.content.trim();
       logger.info('OpenAI API success', { 
-        duration: Date.now() - startTime,
-        tokensUsed: data.usage?.total_tokens,
+        duration,
+        tokensUsed: response.usage?.total_tokens,
         model: this.model 
       });
-      
+
       return result;
     } catch (error) {
-      const duration = Date.now() - startTime;
-      logger.error('OpenAI API call failed', { 
-        duration,
-        error: error.message,
-        statusCode: error.statusCode 
-      });
-      throw error;
+      logger.error('OpenAI API Error', { error: error.message });
+      const statusCode = error.status || 500;
+      const appError = new AppError(error.message || 'OpenAI API Error', statusCode);
+      appError.errorData = error;
+      throw appError;
     }
   }
 
