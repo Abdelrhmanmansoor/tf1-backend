@@ -5,12 +5,14 @@
 
 /**
  * Sanitize user input to prevent NoSQL injection
- * Removes any MongoDB operators from user input
+ * Removes MongoDB operators from object keys, but preserves string content
+ * This is safer than removing $, {, } from strings which may be legitimate content
  */
 const sanitizeMongoInput = input => {
   if (typeof input === 'string') {
-    // Remove potential MongoDB operators and regex special characters
-    return input.replace(/[${}]/g, '');
+    // Don't modify string content - only sanitize when used in queries
+    // The actual sanitization happens in sanitizeSearchQuery for regex queries
+    return input;
   }
 
   if (typeof input === 'object' && input !== null) {
@@ -20,10 +22,11 @@ const sanitizeMongoInput = input => {
 
     const sanitized = {};
     for (const key in input) {
-      // Skip keys that start with $ (MongoDB operators)
+      // Skip keys that start with $ (MongoDB operators) - this is the real security issue
       if (key.startsWith('$')) {
         continue;
       }
+      // Recursively sanitize nested objects
       sanitized[key] = sanitizeMongoInput(input[key]);
     }
     return sanitized;

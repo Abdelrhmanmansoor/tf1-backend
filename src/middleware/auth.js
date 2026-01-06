@@ -1,11 +1,16 @@
 const jwtService = require('../utils/jwt');
 const User = require('../modules/shared/models/User');
+const logger = require('../utils/logger');
 
 const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
+      logger.warn('Authentication failed: No token provided', {
+        ip: req.ip,
+        path: req.path,
+      });
       return res.status(401).json({
         success: false,
         message: 'Access denied. No token provided.',
@@ -18,6 +23,11 @@ const authenticate = async (req, res, next) => {
 
     const user = await User.findById(decoded.userId).select('-password');
     if (!user) {
+      logger.warn('Authentication failed: User not found', {
+        userId: decoded.userId,
+        ip: req.ip,
+        path: req.path,
+      });
       return res.status(401).json({
         success: false,
         message: 'Invalid token. User not found.',
@@ -29,13 +39,30 @@ const authenticate = async (req, res, next) => {
     req.token = token;
     next();
   } catch (error) {
-    console.error('Authentication error:', error);
+    logger.error('Authentication error', {
+      error: error.message,
+      stack: error.stack,
+      ip: req.ip,
+      path: req.path,
+    });
 
-    if (error.message.includes('expired')) {
+    if (error.message.includes('expired') || error.message.includes('Token has expired')) {
       return res.status(401).json({
         success: false,
         message: 'Token has expired. Please log in again.',
         code: 'TOKEN_EXPIRED',
+      });
+    }
+
+    if (error.message.includes('environment variable')) {
+      logger.error('JWT secrets not configured', {
+        ip: req.ip,
+        path: req.path,
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Server configuration error. Please contact support.',
+        code: 'SERVER_ERROR',
       });
     }
 

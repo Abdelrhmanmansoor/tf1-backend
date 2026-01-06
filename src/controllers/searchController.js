@@ -7,6 +7,7 @@ const Job = require('../modules/club/models/Job');
 const SearchHistory = require('../models/SearchHistory');
 const SavedSearch = require('../models/SavedSearch');
 const { sanitizeSearchQuery } = require('../utils/sanitize');
+const logger = require('../utils/logger');
 
 // Helper function to save search history
 const saveSearchHistory = async (
@@ -27,7 +28,12 @@ const saveSearchHistory = async (
       });
     }
   } catch (error) {
-    console.error('Error saving search history:', error);
+    logger.error('Error saving search history', {
+      error: error.message,
+      userId,
+      searchQuery,
+      searchType,
+    });
   }
 };
 

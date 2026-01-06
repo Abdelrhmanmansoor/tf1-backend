@@ -47,9 +47,15 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
   'http://localhost:3000',
 ];
 
-// In development, allow Replit domains dynamically
-if (NODE_ENV === 'development' || process.env.REPLIT_DEV_DOMAIN) {
-  allowedOrigins.push('*');
+// In development, allow additional origins but NOT wildcard
+if (NODE_ENV === 'development') {
+  // Add common development origins
+  allowedOrigins.push('http://localhost:5000');
+  allowedOrigins.push('http://localhost:5173');
+  allowedOrigins.push('http://127.0.0.1:3000');
+  allowedOrigins.push('http://127.0.0.1:5000');
+  
+  // Add Replit domain if specified
   if (process.env.REPLIT_DEV_DOMAIN) {
     allowedOrigins.push(`https://${process.env.REPLIT_DEV_DOMAIN}`);
   }
@@ -120,10 +126,19 @@ app.use(
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      // Allow requests with no origin (like mobile apps, Postman, etc.) in development only
+      if (!origin) {
+        if (NODE_ENV === 'development') {
+          return callback(null, true);
+        }
+        return callback(new Error('Origin is required in production'));
+      }
+      
+      // Check if origin is in allowed list
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        logger.warn(`CORS blocked request from origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));
       }
     },

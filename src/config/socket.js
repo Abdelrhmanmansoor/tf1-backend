@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../modules/shared/models/User');
+const logger = require('../utils/logger');
 
 // Store online users
 const onlineUsers = new Map(); // userId -> socketId
@@ -13,20 +14,61 @@ module.exports = io => {
         socket.handshake.headers.authorization?.split(' ')[1];
 
       if (!token) {
+        logger.warn('Socket.io authentication failed: Token not provided', {
+          ip: socket.handshake.address,
+        });
         return next(new Error('Authentication error: Token not provided'));
       }
 
+      // Validate JWT secret is set
+      if (!process.env.JWT_ACCESS_SECRET) {
+        logger.error('JWT_ACCESS_SECRET is not configured');
+        return next(new Error('Authentication error: Server configuration error'));
+      }
+
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+      let decoded;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+      } catch (jwtError) {
+        if (jwtError.name === 'TokenExpiredError') {
+          logger.warn('Socket.io authentication failed: Token expired', {
+            ip: socket.handshake.address,
+          });
+          return next(new Error('Authentication error: Token expired'));
+        }
+        if (jwtError.name === 'JsonWebTokenError') {
+          logger.warn('Socket.io authentication failed: Invalid token', {
+            ip: socket.handshake.address,
+          });
+          return next(new Error('Authentication error: Invalid token'));
+        }
+        throw jwtError;
+      }
+
+      if (!decoded || !decoded.userId) {
+        logger.warn('Socket.io authentication failed: Invalid token payload', {
+          ip: socket.handshake.address,
+        });
+        return next(new Error('Authentication error: Invalid token payload'));
+      }
 
       // Get user - use userId from the JWT payload
       const user = await User.findById(decoded.userId).select('-password');
 
       if (!user) {
+        logger.warn('Socket.io authentication failed: User not found', {
+          userId: decoded.userId,
+          ip: socket.handshake.address,
+        });
         return next(new Error('Authentication error: User not found'));
       }
 
       if (!user.isVerified) {
+        logger.warn('Socket.io authentication failed: Email not verified', {
+          userId: user._id,
+          ip: socket.handshake.address,
+        });
         return next(new Error('Authentication error: Email not verified'));
       }
 
@@ -34,14 +76,24 @@ module.exports = io => {
       socket.user = user;
       next();
     } catch (error) {
-      next(new Error('Authentication error: Invalid token'));
+      logger.error('Socket.io authentication error', {
+        error: error.message,
+        stack: error.stack,
+        ip: socket.handshake.address,
+      });
+      next(new Error('Authentication error: Internal server error'));
     }
   });
 
   io.on('connection', socket => {
     const userId = socket.user._id.toString();
 
-    console.log(`✅ User connected: ${socket.user.firstName} (${userId})`);
+    logger.info(`User connected via Socket.io`, {
+      userId,
+      firstName: socket.user.firstName,
+      lastName: socket.user.lastName,
+      role: socket.user.role,
+    });
 
     // Join user to their personal room
     socket.join(userId);
@@ -82,7 +134,11 @@ module.exports = io => {
           });
         }
       } catch (error) {
-        console.error('Error in typing_start:', error);
+        logger.error('Error in typing_start event', {
+          error: error.message,
+          userId,
+          conversationId,
+        });
       }
     });
 
@@ -106,7 +162,11 @@ module.exports = io => {
           });
         }
       } catch (error) {
-        console.error('Error in typing_stop:', error);
+        logger.error('Error in typing_stop event', {
+          error: error.message,
+          userId,
+          conversationId,
+        });
       }
     });
 
@@ -137,7 +197,10 @@ module.exports = io => {
 
         if (conversation) {
           socket.join(`conversation_${conversationId}`);
-          console.log(`User ${userId} joined conversation ${conversationId}`);
+          logger.debug(`User joined conversation`, {
+            userId,
+            conversationId,
+          });
 
           // Notify others in conversation
           socket
@@ -149,13 +212,20 @@ module.exports = io => {
             });
         }
       } catch (error) {
-        console.error('Error joining conversation:', error);
+        logger.error('Error joining conversation', {
+          error: error.message,
+          userId,
+          conversationId,
+        });
       }
     });
 
     socket.on('leave_conversation', ({ conversationId }) => {
       socket.leave(`conversation_${conversationId}`);
-      console.log(`User ${userId} left conversation ${conversationId}`);
+      logger.debug(`User left conversation`, {
+        userId,
+        conversationId,
+      });
 
       // Notify others
       socket
@@ -219,12 +289,18 @@ module.exports = io => {
 
     socket.on('subscribe_job_events', () => {
       socket.join('job_events_channel');
-      console.log(`👤 ${socket.user.firstName} subscribed to job events`);
+      logger.debug('User subscribed to job events', {
+        userId,
+        firstName: socket.user.firstName,
+      });
     });
 
     socket.on('unsubscribe_job_events', () => {
       socket.leave('job_events_channel');
-      console.log(`👤 ${socket.user.firstName} unsubscribed from job events`);
+      logger.debug('User unsubscribed from job events', {
+        userId,
+        firstName: socket.user.firstName,
+      });
     });
 
     // ===================================
@@ -232,7 +308,11 @@ module.exports = io => {
     // ===================================
 
     socket.on('disconnect', () => {
-      console.log(`❌ User disconnected: ${socket.user.firstName} (${userId})`);
+      logger.info('User disconnected from Socket.io', {
+        userId,
+        firstName: socket.user?.firstName,
+        lastName: socket.user?.lastName,
+      });
 
       // Remove from online users
       onlineUsers.delete(userId);
@@ -246,7 +326,12 @@ module.exports = io => {
       // Update user's last seen
       User.findByIdAndUpdate(userId, {
         lastSeen: new Date(),
-      }).catch(err => console.error('Error updating last seen:', err));
+      }).catch(err => {
+        logger.error('Error updating last seen on disconnect', {
+          error: err.message,
+          userId,
+        });
+      });
     });
 
     // ===================================
@@ -254,7 +339,11 @@ module.exports = io => {
     // ===================================
 
     socket.on('error', error => {
-      console.error('Socket error:', error);
+      logger.error('Socket.io error', {
+        error: error.message,
+        stack: error.stack,
+        userId,
+      });
     });
   });
 
