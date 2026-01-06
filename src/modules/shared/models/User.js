@@ -40,7 +40,9 @@ const userSchema = new mongoose.Schema({
       'sports-director',
       'executive-director',
       'secretary',
-      'sports-administrator'
+      'sports-administrator',
+      'applicant',
+      'job-publisher'
     ],
     default: 'player'
   },

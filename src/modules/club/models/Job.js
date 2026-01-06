@@ -13,6 +13,11 @@ const jobSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  publishedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true
+  },
 
   // === JOB DETAILS ===
   title: {

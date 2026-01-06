@@ -11,7 +11,9 @@ const ROLES = {
   COACH: 'coach',
   CLUB: 'club',
   SPECIALIST: 'specialist',
-  TEAM: 'team'
+  TEAM: 'team',
+  APPLICANT: 'applicant',
+  JOB_PUBLISHER: 'job-publisher'
 };
 
 const PERMISSIONS = {
@@ -55,6 +57,14 @@ const PERMISSIONS = {
   MANAGE_STRATEGY: 'manage_strategy', // KPIs, Initiatives
   MANAGE_PARTNERSHIPS: 'manage_partnerships',
   VIEW_FINANCIALS: 'view_financials',
+
+  // Job Management
+  VIEW_JOBS: 'view_jobs',
+  APPLY_TO_JOBS: 'apply_to_jobs',
+  MANAGE_JOB_APPLICATIONS: 'manage_job_applications',
+  PUBLISH_JOBS: 'publish_jobs',
+  MANAGE_OWN_JOBS: 'manage_own_jobs',
+  VIEW_JOB_APPLICATIONS: 'view_job_applications',
 };
 
 const ROLE_PERMISSIONS = {
@@ -117,6 +127,19 @@ const ROLE_PERMISSIONS = {
   [ROLES.SPORTS_ADMINISTRATOR]: [
     PERMISSIONS.MANAGE_PROGRAMS,
     PERMISSIONS.MANAGE_RECRUITMENT
+  ],
+
+  [ROLES.APPLICANT]: [
+    PERMISSIONS.VIEW_JOBS,
+    PERMISSIONS.APPLY_TO_JOBS,
+    PERMISSIONS.MANAGE_JOB_APPLICATIONS
+  ],
+
+  [ROLES.JOB_PUBLISHER]: [
+    PERMISSIONS.PUBLISH_JOBS,
+    PERMISSIONS.MANAGE_OWN_JOBS,
+    PERMISSIONS.VIEW_JOB_APPLICATIONS,
+    PERMISSIONS.VIEW_JOBS
   ]
 };
 

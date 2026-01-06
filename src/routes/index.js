@@ -16,6 +16,8 @@ const sportsAdminRoutes = require('./sportsAdmin');
 const teamDashboardRoutes = require('./teamDashboard');
 const clubApplicationsRoutes = require('./clubApplications');
 const ownerRoutes = require('./owner');
+const applicantRoutes = require('../modules/applicant/routes/applicantRoutes');
+const jobPublisherRoutes = require('../modules/job-publisher/routes/jobPublisherRoutes');
 
 const router = express.Router();
 
@@ -38,6 +40,10 @@ router.use('/team', teamDashboardRoutes);
 router.use('/club/applications', clubApplicationsRoutes);
 router.use('/clubs/applications', clubApplicationsRoutes); // Alias for club applications
 router.use('/applications', jobsRoutes); // For /applications/my-applications endpoint
+
+// Applicant and Job Publisher routes
+router.use('/applicant', applicantRoutes);
+router.use('/job-publisher', jobPublisherRoutes);
 
 // Platform Owner System (Isolated)
 router.use('/platform-control', ownerRoutes);

@@ -220,6 +220,16 @@ exports.checkExistingApplication = async (req, res, next) => {
  */
 exports.applyToJob = async (req, res) => {
   try {
+    // Check if user has applicant role
+    if (req.user.role !== 'applicant') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only applicants can apply to jobs',
+        code: 'INSUFFICIENT_ROLE',
+        requiredRole: 'applicant'
+      });
+    }
+
     const { id: jobId } = req.params;
     const applicantId = req.user._id;
     const { 
