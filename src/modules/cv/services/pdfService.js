@@ -14,14 +14,8 @@ const logger = require('../../../utils/logger');
  */
 class PDFService {
   constructor() {
-    this.templates = {
-      standard: this.generateStandardTemplate.bind(this),
-      modern: this.generateModernTemplate.bind(this),
-      classic: this.generateClassicTemplate.bind(this),
-      creative: this.generateCreativeTemplate.bind(this),
-      minimal: this.generateMinimalTemplate.bind(this),
-      executive: this.generateExecutiveTemplate.bind(this)
-    };
+    // Templates are now loaded from separate files
+    this.availableTemplates = ['standard', 'modern', 'classic', 'creative', 'minimal', 'executive'];
   }
 
   /**
@@ -132,18 +126,24 @@ class PDFService {
 
     // Load template from separate files
     try {
-      const templatePath = require.resolve(`../templates/${template}Template.js`);
-      const templateGenerator = require(templatePath);
-      return templateGenerator(data);
+      const templateName = template.charAt(0).toUpperCase() + template.slice(1) + 'Template';
+      const templateModule = require(`../templates/${template}Template.js`);
+      return templateModule(data);
     } catch (error) {
       logger.warn(`Template ${template} not found, using standard template`, { error: error.message });
-      const standardTemplate = require('../templates/standardTemplate.js');
-      return standardTemplate(data);
+      try {
+        const standardTemplate = require('../templates/standardTemplate.js');
+        return standardTemplate(data);
+      } catch (fallbackError) {
+        // Ultimate fallback - use inline template
+        return this.generateStandardTemplate(data);
+      }
     }
   }
 
   /**
    * Standard Template - Clean and professional
+   * @deprecated Use template files instead
    */
   generateStandardTemplate(data) {
     const isRTL = data.language === 'ar';

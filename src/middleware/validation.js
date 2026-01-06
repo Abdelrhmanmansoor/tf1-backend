@@ -116,8 +116,9 @@ const validateRegister = [
 
   // Optional fields
   body('phone')
-    .optional()
-    .isMobilePhone()
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .matches(/^\+?[0-9\s\-]{7,15}$/)
     .withMessage('Please provide a valid phone number'),
 
   body('location')
