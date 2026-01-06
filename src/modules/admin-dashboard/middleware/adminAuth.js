@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const AdminKey = require('../models/AdminKey');
 const AdminLog = require('../models/AdminLog');
-const { createError } = require('../../shared/utils/apiError');
 
 // Extract client IP
 const getClientIP = (req) => {

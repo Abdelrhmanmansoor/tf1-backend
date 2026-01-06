@@ -28,6 +28,7 @@ const teamDashboardRoutes = require('./src/routes/teamDashboard');
 const administrativeOfficerRoutes = require('./src/routes/administrativeOfficer');
 const siteSettingsRoutes = require('./src/routes/siteSettings');
 const locationsRoutes = require('./src/routes/locations');
+const adminDashboardRoutes = require('./src/modules/admin-dashboard/routes');
 const { seedRegions } = require('./src/utils/seedLocations');
 const { createSearchIndexes } = require('./src/config/searchIndexes');
 const configureSocket = require('./src/config/socket');
@@ -315,6 +316,10 @@ app.use(
 
 // Site Settings (Leader Control Panel)
 app.use(`/api/${API_VERSION}/settings`, siteSettingsRoutes);
+
+// ==================== ADMIN DASHBOARD SECURE PANEL ====================
+// 🔐 System Admin Dashboard - Requires Admin Key
+app.use('/sys-admin-secure-panel/api', adminDashboardRoutes);
 
 // ==================== SPA FALLBACK ====================
 // Serve React index.html for any route not handled by API
