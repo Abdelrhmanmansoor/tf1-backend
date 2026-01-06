@@ -1,7 +1,7 @@
 const Job = require('../../club/models/Job');
 const JobApplication = require('../../club/models/JobApplication');
 const User = require('../../shared/models/User');
-const { catchAsync } = require('../../../utils/catchAsync');
+const catchAsync = require('../../../utils/catchAsync');
 const AppError = require('../../../utils/appError');
 const logger = require('../../../utils/logger');
 
