@@ -4,7 +4,6 @@ const teamSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true,
     trim: true
   },
   logo_url: {
@@ -34,7 +33,7 @@ const teamSchema = new mongoose.Schema({
 });
 
 // Index for performance
-teamSchema.index({ name: 1 });
+teamSchema.index({ name: 1 }, { unique: true }); // Unique index on name
 teamSchema.index({ captain_id: 1 });
 teamSchema.index({ created_by: 1 });
 

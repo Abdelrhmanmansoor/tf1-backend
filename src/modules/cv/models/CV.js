@@ -303,7 +303,6 @@ const cvSchema = new mongoose.Schema({
   },
   sessionId: { 
     type: String,
-    index: true,
     sparse: true
   },
   

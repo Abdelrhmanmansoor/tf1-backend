@@ -5,8 +5,7 @@ const coachEarningsSchema = new mongoose.Schema({
   coachId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
   },
 
   // Link to session (if applicable)
@@ -59,8 +58,7 @@ const coachEarningsSchema = new mongoose.Schema({
   paymentStatus: {
     type: String,
     enum: ['pending', 'completed', 'failed', 'refunded'],
-    default: 'completed',
-    index: true
+    default: 'completed'
   },
   paidAt: {
     type: Date
@@ -88,12 +86,10 @@ const coachEarningsSchema = new mongoose.Schema({
   month: {
     type: Number,
     min: 1,
-    max: 12,
-    index: true
+    max: 12
   },
   year: {
-    type: Number,
-    index: true
+    type: Number
   },
 
   // Status
@@ -111,6 +107,7 @@ coachEarningsSchema.index({ coachId: 1, year: 1, month: 1 });
 coachEarningsSchema.index({ coachId: 1, paymentStatus: 1 });
 coachEarningsSchema.index({ coachId: 1, createdAt: -1 });
 coachEarningsSchema.index({ sessionId: 1 });
+coachEarningsSchema.index({ studentId: 1 }); // Single field index for studentId
 
 // Pre-save middleware to calculate month/year and netAmount
 coachEarningsSchema.pre('save', function(next) {
