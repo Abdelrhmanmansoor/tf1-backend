@@ -39,8 +39,17 @@ const validateRegister = [
   body('email')
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail()
-    .trim(),
+    .normalizeEmail({ gmail_remove_dots: false }) // Don't remove dots from Gmail addresses
+    .trim()
+    .custom((value) => {
+      // Additional validation to ensure email format is correct
+      // This supports + sign and other valid email characters
+      const emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+      if (!emailRegex.test(value)) {
+        throw new Error('Please provide a valid email address');
+      }
+      return true;
+    }),
 
   body('registrationCode')
     .if((value, { req }) =>
