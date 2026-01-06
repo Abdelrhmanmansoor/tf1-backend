@@ -262,6 +262,10 @@ app.get('/health', (req, res) => {
 });
 
 // ==================== STATIC FILES ====================
+// Serve React Frontend (Vite build)
+app.use(express.static('frontend/app/dist'));
+
+// Legacy static files
 app.use(express.static('src/public'));
 
 // Admin Dashboard Page - Multiple routes for accessibility
@@ -311,6 +315,17 @@ app.use(
 
 // Site Settings (Leader Control Panel)
 app.use(`/api/${API_VERSION}/settings`, siteSettingsRoutes);
+
+// ==================== SPA FALLBACK ====================
+// Serve React index.html for any route not handled by API
+app.use((req, res, next) => {
+  // Skip API routes
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  // Serve React index.html for all other routes (SPA fallback)
+  res.sendFile(`${__dirname}/frontend/app/dist/index.html`);
+});
 
 // ==================== ERROR HANDLING ====================
 app.use((err, req, res, next) => {
