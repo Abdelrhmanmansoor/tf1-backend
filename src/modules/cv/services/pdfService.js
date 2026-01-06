@@ -130,8 +130,16 @@ class PDFService {
       throw new Error('Invalid CV data: Personal Info is missing');
     }
 
-    const templateGenerator = this.templates[template] || this.templates.standard;
-    return templateGenerator(data);
+    // Load template from separate files
+    try {
+      const templatePath = require.resolve(`../templates/${template}Template.js`);
+      const templateGenerator = require(templatePath);
+      return templateGenerator(data);
+    } catch (error) {
+      logger.warn(`Template ${template} not found, using standard template`, { error: error.message });
+      const standardTemplate = require('../templates/standardTemplate.js');
+      return standardTemplate(data);
+    }
   }
 
   /**

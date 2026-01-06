@@ -486,35 +486,60 @@ exports.aiGenerate = catchAsync(async (req, res, next) => {
         if (!data) {
           return next(new AppError('Profile data is required for summary generation', 400));
         }
-        result = await aiService.generateSummary(data, language);
+        result = await aiService.generateText(data, 
+          language === 'ar' 
+            ? 'أنت خبير في كتابة السير الذاتية الاحترافية. قم بكتابة ملخص مهني احترافي ومقنع (2-4 جمل) بناءً على البيانات المقدمة.'
+            : 'You are a professional resume writer expert. Write a compelling professional summary (2-4 sentences) based on the provided data.',
+          'summary'
+        );
         break;
         
       case 'description':
         if (!data || typeof data !== 'string') {
           return next(new AppError('Description text is required', 400));
         }
-        result = await aiService.improveDescription(data, language);
+        result = await aiService.generateText(data,
+          language === 'ar'
+            ? 'أنت خبير في تحسين أوصاف الوظائف. قم بتحسين الوصف التالي ليكون احترافي ومناسب لأنظمة ATS.'
+            : 'You are an expert in improving job descriptions. Improve the following description to be professional and ATS-friendly.',
+          'description'
+        );
         break;
         
       case 'skills':
         if (!data || typeof data !== 'string') {
           return next(new AppError('Job title is required', 400));
         }
-        result = await aiService.suggestSkills(data, language);
+        result = await aiService.generateText(data,
+          language === 'ar'
+            ? `اقترح قائمة من 10-15 مهارة مهمة للمسمى الوظيفي "${data}".`
+            : `Suggest a list of 10-15 important skills for the job title "${data}".`,
+          'skills'
+        );
         break;
         
       case 'coverLetter':
         if (!data || !data.jobDescription || !data.candidateProfile) {
           return next(new AppError('Job description and candidate profile are required', 400));
         }
-        result = await aiService.generateCoverLetter(data, language);
+        result = await aiService.generateText(data,
+          language === 'ar'
+            ? 'أنت خبير في كتابة خطابات التقديم الاحترافية. اكتب خطاب تقديم مقنع ومخصص للوظيفة والشركة.'
+            : 'You are an expert in writing professional cover letters. Write a compelling and customized cover letter.',
+          'coverLetter'
+        );
         break;
         
       case 'optimizeATS':
         if (!data || !data.cvData) {
           return next(new AppError('CV data is required for ATS optimization', 400));
         }
-        result = await aiService.optimizeForATS(data.cvData, language);
+        result = await aiService.generateText(data.cvData,
+          language === 'ar'
+            ? 'أنت خبير في تحسين السير الذاتية لأنظمة ATS. حلل السيرة الذاتية التالية وقدم اقتراحات محددة لتحسينها.'
+            : 'You are an expert in optimizing resumes for ATS systems. Analyze the following resume and provide specific suggestions.',
+          'optimizeATS'
+        );
         break;
         
       default:
