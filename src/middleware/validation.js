@@ -5,18 +5,27 @@ const handleValidationErrors = (req, res, next) => {
 
   console.log('📝 Validation check for:', req.path);
   console.log('📝 Request body:', JSON.stringify(req.body, null, 2));
+  console.log('📝 Role:', req.body.role);
 
   if (!errors.isEmpty()) {
     const errorMessages = errors.array().map(error => ({
-      field: error.path,
+      field: error.path || error.param,
       message: error.msg,
+      value: error.value
     }));
 
     console.log('❌ Validation errors:', JSON.stringify(errorMessages, null, 2));
 
+    // Provide more detailed error message
+    const firstError = errorMessages[0];
+    const detailedMessage = firstError 
+      ? `${firstError.field}: ${firstError.message}`
+      : 'Validation failed. Please check your input.';
+
     return res.status(400).json({
       success: false,
-      message: 'Validation failed',
+      message: detailedMessage,
+      messageAr: firstError?.message || 'فشل التحقق من البيانات. يرجى التحقق من المدخلات.',
       errors: errorMessages,
       code: 'VALIDATION_ERROR',
     });
