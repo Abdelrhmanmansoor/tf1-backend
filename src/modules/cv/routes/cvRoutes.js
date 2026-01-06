@@ -61,15 +61,17 @@ const router = express.Router();
 
 // Public routes (no auth required for guest users)
 router.post('/', cvController.createOrUpdateCV);
-router.get('/:id', cvController.getCV);
-router.get('/:id/pdf', cvController.generatePDF);
 router.post('/generate-pdf', cvController.generatePDF);
 
-// Authenticated routes
+// Authenticated routes (must be before /:id routes)
 router.get('/', auth.authenticate, cvController.listCVs);
+router.get('/stats/summary', auth.authenticate, cvController.getCVStats);
+
+// Public routes with ID (can be accessed by owner or if public)
+router.get('/:id', cvController.getCV);
+router.get('/:id/pdf', cvController.generatePDF);
 router.delete('/:id', auth.authenticate, cvController.deleteCV);
 router.post('/:id/duplicate', auth.optionalAuth, cvController.duplicateCV);
-router.get('/stats/summary', auth.authenticate, cvController.getCVStats);
 
 // File upload/download
 router.post(
