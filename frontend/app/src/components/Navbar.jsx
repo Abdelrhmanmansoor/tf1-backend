@@ -25,13 +25,13 @@ const Navbar = () => {
           <Link to="/matches" className="nav-link match-btn">
             🎯 انضم لمباراة
           </Link>
-          <Link to="/jobs" className="nav-link">
-            💼 الوظائف
+          <Link to="/jobs" className="nav-link jobs-btn">
+            💼 ابحث عن وظيفة
           </Link>
           {user ? (
             <>
               <Link to="/profile" className="nav-link">
-                👤 ملفي الشخصي
+                👤 الملف الشخصي
               </Link>
               {['age-group-supervisor', 'admin', 'administrator'].includes(user.role) && (
                 <Link to="/age-group-supervisor" className="nav-link">
@@ -50,17 +50,17 @@ const Navbar = () => {
               )}
               {['admin', 'administrator'].includes(user.role) && (
                 <Link to="/admin-dashboard" className="nav-link admin-dashboard-link">
-                  ⚙️ Admin
+                  ⚙️ إدارة النظام
                 </Link>
               )}
               <NotificationBell />
               <button onClick={handleLogout} className="logout-btn">
-                خروج
+                تسجيل خروج
               </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="nav-link">
+              <Link to="/login" className="nav-link login-btn">
                 دخول
               </Link>
               <Link to="/register" className="nav-link register-btn">
