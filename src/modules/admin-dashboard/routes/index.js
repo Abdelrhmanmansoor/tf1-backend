@@ -10,6 +10,10 @@ const dashboardController = require('../controllers/dashboardController');
 const comprehensiveStatsController = require('../controllers/comprehensiveStatsController');
 const usersController = require('../controllers/usersController');
 const settingsController = require('../controllers/settingsController');
+const siteContentController = require('../controllers/siteContentController');
+
+// Import security middleware
+const security = require('../middleware/security');
 
 // Mock controller response helper
 const mockResponse = (req, res, endpoint) => {
@@ -20,6 +24,12 @@ const mockResponse = (req, res, endpoint) => {
     note: 'Using mock data - MongoDB not connected'
   });
 };
+
+// Apply security middleware to all routes
+router.use(security.securityHeaders);
+router.use(security.validateInput);
+router.use(security.checkIPWhitelist);
+router.use(security.apiLimiter);
 
 // Apply authentication middleware to all routes
 router.use(authenticateAdminKey);
@@ -310,6 +320,34 @@ router.get(
   '/backups/:backupName/download',
   checkPermission('manage_backups'),
   settingsController.downloadBackup
+);
+
+// ==================== SITE CONTENT MANAGEMENT ROUTES ====================
+router.get(
+  '/site-content',
+  checkPermission('manage_system_settings'),
+  siteContentController.getSiteContent
+);
+
+router.put(
+  '/site-content',
+  checkPermission('manage_system_settings'),
+  security.strictLimiter,
+  siteContentController.updateSiteContent
+);
+
+router.delete(
+  '/site-content/:id',
+  checkPermission('manage_system_settings'),
+  security.strictLimiter,
+  siteContentController.deleteSiteContent
+);
+
+router.post(
+  '/site-content/bulk-update',
+  checkPermission('manage_system_settings'),
+  security.strictLimiter,
+  siteContentController.bulkUpdateSiteContent
 );
 
 module.exports = router;

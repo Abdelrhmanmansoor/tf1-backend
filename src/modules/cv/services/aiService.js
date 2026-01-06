@@ -1,5 +1,6 @@
 const AppError = require('../../../utils/appError');
 const logger = require('../../../utils/logger');
+const OpenAI = require('openai');
 
 /**
  * Professional AI Service for CV/Resume Enhancement
@@ -23,6 +24,12 @@ class AIService {
     
     // Validate configuration on initialization
     this._validateConfig();
+    if (this.apiKey) {
+      this.openai = new OpenAI({
+        apiKey: this.apiKey,
+        timeout: this.timeout
+      });
+    }
   }
 
   /**
