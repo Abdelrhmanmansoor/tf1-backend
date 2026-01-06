@@ -44,6 +44,14 @@ class AIService {
   /**
    * Intelligent Rule-Based Fallback System
    * This provides professional CV content when AI API is unavailable
+   * Made public for controller access
+   */
+  generateIntelligentFallback(systemInstruction = '', prompt = '', type = '') {
+    return this._generateIntelligentFallback(systemInstruction, prompt, type);
+  }
+
+  /**
+   * Private fallback implementation
    */
   _generateIntelligentFallback(systemInstruction = '', prompt = '', type = '') {
     logger.info('Using intelligent rule-based fallback system');

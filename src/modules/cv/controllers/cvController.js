@@ -564,7 +564,15 @@ exports.aiGenerate = catchAsync(async (req, res, next) => {
     // Enhanced error handling with fallback
     if (process.env.AI_ENABLE_FALLBACK !== 'false') {
       // Use intelligent fallback
-      const fallbackResult = aiService._generateIntelligentFallback('', data, type);
+      let fallbackResult;
+      try {
+        fallbackResult = aiService.generateIntelligentFallback('', data, type);
+      } catch (fallbackError) {
+        logger.error('Fallback generation failed', { error: fallbackError.message, type });
+        fallbackResult = language === 'ar' 
+          ? 'يرجى تكوين AI_API_KEY في ملف .env لاستخدام ميزات الذكاء الاصطناعي الكاملة.'
+          : 'Please configure AI_API_KEY in .env file to use full AI features.';
+      }
       
       logger.info('Using fallback response', { type, userId });
       
