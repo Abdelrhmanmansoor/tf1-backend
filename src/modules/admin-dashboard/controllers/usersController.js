@@ -309,9 +309,9 @@ exports.getUserStatistics = async (req, res) => {
 };
 
 module.exports = {
-  getUsers,
-  getUserDetails,
-  updateUser,
-  deactivateUser,
-  getUserStatistics,
+  getUsers: exports.getUsers,
+  getUserDetails: exports.getUserDetails,
+  updateUser: exports.updateUser,
+  deactivateUser: exports.deactivateUser,
+  getUserStatistics: exports.getUserStatistics,
 };

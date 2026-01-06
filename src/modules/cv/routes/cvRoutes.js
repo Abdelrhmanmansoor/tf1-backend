@@ -87,8 +87,8 @@ router.get(
   cvController.downloadCVFile
 );
 
-// AI-powered features with rate limiting
-router.post('/ai/generate', aiRateLimiter, cvController.aiGenerate);
+// AI-powered features with rate limiting - Optional auth for guest users
+router.post('/ai/generate', auth.optionalAuth, aiRateLimiter, cvController.aiGenerate);
 router.get('/ai/status', cvController.getAIStatus);
 
 module.exports = router;

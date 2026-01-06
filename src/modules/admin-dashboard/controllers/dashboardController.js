@@ -467,10 +467,10 @@ function convertLogsToCSV(logs) {
 }
 
 module.exports = {
-  getDashboardOverview,
-  getActivityLogs,
-  exportLogs,
-  getAdminKeys,
-  createAdminKey,
-  revokeAdminKey,
+  getDashboardOverview: exports.getDashboardOverview,
+  getActivityLogs: exports.getActivityLogs,
+  exportLogs: exports.exportLogs,
+  getAdminKeys: exports.getAdminKeys,
+  createAdminKey: exports.createAdminKey,
+  revokeAdminKey: exports.revokeAdminKey,
 };

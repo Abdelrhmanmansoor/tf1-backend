@@ -307,9 +307,9 @@ exports.bulkUpdateSiteContent = async (req, res) => {
 };
 
 module.exports = {
-  getSiteContent,
-  updateSiteContent,
-  deleteSiteContent,
-  bulkUpdateSiteContent,
+  getSiteContent: exports.getSiteContent,
+  updateSiteContent: exports.updateSiteContent,
+  deleteSiteContent: exports.deleteSiteContent,
+  bulkUpdateSiteContent: exports.bulkUpdateSiteContent,
 };
 

@@ -446,11 +446,11 @@ function getDiskSpace() {
 }
 
 module.exports = {
-  getSystemSettings,
-  updateSystemSettings,
-  getBackups,
-  createBackup,
-  deleteBackup,
-  downloadBackup,
-  getSystemHealth,
+  getSystemSettings: exports.getSystemSettings,
+  updateSystemSettings: exports.updateSystemSettings,
+  getBackups: exports.getBackups,
+  createBackup: exports.createBackup,
+  deleteBackup: exports.deleteBackup,
+  downloadBackup: exports.downloadBackup,
+  getSystemHealth: exports.getSystemHealth,
 };

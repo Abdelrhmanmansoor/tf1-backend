@@ -431,10 +431,10 @@ function getFileType(mimeType) {
 }
 
 module.exports = {
-  getMedia,
-  uploadMedia,
-  deleteMedia,
-  getMediaDetails,
-  bulkDeleteMedia,
-  getStorageStats,
+  getMedia: exports.getMedia,
+  uploadMedia: exports.uploadMedia,
+  deleteMedia: exports.deleteMedia,
+  getMediaDetails: exports.getMediaDetails,
+  bulkDeleteMedia: exports.bulkDeleteMedia,
+  getStorageStats: exports.getStorageStats,
 };

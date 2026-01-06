@@ -462,11 +462,11 @@ exports.bulkDeletePosts = async (req, res) => {
 };
 
 module.exports = {
-  getPosts,
-  getPost,
-  createPost,
-  updatePost,
-  deletePost,
-  togglePostStatus,
-  bulkDeletePosts,
+  getPosts: exports.getPosts,
+  getPost: exports.getPost,
+  createPost: exports.createPost,
+  updatePost: exports.updatePost,
+  deletePost: exports.deletePost,
+  togglePostStatus: exports.togglePostStatus,
+  bulkDeletePosts: exports.bulkDeletePosts,
 };

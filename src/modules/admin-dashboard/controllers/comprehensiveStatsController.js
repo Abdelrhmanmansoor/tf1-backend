@@ -342,6 +342,6 @@ function formatUptime(seconds) {
 }
 
 module.exports = {
-  getComprehensiveStats,
+  getComprehensiveStats: exports.getComprehensiveStats,
 };
 
