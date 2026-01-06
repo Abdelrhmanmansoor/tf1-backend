@@ -135,7 +135,7 @@ app.use(
       }
       
       // Check if origin is in allowed list
-      if (allowedOrigins.includes(origin)) {
+      if (allowedOrigins.includes(origin) || NODE_ENV === 'development') {
         callback(null, true);
       } else {
         logger.warn(`CORS blocked request from origin: ${origin}`);
