@@ -501,15 +501,23 @@ class AuthController {
 
       // Find user with this verification token
       // Try exact match first
+      console.log(`🔍 [EMAIL VERIFICATION] Searching for user with token: ${token?.substring(0, 20)}...`);
+      
       let user = await User.findOne({
         emailVerificationToken: token
       });
 
-      // If not found, try case-insensitive search (some email clients may modify URLs)
-      if (!user) {
+      if (user) {
+        console.log(`✅ [EMAIL VERIFICATION] User found with exact token match: ${user.email} (role: ${user.role})`);
+      } else {
+        console.log(`⚠️ [EMAIL VERIFICATION] No exact match found, trying case-insensitive search...`);
+        
+        // If not found, try case-insensitive search (some email clients may modify URLs)
         const allUsers = await User.find({
           emailVerificationToken: { $exists: true, $ne: null }
         }).select('email emailVerificationToken emailVerificationTokenExpires isVerified role');
+        
+        console.log(`📝 [EMAIL VERIFICATION] Found ${allUsers.length} users with verification tokens`);
         
         // Try to find user with token that matches (case-insensitive or URL-encoded)
         user = allUsers.find(u => {
@@ -529,8 +537,27 @@ class AuthController {
         });
         
         if (user) {
+          const foundUserId = user._id;
+          console.log(`✅ [EMAIL VERIFICATION] User found with case-insensitive match: ${user.email} (role: ${user.role})`);
           // Found user, but need to fetch full document
-          user = await User.findById(user._id);
+          user = await User.findById(foundUserId);
+          if (!user) {
+            console.error(`❌ [EMAIL VERIFICATION] Failed to fetch full user document for ID: ${foundUserId}`);
+          } else {
+            console.log(`✅ [EMAIL VERIFICATION] Full user document fetched successfully`);
+          }
+        } else {
+          console.log(`❌ [EMAIL VERIFICATION] No user found with matching token (case-insensitive search also failed)`);
+          // Log first few tokens for debugging (without exposing full tokens)
+          if (allUsers.length > 0) {
+            console.log(`📝 [DEBUG] Sample tokens in database (first 20 chars):`, 
+              allUsers.slice(0, 5).map(u => ({
+                email: u.email,
+                role: u.role,
+                tokenPrefix: u.emailVerificationToken?.substring(0, 20) + '...'
+              }))
+            );
+          }
         }
       }
 
@@ -590,8 +617,9 @@ class AuthController {
       }
 
       // VERIFY THE USER - This is the first time verification
-      console.log(`🎉 [EMAIL VERIFICATION] Verifying user ${user.email}`);
+      console.log(`🎉 [EMAIL VERIFICATION] Verifying user ${user.email} (role: ${user.role})`);
 
+      // Mark user as verified
       user.isVerified = true;
       // CRITICAL FIX: Do NOT clear the token immediately to prevent "Failed" on refresh
       // user.clearEmailVerificationToken(); 
@@ -600,17 +628,70 @@ class AuthController {
       // But keep it in DB so we can find the user and show "Already Verified"
       user.emailVerificationTokenExpires = Date.now();
       
-      await user.save();
+      // Save user with error handling
+      try {
+        await user.save();
+        console.log(`✅ [EMAIL VERIFICATION] User ${user.email} saved successfully`);
+      } catch (saveError) {
+        console.error('❌ [EMAIL VERIFICATION] Error saving user:', saveError);
+        console.error('Save error details:', {
+          email: user.email,
+          role: user.role,
+          errorMessage: saveError.message,
+          errorStack: saveError.stack
+        });
+        throw new Error(`Failed to save user: ${saveError.message}`);
+      }
 
-      const { accessToken } = jwtService.generateTokenPair(user);
-      const userObject = user.toSafeObject(true); // Include email
+      // Generate JWT token with error handling
+      let accessToken;
+      try {
+        const tokenPair = jwtService.generateTokenPair(user);
+        accessToken = tokenPair.accessToken;
+        console.log(`✅ [EMAIL VERIFICATION] JWT token generated successfully for ${user.email}`);
+      } catch (tokenError) {
+        console.error('❌ [EMAIL VERIFICATION] Error generating JWT token:', tokenError);
+        console.error('Token error details:', {
+          email: user.email,
+          role: user.role,
+          userId: user._id,
+          errorMessage: tokenError.message
+        });
+        throw new Error(`Failed to generate access token: ${tokenError.message}`);
+      }
+
+      // Get user object with error handling
+      let userObject;
+      try {
+        userObject = user.toSafeObject(true); // Include email
+        console.log(`✅ [EMAIL VERIFICATION] User object created successfully`);
+      } catch (userObjectError) {
+        console.error('❌ [EMAIL VERIFICATION] Error creating user object:', userObjectError);
+        throw new Error(`Failed to create user object: ${userObjectError.message}`);
+      }
+
+      // Get permissions with error handling - wrap in try-catch to prevent breaking verification
+      let permissions = [];
+      try {
+        permissions = getUserPermissions(user.role);
+        console.log(`✅ [EMAIL VERIFICATION] Permissions retrieved for role ${user.role}:`, permissions);
+      } catch (permissionsError) {
+        console.error('⚠️ [EMAIL VERIFICATION] Error getting permissions (non-critical):', permissionsError);
+        console.error('Permissions error details:', {
+          role: user.role,
+          errorMessage: permissionsError.message
+        });
+        // Don't throw - just use empty permissions array
+        permissions = [];
+      }
 
       const successResponse = {
         success: true,
         message: 'Email verified successfully! Welcome to SportX Platform.',
+        messageAr: 'تم التحقق من البريد الإلكتروني بنجاح! مرحباً بك في منصة SportX.',
         user: {
           ...userObject,
-          permissions: getUserPermissions(user.role)
+          permissions: permissions
         },
         accessToken
       };
@@ -621,7 +702,7 @@ class AuthController {
         response: successResponse
       });
 
-      console.log(`✅ [EMAIL VERIFICATION] User ${user.email} verified successfully`);
+      console.log(`✅ [EMAIL VERIFICATION] User ${user.email} (role: ${user.role}) verified successfully`);
 
       return res.status(200).json(successResponse);
 
@@ -629,11 +710,19 @@ class AuthController {
       console.error('❌ [EMAIL VERIFICATION ERROR]');
       console.error('Error message:', error.message);
       console.error('Error stack:', error.stack);
+      console.error('Error details:', {
+        token: req.query.token ? req.query.token.substring(0, 10) + '...' : 'missing',
+        path: req.path,
+        method: req.method
+      });
 
+      // Return more specific error message with Arabic translation
       return res.status(500).json({
         success: false,
         message: 'Email verification failed. Please try again later.',
-        code: 'VERIFICATION_FAILED'
+        messageAr: 'فشل التحقق من البريد الإلكتروني. يرجى المحاولة مرة أخرى لاحقاً.',
+        code: 'VERIFICATION_FAILED',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
