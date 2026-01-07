@@ -284,6 +284,10 @@ class AuthController {
           id: user._id,
           email: user.email,
           name: user.name,
+          firstName: user.firstName || user.name?.split(' ')[0] || '',
+          lastName: user.lastName || user.name?.split(' ').slice(1).join(' ') || '',
+          phone: user.phone || null,
+          profilePicture: user.profilePicture || null,
           verified: user.verified,
           role: user.role,
           is_admin: user.is_admin,
@@ -304,6 +308,92 @@ class AuthController {
   // Legacy signup endpoint for backward compatibility
   async signup(req, res) {
     return this.register(req, res);
+  }
+
+  // Upload profile picture
+  async uploadProfilePicture(req, res) {
+    try {
+      const user = req.matchUser;
+      const { uploadAvatar, cleanupOldImage } = require('../../../config/cloudinary');
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No image file provided',
+          code: 'NO_FILE'
+        });
+      }
+
+      // Upload to Cloudinary
+      const result = await uploadAvatar(req.file.buffer, user._id.toString(), 'matches');
+
+      // Clean up old profile picture if exists
+      if (user.profilePicture) {
+        await cleanupOldImage(user.profilePicture);
+      }
+
+      // Update user with new profile picture
+      user.profilePicture = result.url;
+      await user.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'Profile picture uploaded successfully',
+        profilePicture: result.url
+      });
+    } catch (error) {
+      console.error('Upload profile picture error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to upload profile picture',
+        code: 'UPLOAD_FAILED',
+        error: error.message
+      });
+    }
+  }
+
+  // Update profile
+  async updateProfile(req, res) {
+    try {
+      const user = req.matchUser;
+      const { firstName, lastName, phone } = req.body;
+
+      if (firstName) user.firstName = firstName;
+      if (lastName) user.lastName = lastName;
+      if (phone !== undefined) user.phone = phone;
+
+      // Update name if firstName or lastName changed
+      if (firstName || lastName) {
+        user.name = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+      }
+
+      await user.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'Profile updated successfully',
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phone: user.phone,
+          profilePicture: user.profilePicture,
+          verified: user.verified,
+          role: user.role,
+          is_admin: user.is_admin
+        }
+      });
+    } catch (error) {
+      console.error('Update profile error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update profile',
+        code: 'UPDATE_FAILED',
+        error: error.message
+      });
+    }
   }
 
   // Resend verification email

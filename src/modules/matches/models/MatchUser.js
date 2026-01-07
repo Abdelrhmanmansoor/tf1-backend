@@ -33,6 +33,18 @@ const matchUserSchema = new mongoose.Schema({
     trim: true,
     default: null
   },
+  firstName: {
+    type: String,
+    trim: true
+  },
+  lastName: {
+    type: String,
+    trim: true
+  },
+  profilePicture: {
+    type: String,
+    default: null
+  },
   // Email verification
   emailVerificationToken: String,
   emailVerificationTokenExpires: Date,

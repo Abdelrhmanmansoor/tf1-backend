@@ -3,6 +3,18 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const { authLimiter } = require('../middleware/rateLimiter');
+const multer = require('multer');
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
 
 // Public routes with rate limiting
 router.post('/register', authLimiter, (req, res) => authController.register(req, res));
@@ -16,5 +28,7 @@ router.post('/resend-verification', authLimiter, (req, res) => authController.re
 
 // Protected routes
 router.get('/me', authenticate, (req, res) => authController.me(req, res));
+router.post('/profile/avatar', authenticate, upload.single('avatar'), (req, res) => authController.uploadProfilePicture(req, res));
+router.put('/profile', authenticate, (req, res) => authController.updateProfile(req, res));
 
 module.exports = router;
