@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const logger = require('../middleware/logger') || console;
 
 class FallbackEmailService {
   constructor() {
