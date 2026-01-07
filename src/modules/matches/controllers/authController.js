@@ -193,8 +193,8 @@ class AuthController {
         });
       }
 
-      // Find user
-      const user = await MatchUser.findOne({ email: email.toLowerCase() });
+      // Find user (explicitly select password_hash for authentication)
+      const user = await MatchUser.findOne({ email: email.toLowerCase() }).select('+password_hash');
       if (!user) {
         return res.status(401).json({
           success: false,
