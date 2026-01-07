@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const logger = require('../middleware/logger') || console;
 
 // Database migration utility to clean up old fields
 class DBMigration {
