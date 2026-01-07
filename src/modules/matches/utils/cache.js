@@ -10,25 +10,59 @@ const memoryCache = new Map();
 // Try to initialize Redis if available
 try {
   const redisClient = require('redis');
+  
+  // Build Redis URL or use socket configuration
+  const redisHost = process.env.REDIS_HOST || 'localhost';
+  const redisPort = process.env.REDIS_PORT || 6379;
+  const redisPassword = process.env.REDIS_PASSWORD;
+  const redisDb = process.env.REDIS_DB || 0;
+  
+  // Build connection URL
+  let redisUrl;
+  if (redisPassword) {
+    redisUrl = `redis://:${redisPassword}@${redisHost}:${redisPort}/${redisDb}`;
+  } else {
+    redisUrl = `redis://${redisHost}:${redisPort}/${redisDb}`;
+  }
+  
   const client = redisClient.createClient({
-    host: process.env.REDIS_HOST || 'localhost',
-    port: process.env.REDIS_PORT || 6379,
-    password: process.env.REDIS_PASSWORD || undefined,
-    db: process.env.REDIS_DB || 0
+    url: redisUrl,
+    socket: {
+      reconnectStrategy: (retries) => {
+        // Stop retrying after 3 attempts
+        if (retries > 3) {
+          logger.warn('Redis connection failed after 3 retries, falling back to in-memory cache');
+          return new Error('Max retries reached');
+        }
+        // Wait 1 second between retries
+        return 1000;
+      }
+    }
   });
 
+  let errorLogged = false;
+  
   client.on('error', (err) => {
-    logger.warn('Redis client error:', err.message);
+    // Only log the error once to avoid spam
+    if (!errorLogged) {
+      logger.warn('Redis not available, using in-memory cache');
+      errorLogged = true;
+    }
     redis = null;
   });
 
   client.on('connect', () => {
     logger.info('✓ Redis cache connected');
     redis = client;
+    errorLogged = false;
+  });
+  
+  client.on('ready', () => {
+    redis = client;
   });
 
   // Connect to Redis
-  client.connect().catch(() => {
+  client.connect().catch((err) => {
     logger.warn('Redis not available, using in-memory cache');
     redis = null;
   });

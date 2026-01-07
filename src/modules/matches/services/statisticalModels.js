@@ -1,70 +1,58 @@
 /**
- * Statistical Models Service
- * Real statistical models for analytics (NO AI/ML libraries)
- * Pure mathematical implementations
+ * Statistical Models & Mathematical Functions
+ * Advanced statistical analysis for analytics
  */
 
 class StatisticalModels {
   /**
-   * Linear Regression Model
-   * Used for predicting trends based on historical data
+   * Linear Regression
+   * y = mx + b
    */
-  linearRegression(dataPoints) {
-    if (!dataPoints || dataPoints.length < 2) {
-      return { slope: 0, intercept: 0, r2: 0, prediction: null };
-    }
+  linearRegression(data) {
+    const n = data.length;
+    if (n === 0) return null;
 
-    const n = dataPoints.length;
-    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+    const x = data.map((_, i) => i);
+    const y = data.map(d => d.value);
 
-    dataPoints.forEach((point, index) => {
-      const x = index;
-      const y = point.value;
-      sumX += x;
-      sumY += y;
-      sumXY += x * y;
-      sumX2 += x * x;
-      sumY2 += y * y;
-    });
+    const sumX = x.reduce((a, b) => a + b, 0);
+    const sumY = y.reduce((a, b) => a + b, 0);
+    const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+    const sumXX = x.reduce((sum, xi) => sum + xi * xi, 0);
 
-    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
 
-    // Calculate R² (coefficient of determination)
-    const meanY = sumY / n;
-    let ssTotal = 0, ssResidual = 0;
-    dataPoints.forEach((point, index) => {
-      const predicted = slope * index + intercept;
-      ssTotal += Math.pow(point.value - meanY, 2);
-      ssResidual += Math.pow(point.value - predicted, 2);
-    });
+    // Calculate R²
+    const yMean = sumY / n;
+    const ssTotal = y.reduce((sum, yi) => sum + Math.pow(yi - yMean, 2), 0);
+    const ssResidual = y.reduce((sum, yi, i) => {
+      const predicted = slope * i + intercept;
+      return sum + Math.pow(yi - predicted, 2);
+    }, 0);
     const r2 = 1 - (ssResidual / ssTotal);
-
-    // Predict next value
-    const nextX = n;
-    const prediction = slope * nextX + intercept;
 
     return {
       slope,
       intercept,
-      r2: Math.max(0, Math.min(1, r2)), // Clamp between 0 and 1
-      prediction: Math.max(0, prediction), // Can't be negative
-      trend: slope > 0.1 ? 'increasing' : slope < -0.1 ? 'decreasing' : 'stable'
+      r2,
+      trend: slope > 0.1 ? 'increasing' : slope < -0.1 ? 'decreasing' : 'stable',
+      equation: `y = ${slope.toFixed(2)}x + ${intercept.toFixed(2)}`
     };
   }
 
   /**
-   * Moving Average - Smooths out short-term fluctuations
+   * Moving Average
    */
   movingAverage(data, window = 7) {
-    if (data.length < window) return data;
-
     const result = [];
-    for (let i = 0; i <= data.length - window; i++) {
-      const slice = data.slice(i, i + window);
-      const avg = slice.reduce((sum, val) => sum + val.value, 0) / window;
+    for (let i = 0; i < data.length; i++) {
+      const start = Math.max(0, i - window + 1);
+      const end = i + 1;
+      const windowData = data.slice(start, end);
+      const avg = windowData.reduce((sum, d) => sum + d.value, 0) / windowData.length;
       result.push({
-        date: data[i + window - 1].date,
+        date: data[i].date,
         value: Math.round(avg * 100) / 100
       });
     }
@@ -72,12 +60,13 @@ class StatisticalModels {
   }
 
   /**
-   * Exponential Smoothing - More weight on recent data
+   * Exponential Smoothing
    */
   exponentialSmoothing(data, alpha = 0.3) {
-    if (!data || data.length === 0) return [];
+    if (data.length === 0) return [];
 
-    const result = [data[0]];
+    const result = [{ date: data[0].date, value: data[0].value }];
+
     for (let i = 1; i < data.length; i++) {
       const smoothed = alpha * data[i].value + (1 - alpha) * result[i - 1].value;
       result.push({
@@ -85,130 +74,68 @@ class StatisticalModels {
         value: Math.round(smoothed * 100) / 100
       });
     }
+
     return result;
   }
 
   /**
-   * Standard Deviation & Variance
+   * Forecast next periods using linear regression
    */
-  calculateStatistics(values) {
-    if (!values || values.length === 0) {
-      return { mean: 0, median: 0, stdDev: 0, variance: 0, min: 0, max: 0 };
+  forecastNextPeriods(data, periods = 7) {
+    const regression = this.linearRegression(data);
+    if (!regression) return [];
+
+    const forecast = [];
+    const lastIndex = data.length - 1;
+
+    for (let i = 1; i <= periods; i++) {
+      const nextIndex = lastIndex + i;
+      const predicted = regression.slope * nextIndex + regression.intercept;
+      
+      // Add prediction date (assuming daily data)
+      const lastDate = new Date(data[data.length - 1].date);
+      const nextDate = new Date(lastDate);
+      nextDate.setDate(lastDate.getDate() + i);
+
+      forecast.push({
+        date: nextDate.toISOString().split('T')[0],
+        value: Math.max(0, Math.round(predicted * 100) / 100)
+      });
     }
 
-    const n = values.length;
-    const mean = values.reduce((sum, val) => sum + val, 0) / n;
+    return forecast;
+  }
 
-    // Variance
-    const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n;
-    const stdDev = Math.sqrt(variance);
+  /**
+   * Calculate basic statistics
+   */
+  calculateStatistics(values) {
+    if (values.length === 0) {
+      return { mean: 0, median: 0, stdDev: 0, min: 0, max: 0 };
+    }
 
-    // Median
     const sorted = [...values].sort((a, b) => a - b);
-    const median = n % 2 === 0
-      ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2
-      : sorted[Math.floor(n / 2)];
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    
+    const median = sorted.length % 2 === 0
+      ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+      : sorted[Math.floor(sorted.length / 2)];
+
+    const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+    const stdDev = Math.sqrt(variance);
 
     return {
       mean: Math.round(mean * 100) / 100,
       median: Math.round(median * 100) / 100,
       stdDev: Math.round(stdDev * 100) / 100,
-      variance: Math.round(variance * 100) / 100,
-      min: Math.min(...values),
-      max: Math.max(...values),
-      range: Math.max(...values) - Math.min(...values)
+      min: sorted[0],
+      max: sorted[sorted.length - 1],
+      count: values.length
     };
   }
 
   /**
-   * Correlation Coefficient (Pearson)
-   * Measures relationship between two variables (-1 to 1)
-   */
-  correlation(x, y) {
-    if (!x || !y || x.length !== y.length || x.length < 2) {
-      return 0;
-    }
-
-    const n = x.length;
-    const meanX = x.reduce((sum, val) => sum + val, 0) / n;
-    const meanY = y.reduce((sum, val) => sum + val, 0) / n;
-
-    let numerator = 0;
-    let sumX2 = 0;
-    let sumY2 = 0;
-
-    for (let i = 0; i < n; i++) {
-      const dx = x[i] - meanX;
-      const dy = y[i] - meanY;
-      numerator += dx * dy;
-      sumX2 += dx * dx;
-      sumY2 += dy * dy;
-    }
-
-    const denominator = Math.sqrt(sumX2 * sumY2);
-    return denominator === 0 ? 0 : numerator / denominator;
-  }
-
-  /**
-   * Percentile Calculation
-   */
-  percentile(values, p) {
-    if (!values || values.length === 0) return 0;
-    
-    const sorted = [...values].sort((a, b) => a - b);
-    const index = (p / 100) * (sorted.length - 1);
-    const lower = Math.floor(index);
-    const upper = Math.ceil(index);
-    const weight = index % 1;
-
-    if (lower === upper) return sorted[lower];
-    return sorted[lower] * (1 - weight) + sorted[upper] * weight;
-  }
-
-  /**
-   * Seasonal Decomposition
-   * Identifies patterns that repeat at regular intervals
-   */
-  seasonalityAnalysis(data, period = 7) {
-    if (data.length < period * 2) {
-      return { hasSeasonality: false, pattern: [] };
-    }
-
-    // Calculate average for each position in the cycle
-    const seasonalPattern = new Array(period).fill(0);
-    const counts = new Array(period).fill(0);
-
-    data.forEach((point, index) => {
-      const position = index % period;
-      seasonalPattern[position] += point.value;
-      counts[position]++;
-    });
-
-    // Average each seasonal component
-    for (let i = 0; i < period; i++) {
-      seasonalPattern[i] = counts[i] > 0 ? seasonalPattern[i] / counts[i] : 0;
-    }
-
-    // Calculate strength of seasonality
-    const overallMean = data.reduce((sum, p) => sum + p.value, 0) / data.length;
-    const seasonalVariance = seasonalPattern.reduce((sum, val) => 
-      sum + Math.pow(val - overallMean, 2), 0) / period;
-    const dataVariance = data.reduce((sum, p) => 
-      sum + Math.pow(p.value - overallMean, 2), 0) / data.length;
-    
-    const seasonalityStrength = dataVariance > 0 ? seasonalVariance / dataVariance : 0;
-
-    return {
-      hasSeasonality: seasonalityStrength > 0.15,
-      strength: Math.round(seasonalityStrength * 100),
-      pattern: seasonalPattern.map(v => Math.round(v * 100) / 100),
-      peakDay: seasonalPattern.indexOf(Math.max(...seasonalPattern)),
-      lowDay: seasonalPattern.indexOf(Math.min(...seasonalPattern))
-    };
-  }
-
-  /**
-   * Growth Rate Analysis
+   * Calculate growth rate
    */
   calculateGrowthRate(oldValue, newValue) {
     if (oldValue === 0) return newValue > 0 ? 100 : 0;
@@ -216,100 +143,71 @@ class StatisticalModels {
   }
 
   /**
-   * Compound Annual Growth Rate (CAGR)
+   * Correlation coefficient
    */
-  calculateCAGR(initialValue, finalValue, periods) {
-    if (initialValue <= 0 || periods <= 0) return 0;
-    return (Math.pow(finalValue / initialValue, 1 / periods) - 1) * 100;
+  correlation(x, y) {
+    if (x.length !== y.length || x.length === 0) return 0;
+
+    const n = x.length;
+    const sumX = x.reduce((a, b) => a + b, 0);
+    const sumY = y.reduce((a, b) => a + b, 0);
+    const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+    const sumXX = x.reduce((sum, xi) => sum + xi * xi, 0);
+    const sumYY = y.reduce((sum, yi) => sum + yi * yi, 0);
+
+    const numerator = n * sumXY - sumX * sumY;
+    const denominator = Math.sqrt((n * sumXX - sumX * sumX) * (n * sumYY - sumY * sumY));
+
+    return denominator === 0 ? 0 : numerator / denominator;
   }
 
   /**
-   * Z-Score Normalization
-   * Identifies outliers (|z| > 2 is unusual, |z| > 3 is rare)
+   * Seasonality Analysis
    */
-  calculateZScores(values) {
+  seasonalityAnalysis(data, period = 7) {
+    if (data.length < period * 2) {
+      return {
+        hasSeasonality: false,
+        strength: 0,
+        peakDay: null,
+        lowDay: null
+      };
+    }
+
+    const values = data.map(d => d.value);
     const stats = this.calculateStatistics(values);
-    if (stats.stdDev === 0) return values.map(() => 0);
-
-    return values.map(val => (val - stats.mean) / stats.stdDev);
-  }
-
-  /**
-   * Time Series Forecast using Simple Exponential Smoothing
-   */
-  forecastNextPeriods(data, periods = 7, alpha = 0.3) {
-    if (!data || data.length < 3) {
-      return [];
-    }
-
-    // Get smoothed series
-    const smoothed = this.exponentialSmoothing(data, alpha);
-    const lastValue = smoothed[smoothed.length - 1].value;
     
-    // Get trend from linear regression
-    const regression = this.linearRegression(data);
-    
-    const forecasts = [];
-    for (let i = 1; i <= periods; i++) {
-      const forecast = lastValue + (regression.slope * i);
-      forecasts.push({
-        period: i,
-        forecast: Math.max(0, Math.round(forecast * 100) / 100),
-        confidence: Math.max(0, Math.min(100, regression.r2 * 100))
-      });
-    }
+    // Calculate coefficient of variation
+    const cv = stats.stdDev / stats.mean;
 
-    return forecasts;
+    // Find peak and low days
+    const peakDay = values.indexOf(Math.max(...values));
+    const lowDay = values.indexOf(Math.min(...values));
+
+    return {
+      hasSeasonality: cv > 0.2, // Significant variation
+      strength: Math.min(100, Math.round(cv * 100)),
+      peakDay,
+      lowDay,
+      statistics: stats
+    };
   }
 
   /**
-   * Classification based on thresholds
+   * Detect Anomalies (Z-score method)
    */
-  classifyPerformance(value, thresholds = { poor: 30, average: 60, good: 80 }) {
-    if (value >= thresholds.good) return 'excellent';
-    if (value >= thresholds.average) return 'good';
-    if (value >= thresholds.poor) return 'average';
-    return 'poor';
-  }
-
-  /**
-   * Weighted Score Calculation
-   */
-  calculateWeightedScore(metrics) {
-    let totalWeight = 0;
-    let weightedSum = 0;
-
-    Object.keys(metrics).forEach(key => {
-      const { value, weight } = metrics[key];
-      weightedSum += value * weight;
-      totalWeight += weight;
-    });
-
-    return totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 100) / 100 : 0;
-  }
-
-  /**
-   * Anomaly Detection using IQR method
-   */
-  detectAnomalies(values) {
-    if (!values || values.length < 4) return [];
-
-    const q1 = this.percentile(values, 25);
-    const q3 = this.percentile(values, 75);
-    const iqr = q3 - q1;
-    const lowerBound = q1 - 1.5 * iqr;
-    const upperBound = q3 + 1.5 * iqr;
-
+  detectAnomalies(values, threshold = 2) {
+    const stats = this.calculateStatistics(values);
     const anomalies = [];
+
     values.forEach((value, index) => {
-      if (value < lowerBound || value > upperBound) {
+      const zScore = (value - stats.mean) / stats.stdDev;
+      if (Math.abs(zScore) > threshold) {
         anomalies.push({
           index,
           value,
-          type: value < lowerBound ? 'low' : 'high',
-          deviation: value < lowerBound 
-            ? Math.abs(value - lowerBound)
-            : Math.abs(value - upperBound)
+          zScore: Math.round(zScore * 100) / 100,
+          type: zScore > 0 ? 'high' : 'low'
         });
       }
     });
@@ -318,36 +216,59 @@ class StatisticalModels {
   }
 
   /**
-   * Monte Carlo Simulation for Risk Assessment
+   * Calculate Weighted Score
+   */
+  calculateWeightedScore(metrics) {
+    let totalScore = 0;
+    let totalWeight = 0;
+
+    Object.values(metrics).forEach(metric => {
+      totalScore += metric.value * metric.weight;
+      totalWeight += metric.weight;
+    });
+
+    return totalWeight > 0 ? totalScore / totalWeight : 0;
+  }
+
+  /**
+   * Classify Performance
+   */
+  classifyPerformance(score) {
+    if (score >= 90) return 'excellent';
+    if (score >= 75) return 'good';
+    if (score >= 60) return 'average';
+    if (score >= 40) return 'below_average';
+    return 'poor';
+  }
+
+  /**
+   * Monte Carlo Simulation
    */
   monteCarloSimulation(baseValue, volatility, iterations = 1000) {
     const results = [];
-    
+
     for (let i = 0; i < iterations; i++) {
-      // Box-Muller transform for normal distribution
+      // Random normal distribution (Box-Muller transform)
       const u1 = Math.random();
       const u2 = Math.random();
       const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
       
-      const change = z * volatility;
-      const simulatedValue = baseValue * (1 + change);
-      results.push(Math.max(0, simulatedValue));
+      // Simulate value
+      const simulated = baseValue * (1 + volatility * z);
+      results.push(Math.max(0, simulated));
     }
 
-    const stats = this.calculateStatistics(results);
+    results.sort((a, b) => a - b);
+
     return {
-      mean: stats.mean,
-      median: stats.median,
-      stdDev: stats.stdDev,
-      percentile5: this.percentile(results, 5),
-      percentile95: this.percentile(results, 95),
-      confidence90Range: [
-        this.percentile(results, 5),
-        this.percentile(results, 95)
-      ]
+      mean: results.reduce((a, b) => a + b, 0) / results.length,
+      median: results[Math.floor(results.length / 2)],
+      percentile5: results[Math.floor(results.length * 0.05)],
+      percentile95: results[Math.floor(results.length * 0.95)],
+      min: results[0],
+      max: results[results.length - 1]
     };
   }
 }
 
 module.exports = new StatisticalModels();
-

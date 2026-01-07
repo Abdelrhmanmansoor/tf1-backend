@@ -23,8 +23,8 @@ const { authLimiter } = require('../middleware/rateLimiter');
 router.use(autoInitializer.ensureInitialized());
 
 // Direct registration/login routes (for backward compatibility)
-router.post('/register', authLimiter, authController.register);
-router.post('/login', authLimiter, authController.login);
+router.post('/register', authLimiter, (req, res) => authController.register(req, res));
+router.post('/login', authLimiter, (req, res) => authController.login(req, res));
 
 // Mount main routes under /api prefix
 router.use('/api/auth', authRoutes);

@@ -34,7 +34,7 @@ class AnalyticsController {
    */
   async getUserAnalytics(req, res) {
     try {
-      const userId = req.params.userId || req.user?._id;
+      const userId = req.params.userId || req.matchUser?._id;
       const analytics = await analyticsService.getUserAnalytics(userId);
       res.json({
         success: true,
@@ -105,7 +105,7 @@ class AnalyticsController {
    */
   async getUserPerformanceScore(req, res) {
     try {
-      const userId = req.params.userId || req.user?._id;
+      const userId = req.params.userId || req.matchUser?._id;
       const score = await analyticsService.getUserPerformanceScore(userId);
       res.json({
         success: true,
@@ -154,7 +154,7 @@ class AnalyticsController {
    */
   async getComparativeAnalysis(req, res) {
     try {
-      const userId = req.params.userId || req.user?._id;
+      const userId = req.params.userId || req.matchUser?._id;
       const analysis = await analyticsService.getComparativeAnalysis(userId);
       res.json({
         success: true,
@@ -179,7 +179,7 @@ class AnalyticsController {
    */
   async getPredictiveInsights(req, res) {
     try {
-      const userId = req.params.userId || req.user?._id;
+      const userId = req.params.userId || req.matchUser?._id;
       const insights = await analyticsService.getPredictiveInsights(userId);
       res.json({
         success: true,
@@ -325,7 +325,7 @@ class AnalyticsController {
    */
   async getActivityHeatmap(req, res) {
     try {
-      const userId = req.params.userId || req.user?._id;
+      const userId = req.params.userId || req.matchUser?._id;
       const days = parseInt(req.query.days) || 30;
       const heatmap = await analyticsService.getActivityHeatmap(userId, days);
       res.json({
@@ -476,7 +476,7 @@ class AnalyticsController {
    */
   async generateUserReport(req, res) {
     try {
-      const userId = req.params.userId || req.user?._id;
+      const userId = req.params.userId || req.matchUser?._id;
       const report = await reportService.generateUserReport(userId);
       
       res.json({
@@ -529,8 +529,8 @@ class AnalyticsController {
         report = await reportService.generateAnalyticsReport({ period });
       } else if (reportType === 'health') {
         report = await reportService.generateHealthReport();
-      } else if (reportType === 'user' && req.user) {
-        report = await reportService.generateUserReport(req.user._id);
+      } else if (reportType === 'user' && req.matchUser) {
+        report = await reportService.generateUserReport(req.matchUser._id);
       } else {
         return res.status(400).json({
           success: false,
