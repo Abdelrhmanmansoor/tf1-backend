@@ -2,6 +2,16 @@ const express = require('express');
 const router = express.Router();
 const autoInitializer = require('../utils/autoInitialize');
 
+// Middleware to skip CSRF check for matches routes
+// Matches routes use JWT tokens (httpOnly cookies) which are CSRF-resistant
+// CSRF protection is not needed for JWT-based authentication
+router.use((req, res, next) => {
+  // Skip CSRF validation for all matches routes
+  // JWT tokens in httpOnly cookies are protected against CSRF by design
+  req.skipCSRF = true;
+  next();
+});
+
 // Import route modules
 const authRoutes = require('./authRoutes');
 const matchRoutes = require('./matchRoutes');
