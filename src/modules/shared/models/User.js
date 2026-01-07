@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const logger = require('../../../middleware/logger') || console;
+const logger = require('../../../utils/logger') || console;
 
 const userSchema = new mongoose.Schema({
   email: {

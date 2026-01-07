@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const logger = require('../middleware/logger') || console;
+const logger = require('./logger') || console;
 
 class EmailService {
   constructor() {
