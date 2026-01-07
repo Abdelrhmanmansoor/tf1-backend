@@ -86,15 +86,25 @@ describe('MatchController.createMatch', () => {
     }));
   });
 
-  it('should return 400 if location_id is missing in new format', async () => {
+  it('should create match without location_id (using default values)', async () => {
     req.body.location_id = undefined;
     
     await matchController.createMatch(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(400);
+    // Verify matchService.createMatch was called
+    expect(createMatchSpy).toHaveBeenCalledWith(
+        '507f1f77bcf86cd799439011',
+        expect.objectContaining({
+            city: 'Riyadh',
+            area: 'Al Malqa',
+            location: 'KSU'
+        }),
+        true
+    );
+
+    expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        success: false,
-        message: 'location_id is required'
+        success: true
     }));
   });
 });

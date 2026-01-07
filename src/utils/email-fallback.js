@@ -17,9 +17,9 @@ class FallbackEmailService {
           pass: 'ethereal.pass',
         },
       });
-      console.log('✅ Fallback email service initialized (Ethereal)');
+      logger.info('✅ Fallback email service initialized (Ethereal)');
     } catch (error) {
-      console.error('❌ Fallback email service failed:', error);
+      logger.error('❌ Fallback email service failed:', error);
     }
   }
 
@@ -37,14 +37,14 @@ class FallbackEmailService {
         },
       });
 
-      console.log('✅ Test email account created:');
-      console.log('User:', testAccount.user);
-      console.log('Pass:', testAccount.pass);
-      console.log('Preview URL: Will be shown after sending');
+      logger.info('✅ Test email account created:');
+      logger.info('User:', testAccount.user);
+      logger.info('Pass:', testAccount.pass);
+      logger.info('Preview URL: Will be shown after sending');
 
       return testAccount;
     } catch (error) {
-      console.error('❌ Failed to create test account:', error);
+      logger.error('❌ Failed to create test account:', error);
       return null;
     }
   }
@@ -83,14 +83,14 @@ class FallbackEmailService {
 
     try {
       const info = await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Test verification email sent to ${user.email}`);
-      console.log(`📧 Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
-      console.log(
+      logger.info(`✅ Test verification email sent to ${user.email}`);
+      logger.info(`📧 Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+      logger.info(
         `🔗 Copy this URL to see the email: ${nodemailer.getTestMessageUrl(info)}`
       );
       return true;
     } catch (error) {
-      console.error('❌ Failed to send test verification email:', error);
+      logger.error('❌ Failed to send test verification email:', error);
       return false;
     }
   }
@@ -98,10 +98,10 @@ class FallbackEmailService {
   async testConnection() {
     try {
       await this.transporter.verify();
-      console.log('✅ Fallback email service connection verified');
+      logger.info('✅ Fallback email service connection verified');
       return true;
     } catch (error) {
-      console.error('❌ Fallback email service connection failed:', error);
+      logger.error('❌ Fallback email service connection failed:', error);
       return false;
     }
   }

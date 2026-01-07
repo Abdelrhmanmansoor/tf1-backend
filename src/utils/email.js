@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const logger = require('../middleware/logger') || console;
 
 class EmailService {
   constructor() {
@@ -22,7 +23,7 @@ class EmailService {
           greetingTimeout: 10000,
           socketTimeout: 10000,
         });
-        console.log('✅ Email service initialized (SendGrid)');
+        logger.info('Email service initialized with SendGrid');
         return;
       }
 
@@ -32,9 +33,7 @@ class EmailService {
         !process.env.SMTP_USER ||
         !process.env.SMTP_PASS
       ) {
-        console.log(
-          '⚠️  Email service disabled - No SMTP/SendGrid credentials configured'
-        );
+        logger.warn('Email service disabled - No SMTP/SendGrid credentials configured');
         return;
       }
 
@@ -55,9 +54,9 @@ class EmailService {
         },
       });
 
-      console.log('✅ Email service initialized (SMTP)');
+      logger.info('Email service initialized with SMTP');
     } catch (error) {
-      console.error('❌ Email service initialization failed:', error);
+      logger.error('Email service initialization failed', { error: error.message });
     }
   }
 
@@ -91,9 +90,7 @@ class EmailService {
 
   async sendVerificationEmail(user, verificationToken) {
     if (!this.transporter) {
-      console.log(
-        '⚠️  Email service not configured - skipping verification email'
-      );
+      logger.warn('Email service not configured - skipping verification email');
       return false;
     }
 
@@ -177,10 +174,10 @@ class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Verification email sent to ${user.email}`);
+      logger.info(`✅ Verification email sent to ${user.email}`);
       return true;
     } catch (error) {
-      console.error('❌ Failed to send verification email:', error);
+      logger.error('❌ Failed to send verification email:', error);
       return false;
     }
   }
@@ -222,17 +219,17 @@ class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Password reset email sent to ${user.email}`);
+      logger.info(`✅ Password reset email sent to ${user.email}`);
       return true;
     } catch (error) {
-      console.error('❌ Failed to send password reset email:', error);
+      logger.error('❌ Failed to send password reset email:', error);
       return false;
     }
   }
 
   async sendApplicationEmail(applicant, jobTitle, clubName, jobLocation, applicationDate) {
     if (!this.transporter) {
-      console.log('⚠️  Email service not configured - skipping application email');
+      logger.warn('Email service not configured - skipping application email');
       return false;
     }
 
@@ -303,17 +300,17 @@ class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Application confirmation email sent to ${applicant.email}`);
+      logger.info(`✅ Application confirmation email sent to ${applicant.email}`);
       return true;
     } catch (error) {
-      console.error('❌ Failed to send application email:', error);
+      logger.error('❌ Failed to send application email:', error);
       return false;
     }
   }
 
   async sendInterviewEmail(applicant, jobTitle, clubName, interviewDetails, customMessage = '', language = 'ar') {
     if (!this.transporter) {
-      console.log('⚠️  Email service not configured - skipping interview email');
+      logger.warn('Email service not configured - skipping interview email');
       return false;
     }
 
@@ -388,17 +385,17 @@ class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Interview email sent to ${applicant.email}`);
+      logger.info(`✅ Interview email sent to ${applicant.email}`);
       return true;
     } catch (error) {
-      console.error('❌ Failed to send interview email:', error);
+      logger.error('❌ Failed to send interview email:', error);
       return false;
     }
   }
 
   async sendOfferEmail(applicant, jobTitle, clubName, offerDetails, customMessage = '', language = 'ar') {
     if (!this.transporter) {
-      console.log('⚠️  Email service not configured - skipping offer email');
+      logger.warn('Email service not configured - skipping offer email');
       return false;
     }
 
@@ -470,17 +467,17 @@ class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Offer email sent to ${applicant.email}`);
+      logger.info(`✅ Offer email sent to ${applicant.email}`);
       return true;
     } catch (error) {
-      console.error('❌ Failed to send offer email:', error);
+      logger.error('❌ Failed to send offer email:', error);
       return false;
     }
   }
 
   async sendHireEmail(applicant, jobTitle, clubName, hiringDetails, customMessage = '', language = 'ar') {
     if (!this.transporter) {
-      console.log('⚠️  Email service not configured - skipping hire email');
+      logger.warn('Email service not configured - skipping hire email');
       return false;
     }
 
@@ -544,17 +541,17 @@ class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Hire confirmation email sent to ${applicant.email}`);
+      logger.info(`✅ Hire confirmation email sent to ${applicant.email}`);
       return true;
     } catch (error) {
-      console.error('❌ Failed to send hire email:', error);
+      logger.error('❌ Failed to send hire email:', error);
       return false;
     }
   }
 
   async sendRejectionEmail(applicant, jobTitle, clubName, customMessage = '', language = 'ar') {
     if (!this.transporter) {
-      console.log('⚠️  Email service not configured - skipping rejection email');
+      logger.info('⚠️  Email service not configured - skipping rejection email');
       return false;
     }
 
@@ -619,17 +616,17 @@ class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Rejection email sent to ${applicant.email}`);
+      logger.info(`✅ Rejection email sent to ${applicant.email}`);
       return true;
     } catch (error) {
-      console.error('❌ Failed to send rejection email:', error);
+      logger.error('❌ Failed to send rejection email:', error);
       return false;
     }
   }
 
   async sendDirectMessageEmail(applicant, jobTitle, clubName, message, language = 'ar') {
     if (!this.transporter) {
-      console.log('⚠️  Email service not configured - skipping direct message email');
+      logger.warn('Email service not configured - skipping direct message email');
       return false;
     }
 
@@ -688,10 +685,10 @@ class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Direct message email sent to ${applicant.email}`);
+      logger.info(`✅ Direct message email sent to ${applicant.email}`);
       return true;
     } catch (error) {
-      console.error('❌ Failed to send direct message email:', error);
+      logger.error('❌ Failed to send direct message email:', error);
       return false;
     }
   }
@@ -713,7 +710,7 @@ class EmailService {
    */
   async sendJobOfferEmail(data) {
     if (!this.transporter) {
-      console.log('⚠️  Email service not configured - skipping job offer email');
+      logger.warn('Email service not configured - skipping job offer email');
       return false;
     }
 
@@ -851,10 +848,10 @@ class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Job ${isHiring ? 'hiring' : 'offer'} email sent to ${applicantEmail}`);
+      logger.info(`✅ Job ${isHiring ? 'hiring' : 'offer'} email sent to ${applicantEmail}`);
       return true;
     } catch (error) {
-      console.error(`❌ Failed to send job ${isHiring ? 'hiring' : 'offer'} email:`, error);
+      logger.error(`❌ Failed to send job ${isHiring ? 'hiring' : 'offer'} email:`, error);
       return false;
     }
   }
@@ -864,7 +861,7 @@ class EmailService {
    */
   async sendApplicationRejectionEmail(applicantEmail, applicantName, jobTitle) {
     if (!this.transporter) {
-      console.log('⚠️  Email service not configured - skipping rejection email');
+      logger.info('⚠️  Email service not configured - skipping rejection email');
       return false;
     }
 
@@ -925,10 +922,10 @@ class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Rejection email sent to ${applicantEmail}`);
+      logger.info(`✅ Rejection email sent to ${applicantEmail}`);
       return true;
     } catch (error) {
-      console.error('❌ Failed to send rejection email:', error);
+      logger.error('❌ Failed to send rejection email:', error);
       return false;
     }
   }
@@ -936,10 +933,10 @@ class EmailService {
   async testConnection() {
     try {
       await this.transporter.verify();
-      console.log('✅ Email service connection verified');
+      logger.info('✅ Email service connection verified');
       return true;
     } catch (error) {
-      console.error('❌ Email service connection failed:', error);
+      logger.error('❌ Email service connection failed:', error);
       return false;
     }
   }

@@ -26,14 +26,44 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+// ==================== CSRF TOKEN MANAGEMENT ====================
+// Helper function to get CSRF token from cookie or generate new one
+const getCSRFToken = async () => {
+  // First check if CSRF token exists in cookies (set by server)
+  const cookies = document.cookie.split(';').map(c => c.trim());
+  const csrfCookie = cookies.find(c => c.startsWith('XSRF-TOKEN='));
+  
+  if (csrfCookie) {
+    return csrfCookie.split('=')[1];
+  }
+  
+  // If no token in cookie, request one from server
+  try {
+    const response = await axios.get(`${API_URL}/auth/csrf-token`, { withCredentials: true });
+    return response.data?.token || response.data?.csrfToken;
+  } catch (err) {
+    console.warn('Failed to fetch CSRF token:', err);
+    return null;
+  }
+};
+
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     // Get token from sessionStorage (cleared when tab closes)
     // NOT from localStorage (persistent and XSS vulnerable)
     const token = sessionStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Add CSRF token for state-changing requests (POST, PUT, DELETE, PATCH)
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(config.method.toUpperCase())) {
+      const csrfToken = await getCSRFToken();
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+      }
+    }
+    
     // Refresh token is now in httpOnly cookie, sent automatically
     return config;
   },

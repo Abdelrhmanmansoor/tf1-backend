@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const logger = require('../../../middleware/logger') || console;
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -113,12 +114,15 @@ userSchema.index({ role: 1, isVerified: 1 });
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-  // Track isVerified changes for debugging
+  // Track isVerified changes with proper logging
   if (this.isModified('isVerified')) {
-    console.log(`🔍 [VERIFICATION TRACKING] isVerified changed for ${this.email}`);
-    console.log(`   Previous value: ${this.isVerified ? 'false' : 'true'} → New value: ${this.isVerified}`);
-    console.log(`   Has verification token: ${!!this.emailVerificationToken}`);
-    console.log(`   Token expires: ${this.emailVerificationTokenExpires}`);
+    logger.debug('Email verification status changed', {
+      email: this.email,
+      previousValue: !this.isVerified,
+      newValue: this.isVerified,
+      hasVerificationToken: !!this.emailVerificationToken,
+      tokenExpires: this.emailVerificationTokenExpires
+    });
   }
 
   if (!this.isModified('password')) return next();

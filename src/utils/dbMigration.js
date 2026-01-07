@@ -5,7 +5,7 @@ class DBMigration {
   // Remove deprecated 'verified' field from all users
   static async removeDeprecatedVerifiedField() {
     try {
-      console.log(
+      logger.info(
         '🔄 Starting migration: Remove deprecated "verified" field...'
       );
 
@@ -14,12 +14,12 @@ class DBMigration {
         { $unset: { verified: '' } }
       );
 
-      console.log(
+      logger.info(
         `✅ Migration completed: Removed "verified" field from ${result.modifiedCount} users`
       );
       return { success: true, modifiedCount: result.modifiedCount };
     } catch (error) {
-      console.error('❌ Migration failed:', error);
+      logger.error('❌ Migration failed:', error);
       return { success: false, error: error.message };
     }
   }
@@ -27,7 +27,7 @@ class DBMigration {
   // Fix users who have isVerified = true but still have verification tokens
   static async cleanupVerificationTokens() {
     try {
-      console.log(
+      logger.info(
         '🔄 Starting migration: Cleanup verification tokens for verified users...'
       );
 
@@ -47,12 +47,12 @@ class DBMigration {
         }
       );
 
-      console.log(
+      logger.info(
         `✅ Migration completed: Cleaned up verification tokens for ${result.modifiedCount} verified users`
       );
       return { success: true, modifiedCount: result.modifiedCount };
     } catch (error) {
-      console.error('❌ Migration failed:', error);
+      logger.error('❌ Migration failed:', error);
       return { success: false, error: error.message };
     }
   }
@@ -60,7 +60,7 @@ class DBMigration {
   // Generate new verification tokens for unverified users with expired tokens
   static async regenerateExpiredTokens() {
     try {
-      console.log(
+      logger.info(
         '🔄 Starting migration: Regenerate expired verification tokens...'
       );
 
@@ -74,22 +74,22 @@ class DBMigration {
         const newToken = user.generateEmailVerificationToken();
         await user.save();
         count++;
-        console.log(`🔄 Generated new token for user: ${user.email}`);
+        logger.info(`🔄 Generated new token for user: ${user.email}`);
       }
 
-      console.log(
+      logger.info(
         `✅ Migration completed: Generated new tokens for ${count} users`
       );
       return { success: true, modifiedCount: count };
     } catch (error) {
-      console.error('❌ Migration failed:', error);
+      logger.error('❌ Migration failed:', error);
       return { success: false, error: error.message };
     }
   }
 
   // Run all migrations
   static async runAllMigrations() {
-    console.log('🚀 Starting database migrations...');
+    logger.info('🚀 Starting database migrations...');
 
     const migrations = [
       this.removeDeprecatedVerifiedField,
@@ -103,7 +103,7 @@ class DBMigration {
       results.push(result);
     }
 
-    console.log('✅ All migrations completed');
+    logger.info('✅ All migrations completed');
     return results;
   }
 }

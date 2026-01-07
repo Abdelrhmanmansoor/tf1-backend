@@ -39,10 +39,10 @@ class InMemoryNotificationStore {
         this.notifications.set(userId, notifications);
       });
       
-      console.log(`📦 Loaded notifications from file: ${this.notifications.size} users`);
+      logger.info(`📦 Loaded notifications from file: ${this.notifications.size} users`);
     } catch (error) {
       if (error.code !== 'ENOENT') {
-        console.error('⚠️  Error loading notifications:', error.message);
+        logger.error('⚠️  Error loading notifications:', error.message);
       }
     }
     this.loaded = true;
@@ -57,7 +57,7 @@ class InMemoryNotificationStore {
       }
       await fs.writeFile(STORAGE_FILE, JSON.stringify(data, null, 2));
     } catch (error) {
-      console.error('⚠️  Error saving notifications:', error.message);
+      logger.error('⚠️  Error saving notifications:', error.message);
     }
   }
 
@@ -89,7 +89,7 @@ class InMemoryNotificationStore {
     }
 
     // Save to file (async, no await to keep it fast)
-    this.save().catch(err => console.error('Save error:', err));
+    this.save().catch(err => logger.error('Save error:', err));
 
     return notif;
   }
@@ -126,7 +126,7 @@ class InMemoryNotificationStore {
     );
     if (notif) {
       notif.isRead = true;
-      this.save().catch(err => console.error('Save error:', err));
+      this.save().catch(err => logger.error('Save error:', err));
       return true;
     }
     return false;
@@ -139,7 +139,7 @@ class InMemoryNotificationStore {
     const userIdStr = userId.toString();
     const notifs = this.notifications.get(userIdStr) || [];
     notifs.forEach(n => (n.isRead = true));
-    this.save().catch(err => console.error('Save error:', err));
+    this.save().catch(err => logger.error('Save error:', err));
     return notifs.length;
   }
 
@@ -164,7 +164,7 @@ class InMemoryNotificationStore {
     );
     if (index > -1) {
       notifs.splice(index, 1);
-      this.save().catch(err => console.error('Save error:', err));
+      this.save().catch(err => logger.error('Save error:', err));
       return true;
     }
     return false;
@@ -237,7 +237,7 @@ class InMemoryNotificationStore {
     
     if (deletedCount > 0) {
       await this.save();
-      console.log(`🗑️  Cleaned up ${deletedCount} old notifications`);
+      logger.info(`🗑️  Cleaned up ${deletedCount} old notifications`);
     }
     
     return deletedCount;
