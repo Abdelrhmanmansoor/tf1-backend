@@ -14,7 +14,9 @@
     "test:coverage": "jest --coverage",
     "seed:locations": "node src/seeders/saudi-locations.js",
     "seed:sample": "node create-sample-data.js",
-    "setup:local": "setup-local-mongodb.bat"
+    "setup:local": "setup-local-mongodb.bat",
+    "test:all": "node test-and-fix-all.js",
+    "fix:all": "node test-and-fix-all.js"
   },
   "repository": {
     "type": "git",
