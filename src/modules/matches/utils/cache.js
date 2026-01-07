@@ -3,7 +3,7 @@
  * Supports both Redis and in-memory caching
  */
 
-const logger = require('../../../utils/logger') || console;
+const logger = require('./logger') || console;
 let redis = null;
 const memoryCache = new Map();
 

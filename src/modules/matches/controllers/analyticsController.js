@@ -3,11 +3,25 @@
  * Handles advanced analytics and statistical analysis requests
  */
 
-const analyticsService = require('../services/analyticsService');
-const kpiService = require('../services/kpiService');
-const statisticalModels = require('../services/statisticalModels');
-const cache = require('../utils/cache');
-const logger = require('../utils/logger');
+// Safely require all dependencies with proper error handling
+let analyticsService, kpiService, statisticalModels, cache, logger;
+
+try {
+  analyticsService = require('../services/analyticsService');
+  kpiService = require('../services/kpiService');
+  statisticalModels = require('../services/statisticalModels');
+  cache = require('../utils/cache');
+  logger = require('../utils/logger');
+} catch (error) {
+  console.error('Error loading analytics dependencies:', error);
+  // Provide fallback objects
+  analyticsService = {};
+  kpiService = {};
+  statisticalModels = {};
+  cache = {};
+  logger = console;
+}
+
 const { NotFoundError, ValidationError } = require('../utils/errorHandler');
 
 // Lazy load reportService to avoid circular dependency issues

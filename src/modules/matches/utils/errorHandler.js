@@ -2,7 +2,7 @@
  * Error handling utilities for matches system
  */
 
-const logger = require('../../../utils/logger') || console;
+const logger = require('./logger') || console;
 
 class AppError extends Error {
   constructor(message, statusCode = 500, code = 'INTERNAL_ERROR') {

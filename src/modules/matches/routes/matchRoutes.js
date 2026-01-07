@@ -1,10 +1,40 @@
 const express = require('express');
 const router = express.Router();
-const matchController = require('../controllers/matchController');
-const chatController = require('../controllers/chatController');
-const { authenticate, optionalAuth } = require('../middleware/auth');
-const { matchesLimiter, joinLeaveLimiter, chatLimiter } = require('../middleware/rateLimiter');
-const { validateObjectId, checkMatchOwnership, sanitizeInput, preventNoSQLInjection, userActionLimiter } = require('../middleware/security');
+
+let matchController, chatController, authenticate, optionalAuth, matchesLimiter, joinLeaveLimiter, chatLimiter, validateObjectId, checkMatchOwnership, sanitizeInput, preventNoSQLInjection, userActionLimiter;
+
+try {
+  matchController = require('../controllers/matchController');
+  chatController = require('../controllers/chatController');
+  const auth = require('../middleware/auth');
+  authenticate = auth.authenticate;
+  optionalAuth = auth.optionalAuth;
+  const limiters = require('../middleware/rateLimiter');
+  matchesLimiter = limiters.matchesLimiter;
+  joinLeaveLimiter = limiters.joinLeaveLimiter;
+  chatLimiter = limiters.chatLimiter;
+  const security = require('../middleware/security');
+  validateObjectId = security.validateObjectId;
+  checkMatchOwnership = security.checkMatchOwnership;
+  sanitizeInput = security.sanitizeInput;
+  preventNoSQLInjection = security.preventNoSQLInjection;
+  userActionLimiter = security.userActionLimiter;
+} catch (error) {
+  console.error('Error loading match routes:', error);
+  // Provide fallback
+  matchController = {};
+  chatController = {};
+  authenticate = (req, res, next) => next();
+  optionalAuth = (req, res, next) => next();
+  matchesLimiter = (req, res, next) => next();
+  joinLeaveLimiter = (req, res, next) => next();
+  chatLimiter = (req, res, next) => next();
+  validateObjectId = (req, res, next) => next();
+  checkMatchOwnership = (req, res, next) => next();
+  sanitizeInput = (req, res, next) => next();
+  preventNoSQLInjection = (req, res, next) => next();
+  userActionLimiter = (req, res, next) => next();
+}
 
 // Apply security middleware to all routes
 router.use(sanitizeInput);

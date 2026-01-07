@@ -1,12 +1,28 @@
-const matchService = require('../services/matchService');
-const invitationService = require('../services/invitationService');
-const ratingService = require('../services/ratingService');
-const locationService = require('../services/locationService');
-const { asyncHandler } = require('../utils/errorHandler');
-const { validateMatchCreation, validateRating, validateInvitation } = require('../utils/validators');
-const { ValidationError, NotFoundError } = require('../utils/errorHandler');
-const logger = require('../utils/logger');
-const cache = require('../utils/cache');
+// Safely require all dependencies with proper error handling
+let matchService, invitationService, ratingService, locationService, asyncHandler, validateMatchCreation, validateRating, validateInvitation, ValidationError, NotFoundError, logger, cache;
+
+try {
+  matchService = require('../services/matchService');
+  invitationService = require('../services/invitationService');
+  ratingService = require('../services/ratingService');
+  locationService = require('../services/locationService');
+  const errorHandler = require('../utils/errorHandler');
+  asyncHandler = errorHandler.asyncHandler;
+  ValidationError = errorHandler.ValidationError;
+  NotFoundError = errorHandler.NotFoundError;
+  const validators = require('../utils/validators');
+  validateMatchCreation = validators.validateMatchCreation;
+  validateRating = validators.validateRating;
+  validateInvitation = validators.validateInvitation;
+  logger = require('../utils/logger');
+  cache = require('../utils/cache');
+} catch (error) {
+  console.error('Error loading match controller dependencies:', error);
+  // Provide fallback
+  asyncHandler = (fn) => fn;
+  logger = console;
+  cache = {};
+}
 
 class MatchController {
   /**

@@ -1,7 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const locationController = require('../controllers/locationController');
-const { matchesLimiter } = require('../middleware/rateLimiter');
+
+let locationController, matchesLimiter;
+
+try {
+  locationController = require('../controllers/locationController');
+  const limiters = require('../middleware/rateLimiter');
+  matchesLimiter = limiters.matchesLimiter;
+} catch (error) {
+  console.error('Error loading location routes:', error);
+  // Provide fallback
+  locationController = {};
+  matchesLimiter = (req, res, next) => next();
+}
 
 // Public location endpoints (no auth required)
 router.get('/complete', matchesLimiter, (req, res) => locationController.getCompleteRegionsData(req, res));

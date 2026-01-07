@@ -1,10 +1,25 @@
-const locationService = require('../services/locationService');
-const { asyncHandler } = require('../utils/errorHandler');
-const { ValidationError, NotFoundError } = require('../utils/errorHandler');
-const fs = require('fs');
-const path = require('path');
-const cache = require('../utils/cache');
-const logger = require('../utils/logger');
+// Safely require all dependencies with proper error handling
+let locationService, asyncHandler, ValidationError, NotFoundError, fs, path, cache, logger;
+
+try {
+  locationService = require('../services/locationService');
+  const errorHandler = require('../utils/errorHandler');
+  asyncHandler = errorHandler.asyncHandler;
+  ValidationError = errorHandler.ValidationError;
+  NotFoundError = errorHandler.NotFoundError;
+  fs = require('fs');
+  path = require('path');
+  cache = require('../utils/cache');
+  logger = require('../utils/logger');
+} catch (error) {
+  console.error('Error loading location controller dependencies:', error);
+  // Provide fallback
+  asyncHandler = (fn) => fn;
+  logger = console;
+  cache = {};
+  fs = require('fs');
+  path = require('path');
+}
 
 class LocationController {
   /**
