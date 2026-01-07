@@ -4,7 +4,7 @@
  */
 
 const crypto = require('crypto');
-const logger = require('../../../middleware/logger') || console;
+const logger = require('../../../utils/logger') || console;
 
 // Mock admin keys for development
 const MOCK_ADMIN_KEYS = {
