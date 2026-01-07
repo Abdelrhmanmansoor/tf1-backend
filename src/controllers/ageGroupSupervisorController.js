@@ -234,6 +234,41 @@ exports.getAgeGroup = async (req, res) => {
   }
 };
 
+// ========================================
+// Matches (Age Group specific) - Safe stubs
+// ========================================
+exports.getMatches = async (req, res) => {
+  try {
+    res.json({ success: true, data: [] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error fetching matches', error: error.message });
+  }
+};
+
+exports.createMatch = async (req, res) => {
+  try {
+    res.status(501).json({ success: false, message: 'Not implemented' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error creating match', error: error.message });
+  }
+};
+
+exports.updateMatch = async (req, res) => {
+  try {
+    res.status(501).json({ success: false, message: 'Not implemented' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error updating match', error: error.message });
+  }
+};
+
+exports.deleteMatch = async (req, res) => {
+  try {
+    res.status(501).json({ success: false, message: 'Not implemented' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error deleting match', error: error.message });
+  }
+};
+
 exports.updateAgeGroup = async (req, res) => {
   try {
     const { name, nameAr, ageRange, status } = req.body;

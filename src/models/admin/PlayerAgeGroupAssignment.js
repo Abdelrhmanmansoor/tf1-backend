@@ -10,16 +10,14 @@ const playerAgeGroupAssignmentSchema = new mongoose.Schema({
   playerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Player ID is required'],
-    index: true
+    required: [true, 'Player ID is required']
   },
   
   // Age Group reference
   ageGroupId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'AgeGroup',
-    required: [true, 'Age group ID is required'],
-    index: true
+    required: [true, 'Age group ID is required']
   },
   
   // Team reference (if teams within age groups exist)
@@ -38,8 +36,7 @@ const playerAgeGroupAssignmentSchema = new mongoose.Schema({
   clubId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
   },
   
   // Player Position in this age group
@@ -63,8 +60,7 @@ const playerAgeGroupAssignmentSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['active', 'inactive', 'transferred', 'suspended', 'graduated'],
-    default: 'active',
-    index: true
+    default: 'active'
   },
   
   // Dates
@@ -132,12 +128,12 @@ const playerAgeGroupAssignmentSchema = new mongoose.Schema({
 });
 
 // Compound indexes for efficient queries
-playerAgeGroupAssignmentSchema.index({ playerId: 1, status: 1 });
 playerAgeGroupAssignmentSchema.index({ ageGroupId: 1, status: 1 });
 playerAgeGroupAssignmentSchema.index({ clubId: 1, status: 1 });
 playerAgeGroupAssignmentSchema.index({ teamId: 1, status: 1 });
 
 // Unique constraint: One active assignment per player
+// This also serves as the compound index for playerId + status queries
 playerAgeGroupAssignmentSchema.index(
   { playerId: 1, status: 1 },
   {
