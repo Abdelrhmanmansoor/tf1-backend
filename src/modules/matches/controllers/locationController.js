@@ -1,7 +1,32 @@
 const locationService = require('../services/locationService');
 const { asyncHandler } = require('../utils/errorHandler');
+const fs = require('fs');
+const path = require('path');
 
 class LocationController {
+  /**
+   * Get complete regions data from JSON (includes all cities and neighborhoods)
+   */
+  getCompleteRegionsData = asyncHandler(async (req, res) => {
+    try {
+      const filePath = path.join(__dirname, '../../../data/saudiRegionsComplete.json');
+      const data = fs.readFileSync(filePath, 'utf8');
+      const regionsData = JSON.parse(data);
+
+      res.status(200).json({
+        success: true,
+        ...regionsData
+      });
+    } catch (error) {
+      console.error('Error reading regions data:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error loading regions data',
+        error: error.message
+      });
+    }
+  });
+
   /**
    * Get all regions
    */

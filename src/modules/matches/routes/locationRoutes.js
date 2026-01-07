@@ -4,6 +4,7 @@ const locationController = require('../controllers/locationController');
 const { matchesLimiter } = require('../middleware/rateLimiter');
 
 // Public location endpoints (no auth required)
+router.get('/complete', matchesLimiter, (req, res) => locationController.getCompleteRegionsData(req, res));
 router.get('/regions', matchesLimiter, (req, res) => locationController.getRegions(req, res));
 router.get('/cities', matchesLimiter, (req, res) => locationController.getCities(req, res));
 router.get('/cities/:cityId/districts', matchesLimiter, (req, res) => locationController.getDistricts(req, res));

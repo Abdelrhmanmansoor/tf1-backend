@@ -1,0 +1,897 @@
+{
+  "regions": [
+    {
+      "id": "riyadh",
+      "nameAr": "الرياض",
+      "nameEn": "Riyadh",
+      "cities": [
+        {
+          "id": "riyadh-city",
+          "nameAr": "الرياض",
+          "nameEn": "Riyadh",
+          "neighborhoods": [
+            "العليا", "السليمانية", "الملز", "الشميسي", "الروضة", "النخيل", "المونسية", "الفاتح", "الأمل", "الربيع",
+            "الملك فهد", "الملك عبدالعزيز", "الورود", "النرجس", "الياسمين", "الصفا", "المطار", "الفيصلية", "العقربية",
+            "البديعة", "الصحافة", "الطيار", "البدايع", "الحمراء", "الضباط", "الملك فيصل", "الخزامى", "المرسلات",
+            "النهضة", "النسيم", "الجزيرة", "الدرعية", "المعذر", "العريجاء", "العارض", "النموذجية", "الزهراء"
+          ]
+        },
+        {
+          "id": "diriyah",
+          "nameAr": "الدرعية",
+          "nameEn": "Diriyah",
+          "neighborhoods": ["البجيري", "غصيبة", "الطريف", "سلاي", "الدرعية", "العمارية"]
+        },
+        {
+          "id": "alkharj",
+          "nameAr": "الخرج",
+          "nameEn": "Al Kharj",
+          "neighborhoods": ["الخرج", "الرين", "الحرملية", "الدلم", "الهياثم", "السلمية"]
+        },
+        {
+          "id": "dawadmi",
+          "nameAr": "الدوادمي",
+          "nameEn": "Dawadmi",
+          "neighborhoods": ["الدوادمي", "المجمعة", "الأسياح", "الرس"]
+        },
+        {
+          "id": "majmaah",
+          "nameAr": "المجمعة",
+          "nameEn": "Majmaah",
+          "neighborhoods": ["المجمعة", "الزلفي", "الغاط", "رماح"]
+        },
+        {
+          "id": "quwaiyah",
+          "nameAr": "القويعية",
+          "nameEn": "Quwaiyah",
+          "neighborhoods": ["القويعية", "الدلم", "الحريق", "رماح"]
+        },
+        {
+          "id": "afif",
+          "nameAr": "عفيف",
+          "nameEn": "Afif",
+          "neighborhoods": ["عفيف", "الدوادمي", "المذنب"]
+        },
+        {
+          "id": "zulfi",
+          "nameAr": "الزلفي",
+          "nameEn": "Zulfi",
+          "neighborhoods": ["الزلفي", "الغاط", "المجمعة"]
+        },
+        {
+          "id": "shaqra",
+          "nameAr": "شقراء",
+          "nameEn": "Shaqra",
+          "neighborhoods": ["شقراء", "الدوادمي", "القويعية"]
+        },
+        {
+          "id": "huraymila",
+          "nameAr": "حريملاء",
+          "nameEn": "Huraymila",
+          "neighborhoods": ["حريملاء", "ثادق", "المجمعة"]
+        },
+        {
+          "id": "thadiq",
+          "nameAr": "ثادق",
+          "nameEn": "Thadiq",
+          "neighborhoods": ["ثادق", "حريملاء", "شقراء"]
+        },
+        {
+          "id": "rumah",
+          "nameAr": "رماح",
+          "nameEn": "Rumah",
+          "neighborhoods": ["رماح", "الدوادمي", "الحريق"]
+        },
+        {
+          "id": "hareeq",
+          "nameAr": "الحريق",
+          "nameEn": "Hareeq",
+          "neighborhoods": ["الحريق", "رماح", "القويعية"]
+        },
+        {
+          "id": "dhurma",
+          "nameAr": "ضرماء",
+          "nameEn": "Dhurma",
+          "neighborhoods": ["ضرماء", "الدوادمي", "الرياض"]
+        },
+        {
+          "id": "salboukh",
+          "nameAr": "سلبوخ",
+          "nameEn": "Salboukh",
+          "neighborhoods": ["سلبوخ", "الدوادمي"]
+        },
+        {
+          "id": "ajfar",
+          "nameAr": "الأجفر",
+          "nameEn": "Ajfar",
+          "neighborhoods": ["الأجفر", "الزلفي"]
+        },
+        {
+          "id": "jubayla",
+          "nameAr": "الجبييلة",
+          "nameEn": "Jubayla",
+          "neighborhoods": ["الجبييلة", "الخرج"]
+        }
+      ]
+    },
+    {
+      "id": "makkah",
+      "nameAr": "مكة المكرمة",
+      "nameEn": "Makkah",
+      "cities": [
+        {
+          "id": "makkah-city",
+          "nameAr": "مكة المكرمة",
+          "nameEn": "Makkah",
+          "neighborhoods": [
+            "المسفلة", "كرا", "أجياد", "الشبيكة", "الحمراء", "العزيزية", "الهنداوية", "الزاهر", "الطندباوي",
+            "الفلاح", "النزهة", "الهجلة", "الجميزة", "السليمانية", "الروضة", "الزاهر", "الورود", "الفيصلية",
+            "العقبة", "الشرائع", "الشوقية", "المنشأة", "السليمانية", "العتيبية", "الزهراء", "القدس", "المنصور"
+          ]
+        },
+        {
+          "id": "jeddah",
+          "nameAr": "جدة",
+          "nameEn": "Jeddah",
+          "neighborhoods": [
+            "البلد", "الشاطئ", "السلام", "الروضة", "الرياض", "أم السلم", "الزاهر", "الورود", "الفيصلية",
+            "الكورنيش", "الحمراء", "النزهة", "الفلاح", "الصفا", "البغدادية", "النسيم", "العزيزية", "الزهراء",
+            "الورود", "الجامعة", "البساتين", "الخالدية", "الربيع", "النهضة", "النور", "الخضراء", "السليمانية",
+            "المرجان", "الشاطئ", "الكورنيش الشمالي", "الكورنيش الجنوبي", "الأندلس", "الإسكان", "المنار", "الزهراء"
+          ]
+        },
+        {
+          "id": "taif",
+          "nameAr": "الطائف",
+          "nameEn": "Taif",
+          "neighborhoods": [
+            "الطائف", "الهدا", "الشفا", "المنتزه", "الفيصلية", "الملك فهد", "العزيزية", "النزهة", "السليمانية",
+            "الروضة", "النخيل", "الزهراء", "الورود", "الفيحاء", "الصفا", "النسيم", "الربيع", "الخالدية"
+          ]
+        },
+        {
+          "id": "qunfudhah",
+          "nameAr": "القنفذة",
+          "nameEn": "Qunfudhah",
+          "neighborhoods": ["القنفذة", "المظيلف", "أملج", "الدرب"]
+        },
+        {
+          "id": "lith",
+          "nameAr": "الليث",
+          "nameEn": "Al-Lith",
+          "neighborhoods": ["الليث", "أملج", "الدرب", "القنفذة"]
+        },
+        {
+          "id": "rabigh",
+          "nameAr": "رابغ",
+          "nameEn": "Rabigh",
+          "neighborhoods": ["رابغ", "خليص", "جدة", "مكة"]
+        },
+        {
+          "id": "khulais",
+          "nameAr": "خليص",
+          "nameEn": "Khulais",
+          "neighborhoods": ["خليص", "رابغ", "مكة", "جدة"]
+        },
+        {
+          "id": "turabah",
+          "nameAr": "تربة",
+          "nameEn": "Turabah",
+          "neighborhoods": ["تربة", "الخرمة", "الطائف", "بيشة"]
+        },
+        {
+          "id": "jumum",
+          "nameAr": "الجموم",
+          "nameEn": "Jumum",
+          "neighborhoods": ["الجموم", "مكة", "جدة", "رابغ"]
+        },
+        {
+          "id": "khurma",
+          "nameAr": "الخرمة",
+          "nameEn": "Khurma",
+          "neighborhoods": ["الخرمة", "تربة", "الطائف", "رنية"]
+        },
+        {
+          "id": "al-mukhwah",
+          "nameAr": "المخواة",
+          "nameEn": "Al-Mukhwah",
+          "neighborhoods": ["المخواة", "الباحة", "الطائف"]
+        },
+        {
+          "id": "ranniyah",
+          "nameAr": "رنية",
+          "nameEn": "Ranniyah",
+          "neighborhoods": ["رنية", "الخرمة", "تربة"]
+        },
+        {
+          "id": "al-jumum",
+          "nameAr": "الجموم",
+          "nameEn": "Al-Jumum",
+          "neighborhoods": ["الجموم", "مكة", "جدة"]
+        },
+        {
+          "id": "turbah",
+          "nameAr": "تربة",
+          "nameEn": "Turbah",
+          "neighborhoods": ["تربة", "الخرمة", "الطائف"]
+        }
+      ]
+    },
+    {
+      "id": "madinah",
+      "nameAr": "المدينة المنورة",
+      "nameEn": "Madinah",
+      "cities": [
+        {
+          "id": "madinah-city",
+          "nameAr": "المدينة المنورة",
+          "nameEn": "Madinah",
+          "neighborhoods": [
+            "العنبرية", "البقيع", "الحرة", "جبل عير", "قباء", "العوالي", "العريض", "السليمانية", "الروضة",
+            "النخيل", "المنتزه", "الفيصلية", "الملك فهد", "العزيزية", "النزهة", "الزهراء", "الورود", "الصفا",
+            "النسيم", "الربيع", "الخالدية", "الحرم", "المناخة", "السنبل", "الملك عبدالعزيز", "الإسكان"
+          ]
+        },
+        {
+          "id": "yanbu",
+          "nameAr": "ينبع",
+          "nameEn": "Yanbu",
+          "neighborhoods": [
+            "ينبع البحر", "ينبع الصناعية", "الروضة", "النزهة", "الفيصلية", "الزهراء", "الورود", "الصفا",
+            "النسيم", "الربيع", "الخالدية", "السليمانية", "العزيزية", "الملك فهد"
+          ]
+        },
+        {
+          "id": "alula",
+          "nameAr": "العلا",
+          "nameEn": "Al-Ula",
+          "neighborhoods": ["العلا", "خيبر", "الحائط", "المدائن"]
+        },
+        {
+          "id": "mahd-dhahab",
+          "nameAr": "مهد الذهب",
+          "nameEn": "Mahd adh Dhahab",
+          "neighborhoods": ["مهد الذهب", "المدينة", "ينبع"]
+        },
+        {
+          "id": "badr",
+          "nameAr": "بدر",
+          "nameEn": "Badr",
+          "neighborhoods": ["بدر", "المدينة", "ينبع"]
+        },
+        {
+          "id": "khaybar",
+          "nameAr": "خيبر",
+          "nameEn": "Khaybar",
+          "neighborhoods": ["خيبر", "العلا", "المدينة"]
+        },
+        {
+          "id": "hunayn",
+          "nameAr": "حنين",
+          "nameEn": "Hunayn",
+          "neighborhoods": ["حنين", "المدينة", "الطائف"]
+        },
+        {
+          "id": "al-hanakiyah",
+          "nameAr": "الحناكية",
+          "nameEn": "Al-Hanakiyah",
+          "neighborhoods": ["الحناكية", "المدينة", "الرس"]
+        },
+        {
+          "id": "wadi-al-fara",
+          "nameAr": "وادي الفرع",
+          "nameEn": "Wadi Al-Fara",
+          "neighborhoods": ["وادي الفرع", "المدينة"]
+        }
+      ]
+    },
+    {
+      "id": "eastern",
+      "nameAr": "المنطقة الشرقية",
+      "nameEn": "Eastern Province",
+      "cities": [
+        {
+          "id": "dammam",
+          "nameAr": "الدمام",
+          "nameEn": "Dammam",
+          "neighborhoods": [
+            "الدمام", "الخليج", "الشرقية", "الراقية", "الحمراء", "الفناتير", "الشاطئ", "الكورنيش", "الفيصلية",
+            "النزهة", "الروضة", "الزهراء", "الورود", "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية",
+            "العزيزية", "الملك فهد", "الملك عبدالعزيز", "المنتزه", "الأندلس", "الإسكان", "المنار"
+          ]
+        },
+        {
+          "id": "khobar",
+          "nameAr": "الخبر",
+          "nameEn": "Khobar",
+          "neighborhoods": [
+            "الخبر", "الراقي", "الكورنيش", "الشاطئ", "الفيصلية", "النزهة", "الروضة", "الزهراء", "الورود",
+            "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية", "العزيزية", "الملك فهد", "الملك عبدالعزيز",
+            "المنتزه", "الأندلس", "الإسكان", "المنار", "البحر", "الروابي", "الخزامى"
+          ]
+        },
+        {
+          "id": "dhahran",
+          "nameAr": "الظهران",
+          "nameEn": "Dhahran",
+          "neighborhoods": [
+            "الظهران", "أرامكو", "الفيصلية", "النزهة", "الروضة", "الزهراء", "الورود", "الصفا", "النسيم",
+            "الربيع", "الخالدية", "السليمانية", "العزيزية", "الملك فهد", "الملك عبدالعزيز"
+          ]
+        },
+        {
+          "id": "jubail",
+          "nameAr": "الجبيل",
+          "nameEn": "Jubail",
+          "neighborhoods": [
+            "الجبيل الصناعية", "الجبيل الدينية", "الفيصلية", "النزهة", "الروضة", "الزهراء", "الورود",
+            "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية", "العزيزية"
+          ]
+        },
+        {
+          "id": "qatif",
+          "nameAr": "القطيف",
+          "nameEn": "Qatif",
+          "neighborhoods": [
+            "القطيف", "سيهات", "عنك", "تاروت", "السنابس", "القديح", "العوامية", "الخويلدية", "العقير"
+          ]
+        },
+        {
+          "id": "hafr-albatin",
+          "nameAr": "حفر الباطن",
+          "nameEn": "Hafar Al-Batin",
+          "neighborhoods": [
+            "حفر الباطن", "النقرة", "الفيصلية", "النزهة", "الروضة", "الزهراء", "الورود", "الصفا", "النسيم"
+          ]
+        },
+        {
+          "id": "ras-tanura",
+          "nameAr": "رأس تنورة",
+          "nameEn": "Ras Tanura",
+          "neighborhoods": ["رأس تنورة", "الجبيل", "الدمام"]
+        },
+        {
+          "id": "sayhat",
+          "nameAr": "سيهات",
+          "nameEn": "Sayhat",
+          "neighborhoods": ["سيهات", "القطيف", "الدمام"]
+        },
+        {
+          "id": "safwa",
+          "nameAr": "صفوى",
+          "nameEn": "Safwa",
+          "neighborhoods": ["صفوى", "القطيف", "سيهات"]
+        },
+        {
+          "id": "abqaiq",
+          "nameAr": "بقيق",
+          "nameEn": "Abqaiq",
+          "neighborhoods": ["بقيق", "الدمام", "الظهران"]
+        },
+        {
+          "id": "al-ahsa",
+          "nameAr": "الأحساء",
+          "nameEn": "Al-Ahsa",
+          "neighborhoods": [
+            "الهفوف", "المبرز", "الجفر", "العيون", "الخيل", "المنتزه", "الفيصلية", "النزهة", "الروضة",
+            "الزهراء", "الورود", "الصفا", "النسيم", "الربيع", "الخالدية"
+          ]
+        },
+        {
+          "id": "al-khafji",
+          "nameAr": "الخفجي",
+          "nameEn": "Al-Khafji",
+          "neighborhoods": ["الخفجي", "حفر الباطن", "النقرة"]
+        },
+        {
+          "id": "nayriyah",
+          "nameAr": "النعيرية",
+          "nameEn": "Nayriyah",
+          "neighborhoods": ["النعيرية", "حفر الباطن"]
+        },
+        {
+          "id": "al-battaliyah",
+          "nameAr": "البطالية",
+          "nameEn": "Al-Battaliyah",
+          "neighborhoods": ["البطالية", "القطيف"]
+        },
+        {
+          "id": "al-qarah",
+          "nameAr": "القارة",
+          "nameEn": "Al-Qarah",
+          "neighborhoods": ["القارة", "الأحساء"]
+        }
+      ]
+    },
+    {
+      "id": "asir",
+      "nameAr": "عسير",
+      "nameEn": "Asir",
+      "cities": [
+        {
+          "id": "abha",
+          "nameAr": "أبها",
+          "nameEn": "Abha",
+          "neighborhoods": [
+            "أبها", "الرغام", "الوادي", "الملك فهد", "الملك عبدالعزيز", "الفيصلية", "النزهة", "الروضة",
+            "الزهراء", "الورود", "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية", "العزيزية", "المنتزه"
+          ]
+        },
+        {
+          "id": "khamis-mushait",
+          "nameAr": "خميس مشيط",
+          "nameEn": "Khamis Mushait",
+          "neighborhoods": [
+            "خميس مشيط", "الملك فهد", "الملك عبدالعزيز", "الفيصلية", "النزهة", "الروضة", "الزهراء", "الورود",
+            "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية", "العزيزية"
+          ]
+        },
+        {
+          "id": "bisha",
+          "nameAr": "بيشة",
+          "nameEn": "Bisha",
+          "neighborhoods": [
+            "بيشة", "تربة", "الخرمة", "النماص", "بلقرن", "الفيصلية", "النزهة", "الروضة", "الزهراء"
+          ]
+        },
+        {
+          "id": "sarat-abidah",
+          "nameAr": "سراة عبيدة",
+          "nameEn": "Sarat Abidah",
+          "neighborhoods": ["سراة عبيدة", "أبها", "خميس مشيط"]
+        },
+        {
+          "id": "ahad-rafidah",
+          "nameAr": "أحد رفيدة",
+          "nameEn": "Ahad Rafidah",
+          "neighborhoods": ["أحد رفيدة", "خميس مشيط", "أبها"]
+        },
+        {
+          "id": "muhayil",
+          "nameAr": "محايل",
+          "nameEn": "Muhayil",
+          "neighborhoods": ["محايل", "أبها", "القنفذة"]
+        },
+        {
+          "id": "balqarn",
+          "nameAr": "بلقرن",
+          "nameEn": "Balqarn",
+          "neighborhoods": ["بلقرن", "بيشة", "النماص"]
+        },
+        {
+          "id": "al-namas",
+          "nameAr": "النماص",
+          "nameEn": "Al-Namas",
+          "neighborhoods": ["النماص", "بلقرن", "أبها"]
+        },
+        {
+          "id": "tanomah",
+          "nameAr": "تنومة",
+          "nameEn": "Tanomah",
+          "neighborhoods": ["تنومة", "النماص", "أبها"]
+        },
+        {
+          "id": "bariq",
+          "nameAr": "بارق",
+          "nameEn": "Bariq",
+          "neighborhoods": ["بارق", "محايل", "القنفذة"]
+        },
+        {
+          "id": "rijal-alma",
+          "nameAr": "رجال ألمع",
+          "nameEn": "Rijal Almaa",
+          "neighborhoods": ["رجال ألمع", "أبها", "محايل"]
+        },
+        {
+          "id": "tathleeth",
+          "nameAr": "تثليث",
+          "nameEn": "Tathleeth",
+          "neighborhoods": ["تثليث", "بيشة", "أبها"]
+        }
+      ]
+    },
+    {
+      "id": "qassim",
+      "nameAr": "القصيم",
+      "nameEn": "Qassim",
+      "cities": [
+        {
+          "id": "buraidah",
+          "nameAr": "بريدة",
+          "nameEn": "Buraidah",
+          "neighborhoods": [
+            "بريدة", "الملك فهد", "الملك عبدالعزيز", "الفيصلية", "النزهة", "الروضة", "الزهراء", "الورود",
+            "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية", "العزيزية", "المنتزه"
+          ]
+        },
+        {
+          "id": "unaizah",
+          "nameAr": "عنيزة",
+          "nameEn": "Unaizah",
+          "neighborhoods": [
+            "عنيزة", "الملك فهد", "الملك عبدالعزيز", "الفيصلية", "النزهة", "الروضة", "الزهراء", "الورود",
+            "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية"
+          ]
+        },
+        {
+          "id": "rass",
+          "nameAr": "الرس",
+          "nameEn": "Ar Rass",
+          "neighborhoods": ["الرس", "بريدة", "عنيزة"]
+        },
+        {
+          "id": "bukayriyah",
+          "nameAr": "البكيرية",
+          "nameEn": "Bukayriyah",
+          "neighborhoods": ["البكيرية", "بريدة", "عنيزة"]
+        },
+        {
+          "id": "badai",
+          "nameAr": "البدائع",
+          "nameEn": "Al-Badai",
+          "neighborhoods": ["البدائع", "بريدة", "الأسياح"]
+        },
+        {
+          "id": "midhnab",
+          "nameAr": "المذنب",
+          "nameEn": "Al-Midhnab",
+          "neighborhoods": ["المذنب", "بريدة", "الأسياح"]
+        },
+        {
+          "id": "al-asiah",
+          "nameAr": "الأسياح",
+          "nameEn": "Al-Asiah",
+          "neighborhoods": ["الأسياح", "بريدة", "البدائع"]
+        },
+        {
+          "id": "al-shimasiyah",
+          "nameAr": "الشماسية",
+          "nameEn": "Al-Shimasiyah",
+          "neighborhoods": ["الشماسية", "بريدة", "الأسياح"]
+        },
+        {
+          "id": "al-nabhaniyah",
+          "nameAr": "النبهانية",
+          "nameEn": "Al-Nabhaniyah",
+          "neighborhoods": ["النبهانية", "بريدة", "الرس"]
+        },
+        {
+          "id": "riyadh-al-qassim",
+          "nameAr": "رياض الخبراء",
+          "nameEn": "Riyadh Al-Khabra",
+          "neighborhoods": ["رياض الخبراء", "عنيزة", "بريدة"]
+        }
+      ]
+    },
+    {
+      "id": "hail",
+      "nameAr": "حائل",
+      "nameEn": "Hail",
+      "cities": [
+        {
+          "id": "hail-city",
+          "nameAr": "حائل",
+          "nameEn": "Hail",
+          "neighborhoods": [
+            "حائل", "الملك فهد", "الملك عبدالعزيز", "الفيصلية", "النزهة", "الروضة", "الزهراء", "الورود",
+            "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية", "العزيزية", "المنتزه", "النقرة"
+          ]
+        },
+        {
+          "id": "baqiq",
+          "nameAr": "بقعاء",
+          "nameEn": "Baqiq",
+          "neighborhoods": ["بقعاء", "حائل", "الغزالة"]
+        },
+        {
+          "id": "sambak",
+          "nameAr": "الغزالة",
+          "nameEn": "Al-Ghazalah",
+          "neighborhoods": ["الغزالة", "بقعاء", "حائل"]
+        },
+        {
+          "id": "al-shinan",
+          "nameAr": "الشنان",
+          "nameEn": "Al-Shinan",
+          "neighborhoods": ["الشنان", "حائل", "بقعاء"]
+        },
+        {
+          "id": "al-sulaimi",
+          "nameAr": "السليمي",
+          "nameEn": "Al-Sulaimi",
+          "neighborhoods": ["السليمي", "حائل"]
+        }
+      ]
+    },
+    {
+      "id": "tabuk",
+      "nameAr": "تبوك",
+      "nameEn": "Tabuk",
+      "cities": [
+        {
+          "id": "tabuk-city",
+          "nameAr": "تبوك",
+          "nameEn": "Tabuk",
+          "neighborhoods": [
+            "تبوك", "الملك فهد", "الملك عبدالعزيز", "الفيصلية", "النزهة", "الروضة", "الزهراء", "الورود",
+            "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية", "العزيزية", "المنتزه", "الشامية"
+          ]
+        },
+        {
+          "id": "amlaj",
+          "nameAr": "أملج",
+          "nameEn": "Amlaj",
+          "neighborhoods": ["أملج", "ضبا", "الوجه"]
+        },
+        {
+          "id": "haql",
+          "nameAr": "حقل",
+          "nameEn": "Haql",
+          "neighborhoods": ["حقل", "تبوك", "ضبا"]
+        },
+        {
+          "id": "duba",
+          "nameAr": "ضبا",
+          "nameEn": "Duba",
+          "neighborhoods": ["ضبا", "أملج", "الوجه"]
+        },
+        {
+          "id": "al-wajh",
+          "nameAr": "الوجه",
+          "nameEn": "Al-Wajh",
+          "neighborhoods": ["الوجه", "ضبا", "أملج"]
+        },
+        {
+          "id": "tayma",
+          "nameAr": "تيماء",
+          "nameEn": "Tayma",
+          "neighborhoods": ["تيماء", "تبوك", "حائل"]
+        },
+        {
+          "id": "uqlat-al-suqur",
+          "nameAr": "عقلة الصقور",
+          "nameEn": "Uqlat Al-Suqur",
+          "neighborhoods": ["عقلة الصقور", "تبوك"]
+        }
+      ]
+    },
+    {
+      "id": "border",
+      "nameAr": "الحدود الشمالية",
+      "nameEn": "Northern Borders",
+      "cities": [
+        {
+          "id": "arar",
+          "nameAr": "عرعر",
+          "nameEn": "Arar",
+          "neighborhoods": [
+            "عرعر", "الملك فهد", "الملك عبدالعزيز", "الفيصلية", "النزهة", "الروضة", "الزهراء", "الورود",
+            "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية", "العزيزية"
+          ]
+        },
+        {
+          "id": "rafha",
+          "nameAr": "رفحاء",
+          "nameEn": "Rafha",
+          "neighborhoods": ["رفحاء", "عرعر", "طريف"]
+        },
+        {
+          "id": "turaif",
+          "nameAr": "طريف",
+          "nameEn": "Turaif",
+          "neighborhoods": ["طريف", "عرعر", "رفحاء"]
+        },
+        {
+          "id": "al-uwaiqilah",
+          "nameAr": "العويقلية",
+          "nameEn": "Al-Uwaiqilah",
+          "neighborhoods": ["العويقلية", "عرعر"]
+        }
+      ]
+    },
+    {
+      "id": "jawf",
+      "nameAr": "الجوف",
+      "nameEn": "Al Jouf",
+      "cities": [
+        {
+          "id": "sakaka",
+          "nameAr": "سكاكا",
+          "nameEn": "Sakaka",
+          "neighborhoods": [
+            "سكاكا", "الملك فهد", "الملك عبدالعزيز", "الفيصلية", "النزهة", "الروضة", "الزهراء", "الورود",
+            "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية", "العزيزية"
+          ]
+        },
+        {
+          "id": "dumat-aljandal",
+          "nameAr": "دومة الجندل",
+          "nameEn": "Dumat Al-Jandal",
+          "neighborhoods": ["دومة الجندل", "سكاكا", "القريات"]
+        },
+        {
+          "id": "al-qurayyat",
+          "nameAr": "القريات",
+          "nameEn": "Al-Qurayyat",
+          "neighborhoods": ["القريات", "سكاكا", "دومة الجندل"]
+        },
+        {
+          "id": "tabul",
+          "nameAr": "طبرجل",
+          "nameEn": "Tubarjal",
+          "neighborhoods": ["طبرجل", "سكاكا"]
+        }
+      ]
+    },
+    {
+      "id": "bahah",
+      "nameAr": "الباحة",
+      "nameEn": "Al Bahah",
+      "cities": [
+        {
+          "id": "albaha",
+          "nameAr": "الباحة",
+          "nameEn": "Al Bahah",
+          "neighborhoods": [
+            "الباحة", "الملك فهد", "الملك عبدالعزيز", "الفيصلية", "النزهة", "الروضة", "الزهراء", "الورود",
+            "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية", "العزيزية", "القصاب"
+          ]
+        },
+        {
+          "id": "baljurashi",
+          "nameAr": "بلجرشي",
+          "nameEn": "Baljurashi",
+          "neighborhoods": ["بلجرشي", "الباحة", "المندق"]
+        },
+        {
+          "id": "aqla",
+          "nameAr": "المندق",
+          "nameEn": "Al-Mandaq",
+          "neighborhoods": ["المندق", "بلجرشي", "الباحة"]
+        },
+        {
+          "id": "al-makhwah",
+          "nameAr": "المخواة",
+          "nameEn": "Al-Makhwah",
+          "neighborhoods": ["المخواة", "الباحة", "الطائف"]
+        },
+        {
+          "id": "qiwa",
+          "nameAr": "قيوة",
+          "nameEn": "Qiwa",
+          "neighborhoods": ["قيوة", "الباحة"]
+        }
+      ]
+    },
+    {
+      "id": "jizan",
+      "nameAr": "جيزان",
+      "nameEn": "Jizan",
+      "cities": [
+        {
+          "id": "jizan-city",
+          "nameAr": "جيزان",
+          "nameEn": "Jizan",
+          "neighborhoods": [
+            "جيزان", "الملك فهد", "الملك عبدالعزيز", "الفيصلية", "النزهة", "الروضة", "الزهراء", "الورود",
+            "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية", "العزيزية", "القاهرة"
+          ]
+        },
+        {
+          "id": "sabya",
+          "nameAr": "صبيا",
+          "nameEn": "Sabya",
+          "neighborhoods": ["صبيا", "أبو عريش", "جيزان"]
+        },
+        {
+          "id": "abu-arish",
+          "nameAr": "أبو عريش",
+          "nameEn": "Abu Arish",
+          "neighborhoods": ["أبو عريش", "صبيا", "جيزان"]
+        },
+        {
+          "id": "farasan",
+          "nameAr": "فرسان",
+          "nameEn": "Farasan",
+          "neighborhoods": ["فرسان", "جيزان"]
+        },
+        {
+          "id": "samitah",
+          "nameAr": "صامطة",
+          "nameEn": "Samitah",
+          "neighborhoods": ["صامطة", "أبو عريش", "جيزان"]
+        },
+        {
+          "id": "al-darb",
+          "nameAr": "الدرب",
+          "nameEn": "Al-Darb",
+          "neighborhoods": ["الدرب", "جيزان", "القنفذة"]
+        },
+        {
+          "id": "al-aridhah",
+          "nameAr": "العارضة",
+          "nameEn": "Al-Aridhah",
+          "neighborhoods": ["العارضة", "أبو عريش"]
+        },
+        {
+          "id": "al-reeth",
+          "nameAr": "الريث",
+          "nameEn": "Al-Reeth",
+          "neighborhoods": ["الريث", "جيزان"]
+        }
+      ]
+    },
+    {
+      "id": "najran",
+      "nameAr": "نجران",
+      "nameEn": "Najran",
+      "cities": [
+        {
+          "id": "najran-city",
+          "nameAr": "نجران",
+          "nameEn": "Najran",
+          "neighborhoods": [
+            "نجران", "الشرقية", "الغربية", "الملك فهد", "الملك عبدالعزيز", "الفيصلية", "النزهة", "الروضة",
+            "الزهراء", "الورود", "الصفا", "النسيم", "الربيع", "الخالدية", "السليمانية", "العزيزية"
+          ]
+        },
+        {
+          "id": "sharorah",
+          "nameAr": "شرورة",
+          "nameEn": "Sharorah",
+          "neighborhoods": ["شرورة", "نجران", "حبونا"]
+        },
+        {
+          "id": "habuna",
+          "nameAr": "حبونا",
+          "nameEn": "Habuna",
+          "neighborhoods": ["حبونا", "شرورة", "نجران"]
+        },
+        {
+          "id": "badr-al-janoob",
+          "nameAr": "بدر الجنوب",
+          "nameEn": "Badr Al-Janoob",
+          "neighborhoods": ["بدر الجنوب", "نجران"]
+        },
+        {
+          "id": "yadamah",
+          "nameAr": "يدمة",
+          "nameEn": "Yadamah",
+          "neighborhoods": ["يدمة", "نجران"]
+        },
+        {
+          "id": "khubah",
+          "nameAr": "خباة",
+          "nameEn": "Khubah",
+          "neighborhoods": ["خباة", "نجران"]
+        }
+      ]
+    }
+  ],
+  "sports": [
+    { "value": "football", "label": "كرة القدم", "labelEn": "Football" },
+    { "value": "basketball", "label": "كرة السلة", "labelEn": "Basketball" },
+    { "value": "volleyball", "label": "الكرة الطائرة", "labelEn": "Volleyball" },
+    { "value": "tennis", "label": "التنس", "labelEn": "Tennis" },
+    { "value": "handball", "label": "كرة اليد", "labelEn": "Handball" },
+    { "value": "badminton", "label": "الريشة الطائرة", "labelEn": "Badminton" },
+    { "value": "swimming", "label": "السباحة", "labelEn": "Swimming" },
+    { "value": "hockey", "label": "الهوكي", "labelEn": "Hockey" },
+    { "value": "gymnastics", "label": "الجمباز", "labelEn": "Gymnastics" },
+    { "value": "shooting", "label": "الرماية", "labelEn": "Shooting" },
+    { "value": "athletics", "label": "ألعاب القوى", "labelEn": "Athletics" },
+    { "value": "boxing", "label": "الملاكمة", "labelEn": "Boxing" },
+    { "value": "martial-arts", "label": "الفنون القتالية", "labelEn": "Martial Arts" },
+    { "value": "cycling", "label": "راكب الدراجات", "labelEn": "Cycling" },
+    { "value": "table-tennis", "label": "تنس الطاولة", "labelEn": "Table Tennis" }
+  ],
+  "levels": [
+    { "value": "beginner", "label": "مبتدئ", "labelEn": "Beginner" },
+    { "value": "intermediate", "label": "متوسط", "labelEn": "Intermediate" },
+    { "value": "advanced", "label": "متقدم", "labelEn": "Advanced" },
+    { "value": "amateur", "label": "هاوي", "labelEn": "Amateur" },
+    { "value": "semi-pro", "label": "شبه محترف", "labelEn": "Semi-Professional" },
+    { "value": "professional", "label": "محترف", "labelEn": "Professional" }
+  ]
+}
+
