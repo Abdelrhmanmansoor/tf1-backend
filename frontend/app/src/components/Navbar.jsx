@@ -9,8 +9,8 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => {
+    // دع AuthContext يتولى كل شيء (شمل logout() يستدعي endpoint و يوجه)
     logout();
-    navigate('/login');
   };
 
   return (

@@ -75,8 +75,20 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // تحقق إذا كان الخطأ 401 (unauthorized) فقط - وليس من الشبكة أو من الـ timeout
+    // إذا كان الخطأ 401 - محاولة تحديث التوكن
     if (error.response?.status === 401 && !originalRequest._retry && error.response) {
+      originalRequest._retry = true;
+      
+      // تحقق من أن الـ refresh_token موجود
+      const refreshToken = sessionStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        // لا توجد refresh token - اذهب لصفحة الدخول
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('user');
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+      
       // Only refresh token once, queue other requests
       if (!refreshPromise) {
         refreshPromise = new Promise(async (resolve, reject) => {
@@ -101,9 +113,10 @@ api.interceptors.response.use(
             processQueue(null, accessToken);
             resolve(accessToken);
           } catch (err) {
-            // Token refresh failed - لا تسجل خروج، فقط رفع الخطأ
-            console.warn('Token refresh failed, user may be logged out:', err);
-            // فقط سجل خروج إذا كان الخطأ من الـ authentication نفسه
+            // Token refresh failed - لا تسجل خروج إلا إذا كان الخطأ من authentication نفسه
+            console.warn('Token refresh failed:', err);
+            
+            // فقط سجل خروج إذا كان الخطأ 401/403 من الـ refresh endpoint
             if (err.response?.status === 401 || err.response?.status === 403) {
               sessionStorage.removeItem('accessToken');
               sessionStorage.removeItem('refreshToken');
@@ -122,7 +135,7 @@ api.interceptors.response.use(
       try {
         const token = await refreshPromise;
         originalRequest.headers.Authorization = `Bearer ${token}`;
-        originalRequest._retry = true; // Mark as retried
+        originalRequest._retry = true;
         return api(originalRequest);
       } catch (err) {
         console.warn('Failed to refresh token, request will fail');
@@ -130,13 +143,14 @@ api.interceptors.response.use(
       }
     }
 
-    // إذا كان الخطأ من الشبكة أو من الـ timeout، لا تسجل خروج
+    // إذا كان الخطأ من الشبكة أو من الـ timeout، لا تسجل خروج - فقط رجع الخطأ
     if (!error.response) {
-      // Network error or timeout - لا تسجل خروج
+      // Network error or timeout
       console.warn('Network error:', error.message);
       return Promise.reject(error);
     }
 
+    // للأخطاء الأخرى (500, 403, إلخ) - لا تسجل خروج فقط رجع الخطأ
     return Promise.reject(error);
   }
 );
@@ -145,13 +159,13 @@ export const authService = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   register: (data) => api.post('/auth/register', data),
   logout: () => {
-    // Clear local session storage
-    sessionStorage.removeItem('accessToken');
-    sessionStorage.removeItem('refreshToken');
-    sessionStorage.removeItem('user');
-    
-    // Call logout endpoint to clear cookies server-side
-    return api.post('/auth/logout');
+    // استدعاء logout endpoint أولاً لحذف الجلسة من الخادم
+    return api.post('/auth/logout').finally(() => {
+      // حذف البيانات المحلية بغض النظر عن نتيجة الطلب
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('refreshToken');
+      sessionStorage.removeItem('user');
+    });
   },
   refreshToken: (refreshToken) => api.post('/auth/refresh-token', { refreshToken }),
 };
@@ -165,23 +179,23 @@ export const matchService = {
   getMyMatches: () => api.get('/matches/my-matches'),
   getRegions: () => api.get('/matches/regions'),
   
-  // Social Features
-  getFriends: () => api.get('/matches/api/social/friends'),
-  getFriendRequests: () => api.get('/matches/api/social/friends/requests'),
-  getFriendSuggestions: () => api.get('/matches/api/social/friends/suggestions'),
-  getFriendsInMatch: (matchId) => api.get(`/matches/api/social/matches/${matchId}/friends`),
-  sendFriendRequest: (friendId) => api.post('/matches/api/social/friends/request', { friendId }),
-  acceptFriendRequest: (friendshipId) => api.post(`/matches/api/social/friends/${friendshipId}/accept`),
-  getActivityFeed: (limit = 50) => api.get('/matches/api/social/feed', { params: { limit } }),
-  getRecommendations: (limit = 20) => api.get('/matches/api/social/recommendations', { params: { limit } }),
+  // Social Features ✅ Fixed paths (use /matches/social not /matches/api/social)
+  getFriends: () => api.get('/matches/social/friends'),
+  getFriendRequests: () => api.get('/matches/social/friends/requests'),
+  getFriendSuggestions: () => api.get('/matches/social/friends/suggestions'),
+  getFriendsInMatch: (matchId) => api.get(`/matches/social/matches/${matchId}/friends`),
+  sendFriendRequest: (friendId) => api.post('/matches/social/friends/request', { friendId }),
+  acceptFriendRequest: (friendshipId) => api.post(`/matches/social/friends/${friendshipId}/accept`),
+  getActivityFeed: (limit = 50) => api.get('/matches/social/feed', { params: { limit } }),
+  getRecommendations: (limit = 20) => api.get('/matches/social/recommendations', { params: { limit } }),
   
-  // Analytics Features
-  getUserAnalytics: (userId) => api.get(`/matches/api/analytics/user${userId ? `/${userId}` : ''}`),
-  getUserPerformance: (userId) => api.get(`/matches/api/analytics/performance${userId ? `/${userId}` : ''}`),
-  getMatchStats: (matchId) => api.get(`/matches/api/analytics/match/${matchId}`),
-  getLeaderboard: (type = 'points') => api.get('/matches/api/analytics/leaderboard', { params: { type } }),
-  getTrendingMatches: () => api.get('/matches/api/analytics/trending'),
-  getPlatformStats: () => api.get('/matches/api/analytics/platform'),
+  // Analytics Features ✅ Fixed paths (use /matches/analytics not /matches/api/analytics)
+  getUserAnalytics: (userId) => api.get(`/matches/analytics/user${userId ? `/${userId}` : ''}`),
+  getUserPerformance: (userId) => api.get(`/matches/analytics/performance${userId ? `/${userId}` : ''}`),
+  getMatchStats: (matchId) => api.get(`/matches/analytics/match/${matchId}`),
+  getLeaderboard: (type = 'points') => api.get('/matches/analytics/leaderboard', { params: { type } }),
+  getTrendingMatches: () => api.get('/matches/analytics/trending'),
+  getPlatformStats: () => api.get('/matches/analytics/platform'),
 };
 
 export const profileService = {

@@ -33,7 +33,20 @@ const MatchStatistics = ({ matchId, userId }) => {
       }
     } catch (err) {
       console.error('Error fetching statistics:', err);
-      setError(err.response?.data?.message || 'خطأ في تحميل الإحصائيات');
+      
+      // تحقق إذا كان الخطأ من عدم وجود authorization
+      if (err.response?.status === 401) {
+        // Unauthorized - توكن منتهي الصلاحية
+        // دع الـ interceptor يتعامل مع refresh
+        setError('انتهت صلاحية الجلسة، يرجى إعادة تسجيل الدخول');
+      } else if (err.response?.status === 403) {
+        setError('لا تملك صلاحية للوصول إلى هذه البيانات');
+      } else if (!err.response) {
+        // Network error
+        setError('خطأ في الاتصال، يرجى التحقق من الإنترنت');
+      } else {
+        setError(err.response?.data?.message || 'خطأ في تحميل الإحصائيات');
+      }
     } finally {
       setLoading(false);
     }

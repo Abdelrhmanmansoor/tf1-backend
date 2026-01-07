@@ -32,7 +32,20 @@ const MatchFriends = ({ matchId }) => {
       }
     } catch (err) {
       console.error('Error fetching friends:', err);
-      setError(err.response?.data?.message || 'خطأ في تحميل الأصدقاء');
+      
+      // تحقق إذا كان الخطأ من عدم وجود authorization
+      if (err.response?.status === 401) {
+        // Unauthorized - توكن منتهي الصلاحية
+        // دع الـ interceptor يتعامل مع refresh
+        setError('انتهت صلاحية الجلسة، يرجى إعادة تسجيل الدخول');
+      } else if (err.response?.status === 403) {
+        setError('لا تملك صلاحية للوصول إلى هذه البيانات');
+      } else if (!err.response) {
+        // Network error
+        setError('خطأ في الاتصال، يرجى التحقق من الإنترنت');
+      } else {
+        setError(err.response?.data?.message || 'خطأ في تحميل الأصدقاء');
+      }
     } finally {
       setLoading(false);
     }

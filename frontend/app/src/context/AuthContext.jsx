@@ -105,29 +105,43 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    // Clear all authentication data from both storages
-    sessionStorage.removeItem('accessToken');
-    sessionStorage.removeItem('refreshToken');
-    sessionStorage.removeItem('user');
-    
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-    
-    sessionStorage.clear();
-    
-    setUser(null);
-    setIsLoggedOut(true);
+  const logout = async () => {
+    try {
+      // محاولة استدعاء الـ logout endpoint لحذف الجلسة من الخادم
+      await authService.logout().catch(err => {
+        // إذا فشل - لا يهم، سنحذف من الكلاينت على أي حال
+        console.warn('Logout endpoint failed:', err);
+      });
+    } catch (error) {
+      console.warn('Logout service error:', error);
+    } finally {
+      // حذف البيانات من التخزين
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('refreshToken');
+      sessionStorage.removeItem('user');
+      
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      
+      sessionStorage.clear();
+      localStorage.clear();
+      
+      setUser(null);
+      setIsLoggedOut(true);
 
-    // Prevent back button from showing cached page
-    window.history.pushState(null, null, window.location.href);
-    window.addEventListener('popstate', () => {
+      // منع زر الرجوع من عرض صفحة مخزنة مؤقتاً
       window.history.pushState(null, null, window.location.href);
-    });
+      window.addEventListener('popstate', () => {
+        window.history.pushState(null, null, window.location.href);
+      });
 
-    // Redirect using replace (removes logout from history)
-    window.location.replace('/login');
+      // إعادة التوجيه باستخدام replace (إزالة logout من السجل)
+      // استخدم setTimeout لضمان اكتمال التنظيف قبل الإعادة
+      setTimeout(() => {
+        window.location.replace('/login');
+      }, 100);
+    }
   };
 
   return (
