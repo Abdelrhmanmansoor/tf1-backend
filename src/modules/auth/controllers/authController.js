@@ -3,6 +3,8 @@ const ClubProfile = require('../../club/models/ClubProfile');
 const jwtService = require('../../../utils/jwt');
 const emailService = require('../../../utils/email');
 const { getUserPermissions } = require('../../../middleware/rbac');
+const { clearUserCSRFTokens } = require('../../../middleware/csrf');
+const logger = require('../../../utils/logger');
 
 // Global cache to prevent duplicate verification requests
 const verificationCache = new Map();
@@ -151,23 +153,60 @@ class AuthController {
       const user = new User(userData);
       const verificationToken = user.generateEmailVerificationToken();
       
-      // Log token generation for debugging
       console.log(`📧 [REGISTRATION] Generated verification token for ${user.email} (role: ${user.role})`);
-      console.log(`📧 [REGISTRATION] Token (first 20 chars): ${verificationToken.substring(0, 20)}...`);
-      console.log(`📧 [REGISTRATION] Token expires at: ${new Date(user.emailVerificationTokenExpires).toISOString()}`);
+      console.log(`📧 [REGISTRATION] Token length: ${verificationToken.length}, Token prefix: ${verificationToken.substring(0, 20)}...`);
+      console.log(`📧 [REGISTRATION] Token expires at: ${user.emailVerificationTokenExpires ? new Date(user.emailVerificationTokenExpires).toISOString() : 'null'}`);
       
-      await user.save();
+      try {
+        await user.save();
+        console.log(`✅ [REGISTRATION] User saved successfully: ${user.email} (role: ${user.role})`);
+      } catch (saveError) {
+        console.error('❌ [REGISTRATION] Error saving user:', saveError);
+        console.error('Save error details:', {
+          email: user.email,
+          role: user.role,
+          errorMessage: saveError.message,
+          errorName: saveError.name,
+          validationErrors: saveError.errors ? Object.keys(saveError.errors).map(key => ({
+            field: key,
+            message: saveError.errors[key].message
+          })) : null
+        });
+        throw saveError;
+      }
       
       // Verify token was saved correctly
       const savedUser = await User.findById(user._id);
+      if (!savedUser) {
+        console.error(`❌ [REGISTRATION] User not found after save: ${user._id}`);
+        throw new Error('User not found after registration');
+      }
+      
       if (!savedUser.emailVerificationToken) {
-        console.error('❌ [REGISTRATION] Token was not saved!');
-        // Regenerate and save again
-        savedUser.generateEmailVerificationToken();
-        await savedUser.save();
-        console.log('✅ [REGISTRATION] Token regenerated and saved');
+        console.error(`❌ [REGISTRATION] Email verification token not saved on first attempt for ${user.email} (role: ${user.role})`);
+        // Regenerate and save again using updateOne to ensure it's saved
+        const newToken = savedUser.generateEmailVerificationToken();
+        await User.updateOne(
+          { _id: savedUser._id },
+          {
+            $set: {
+              emailVerificationToken: savedUser.emailVerificationToken,
+              emailVerificationTokenExpires: savedUser.emailVerificationTokenExpires
+            }
+          }
+        );
+        console.log(`✅ [REGISTRATION] Email verification token regenerated and saved using updateOne for ${user.email}`);
+        
+        // Verify again
+        const recheckUser = await User.findById(savedUser._id);
+        if (!recheckUser || !recheckUser.emailVerificationToken) {
+          console.error(`❌ [REGISTRATION] Token still not saved after updateOne for ${user.email}`);
+          throw new Error('Failed to save verification token');
+        } else {
+          console.log(`✅ [REGISTRATION] Token verified after updateOne for ${user.email}, token length: ${recheckUser.emailVerificationToken.length}, matches: ${recheckUser.emailVerificationToken === verificationToken}`);
+        }
       } else {
-        console.log('✅ [REGISTRATION] Token saved successfully');
+        console.log(`✅ [REGISTRATION] Email verification token saved successfully for ${user.email}, token length: ${savedUser.emailVerificationToken.length}, matches: ${savedUser.emailVerificationToken === verificationToken}`);
       }
 
       // Create Club Profile if role is club
@@ -204,9 +243,9 @@ class AuthController {
           });
 
           await clubProfile.save();
-          console.log(`✅ Club profile created for user ${user._id} with address verification status: ${nationalAddressData.isVerified}`);
+          logger.info('Club profile created', { userId: user._id });
         } catch (profileError) {
-          console.error('❌ Failed to create club profile:', profileError);
+          logger.error('Failed to create club profile', { userId: user._id, error: profileError.message });
           // We don't fail the registration, but this should be investigated
         }
       }
@@ -222,7 +261,7 @@ class AuthController {
           user: user.toSafeObject()
         });
       } catch (emailError) {
-        console.error('Email service error (non-critical):', emailError);
+        logger.warn('Email verification send failed', { userId: user._id, error: emailError.message });
         res.status(201).json({
           success: true,
           message: 'Registration successful. You can now log in to your account.',
@@ -231,7 +270,7 @@ class AuthController {
       }
 
     } catch (error) {
-      console.error('Registration error:', error);
+      logger.error('Registration failed', { error: error.message, stack: error.stack });
 
       if (error.name === 'ValidationError') {
         const errors = Object.values(error.errors).map(err => ({
@@ -277,7 +316,7 @@ class AuthController {
       }
 
       const isPasswordValid = await user.comparePassword(password);
-      console.log('🔐 Password check:', {
+      logger.debug('Password verification check:', {
         email: user.email,
         passwordProvided: password.substring(0, 5) + '...',
         passwordHash: user.password.substring(0, 10) + '...',
@@ -313,7 +352,7 @@ class AuthController {
       });
 
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login failed', { error: error.message, stack: error.stack });
       res.status(500).json({
         success: false,
         message: 'Login failed. Please try again.',
@@ -376,7 +415,7 @@ class AuthController {
       });
 
     } catch (error) {
-      console.error('Refresh token error:', error);
+      logger.error('Token refresh failed', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to refresh token. Please try again.',
@@ -417,7 +456,7 @@ class AuthController {
       });
 
     } catch (error) {
-      console.error('Forgot password error:', error);
+      logger.error('Forgot password failed', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to process password reset request. Please try again.',
@@ -453,7 +492,7 @@ class AuthController {
       });
 
     } catch (error) {
-      console.error('Reset password error:', error);
+      logger.error('Reset password failed', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to reset password. Please try again.',
@@ -472,11 +511,11 @@ class AuthController {
 
       const { token } = req.query;
 
-      console.log(`📧 [EMAIL VERIFICATION] Request received for token: ${token?.substring(0, 10)}...`);
+      logger.info('Email verification request received');
 
       // Validate token exists
       if (!token) {
-        console.log('❌ [EMAIL VERIFICATION] No token provided');
+        logger.warn('Email verification requested with no token');
         return res.status(400).json({
           success: false,
           message: 'Verification token is required',
@@ -877,7 +916,7 @@ class AuthController {
       });
 
     } catch (error) {
-      console.error('Resend verification error:', error);
+      logger.error('Resend verification failed', { error: error.message });
       res.status(500).json({
         success: false,
         message: 'Failed to resend verification email. Please try again.',
@@ -889,6 +928,11 @@ class AuthController {
 
   async logout(req, res) {
     try {
+      // Clear CSRF tokens for this user
+      if (req.user?._id) {
+        clearUserCSRFTokens(req.user._id);
+      }
+
       // Clear authentication cookies for both main auth and matches system
       const cookieOptions = {
         httpOnly: true,
