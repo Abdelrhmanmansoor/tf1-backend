@@ -30,6 +30,7 @@ const siteSettingsRoutes = require('./src/routes/siteSettings');
 const locationsRoutes = require('./src/routes/locations');
 const openaiWebhookRoutes = require('./src/modules/integrations/openai/webhook.routes');
 const adminDashboardRoutes = require('./src/modules/admin-dashboard/routes');
+const securityHeadersMiddleware = require('./src/middleware/securityHeaders');
 const { seedRegions } = require('./src/utils/seedLocations');
 const { createSearchIndexes } = require('./src/config/searchIndexes');
 const configureSocket = require('./src/config/socket');
@@ -117,6 +118,9 @@ if (NODE_ENV === 'production' || process.env.RENDER) {
 }
 
 // ==================== SECURITY MIDDLEWARE ====================
+// Apply security headers middleware first
+app.use(securityHeadersMiddleware);
+
 app.use(
   helmet({
     contentSecurityPolicy: NODE_ENV === 'production' ? undefined : false,

@@ -12,20 +12,20 @@ const notificationRoutes = require('./notificationRoutes');
 const authController = require('../controllers/authController');
 const { authLimiter } = require('../middleware/rateLimiter');
 
-// Direct registration/login routes for /api/v1/matches/register and /api/v1/matches/login
+// Direct registration/login routes (for backward compatibility)
 router.post('/register', authLimiter, authController.register);
 router.post('/login', authLimiter, authController.login);
 
-// Mount routes under /matches/api
+// Mount main routes under /api prefix
 router.use('/api/auth', authRoutes);
-router.use('/api', matchRoutes); // Match routes will be at /matches/api/matches, etc.
+router.use('/api/matches', matchRoutes);
 router.use('/api/teams', teamRoutes);
 router.use('/api/me', historyRoutes);
 router.use('/api/notifications', notificationRoutes);
 
 // Legacy routes for backward compatibility (direct under /matches)
 router.use('/auth', authRoutes);
-router.use('/', matchRoutes);
+router.use('/matches', matchRoutes);
 router.use('/teams', teamRoutes);
 router.use('/me', historyRoutes);
 router.use('/notifications', notificationRoutes);

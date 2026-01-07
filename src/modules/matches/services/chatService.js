@@ -29,7 +29,7 @@ class ChatService {
     });
 
     // Populate user info
-    await message.populate('user_id', 'display_name email');
+    await message.populate('user_id', 'name email');
 
     // Socket.io broadcast
     if (global.io) {
@@ -55,7 +55,7 @@ class ChatService {
     }
 
     const messages = await ChatMessage.find(query)
-      .populate('user_id', 'display_name email')
+      .populate('user_id', 'name email')
       .sort({ created_at: -1 })
       .limit(limit);
 

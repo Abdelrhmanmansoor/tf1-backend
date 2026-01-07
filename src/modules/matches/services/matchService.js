@@ -3,6 +3,7 @@ const Match = require('../models/Match');
 const Participation = require('../models/Participation');
 const MatchNotification = require('../models/MatchNotification');
 const StateMachine = require('../utils/stateMachine');
+const cache = require('../utils/cache');
 
 class MatchService {
   async createMatch(userId, data, isNewFormat = false) {
@@ -46,13 +47,32 @@ class MatchService {
     }
 
     const match = await Match.create(matchData);
+    
+    // Invalidate matches list cache
+    await cache.invalidateMatchCache(match._id);
+    
     return match;
   }
 
   async getMatch(matchId) {
+    // Try to get from cache first
+    const cacheKey = `match:${matchId}`;
+    const cached = await cache.get(cacheKey);
+    
+    if (cached) {
+      return cached;
+    }
+
     const match = await Match.findById(matchId)
       .populate('created_by', 'name email')
-      .populate('owner_id', 'name email');
+      .populate('owner_id', 'name email')
+      .lean();
+    
+    // Cache for 5 minutes
+    if (match) {
+      await cache.set(cacheKey, match, 300);
+    }
+    
     return match;
   }
 
@@ -73,13 +93,13 @@ class MatchService {
 
     // New filter fields
     if (filters.sport) {
-      query.sport = filters.sport;
+      query.sport = { $regex: new RegExp(filters.sport, 'i') };
     }
     if (filters.city) {
-      query.city = filters.city;
+      query.city = { $regex: new RegExp(filters.city, 'i') };
     }
     if (filters.area) {
-      query.area = filters.area;
+      query.area = { $regex: new RegExp(filters.area, 'i') };
     }
     if (filters.level) {
       query.level = filters.level;
@@ -96,18 +116,28 @@ class MatchService {
       }
     }
 
-    const skip = Math.max(((filters.page || 1) - 1) * (filters.limit || 50), 0);
+    // Search by title
+    if (filters.search) {
+      query.title = { $regex: new RegExp(filters.search, 'i') };
+    }
+
+    // Limit to reasonable values
+    const limit = Math.min(Math.max(parseInt(filters.limit) || 20, 1), 100);
+    const page = Math.max(parseInt(filters.page) || 1, 1);
+    const skip = (page - 1) * limit;
+
     const [matches, total] = await Promise.all([
       Match.find(query)
       .populate('created_by', 'name email')
       .populate('owner_id', 'name email')
-      .sort({ created_at: -1 })
+      .sort({ date: 1, created_at: -1 })
       .skip(skip)
-      .limit(filters.limit || 50),
+      .limit(limit)
+      .lean(),
       Match.countDocuments(query)
     ]);
 
-    return { matches, total };
+    return { matches, total, page, limit };
   }
 
   async getMyMatches(userId) {
@@ -249,6 +279,9 @@ class MatchService {
 
       await session.commitTransaction();
 
+      // Invalidate cache for this match
+      await cache.invalidateMatchCache(matchId);
+
       // Send notification asynchronously
       this.notifyPlayerJoined(match, userId).catch(err => {
         console.error(`Failed to notify player joined for match ${match._id}, user ${userId}:`, err);
@@ -308,6 +341,9 @@ class MatchService {
       await match.save({ session });
 
       await session.commitTransaction();
+
+      // Invalidate cache for this match
+      await cache.invalidateMatchCache(matchId);
 
       return { match };
     } catch (error) {

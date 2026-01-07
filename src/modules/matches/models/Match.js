@@ -57,7 +57,18 @@ const matchSchema = new mongoose.Schema({
   },
   current_players: {
     type: Number,
+    default: 0,
+    min: 0
+  },
+  cost_per_player: {
+    type: Number,
+    min: 0,
     default: 0
+  },
+  currency: {
+    type: String,
+    default: 'SAR',
+    trim: true
   },
   notes: {
     type: String,
@@ -65,7 +76,7 @@ const matchSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['open', 'full', 'finished'],
+    enum: ['open', 'full', 'finished', 'canceled'],
     default: 'open'
   },
   // Legacy fields for backward compatibility

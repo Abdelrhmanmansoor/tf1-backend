@@ -18,6 +18,11 @@ const SiteSettings = require('./SiteSettings');
 const PlayerRegistration = require('./PlayerRegistration');
 const JobEvent = require('./JobEvent');
 
+// New models for Player-AgeGroup integration
+const PlayerAgeGroupAssignment = require('./PlayerAgeGroupAssignment');
+const PlayerMatchPerformance = require('./PlayerMatchPerformance');
+const AgeCategoryAnnouncement = require('./AgeCategoryAnnouncement');
+
 module.exports = {
   AgeGroup,
   AdminTrainingSession,
@@ -38,5 +43,9 @@ module.exports = {
   Permission,
   SiteSettings,
   PlayerRegistration,
-  JobEvent
+  JobEvent,
+  // New models
+  PlayerAgeGroupAssignment,
+  PlayerMatchPerformance,
+  AgeCategoryAnnouncement
 };

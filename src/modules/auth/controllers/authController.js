@@ -502,6 +502,19 @@ class AuthController {
       // Find user with this verification token
       // Try exact match first
       console.log(`🔍 [EMAIL VERIFICATION] Searching for user with token: ${token?.substring(0, 20)}...`);
+      console.log(`📝 [DEBUG] Token length: ${token?.length}, Token type: ${typeof token}`);
+      
+      // Decode token if it's URL encoded
+      let decodedToken = token;
+      try {
+        decodedToken = decodeURIComponent(token);
+        if (decodedToken !== token) {
+          console.log(`📝 [DEBUG] Token was URL encoded, decoded length: ${decodedToken.length}`);
+        }
+      } catch (e) {
+        console.log(`📝 [DEBUG] Token is not URL encoded or decode failed: ${e.message}`);
+        decodedToken = token;
+      }
       
       let user = await User.findOne({
         emailVerificationToken: token
@@ -510,29 +523,48 @@ class AuthController {
       if (user) {
         console.log(`✅ [EMAIL VERIFICATION] User found with exact token match: ${user.email} (role: ${user.role})`);
       } else {
+        // Try with decoded token
+        if (decodedToken !== token) {
+          console.log(`🔄 [EMAIL VERIFICATION] Trying with decoded token...`);
+          user = await User.findOne({
+            emailVerificationToken: decodedToken
+          });
+          if (user) {
+            console.log(`✅ [EMAIL VERIFICATION] User found with decoded token: ${user.email} (role: ${user.role})`);
+          }
+        }
+      }
+
+      if (!user) {
         console.log(`⚠️ [EMAIL VERIFICATION] No exact match found, trying case-insensitive search...`);
         
         // If not found, try case-insensitive search (some email clients may modify URLs)
         const allUsers = await User.find({
           emailVerificationToken: { $exists: true, $ne: null }
-        }).select('email emailVerificationToken emailVerificationTokenExpires isVerified role');
+        }).select('email emailVerificationToken emailVerificationTokenExpires isVerified role _id');
         
         console.log(`📝 [EMAIL VERIFICATION] Found ${allUsers.length} users with verification tokens`);
+        
+        // Log job-publisher users specifically for debugging
+        const jobPublisherUsers = allUsers.filter(u => u.role === 'job-publisher');
+        console.log(`📝 [DEBUG] Found ${jobPublisherUsers.length} job-publisher users with tokens`);
+        if (jobPublisherUsers.length > 0) {
+          console.log(`📝 [DEBUG] Job-publisher users:`, jobPublisherUsers.map(u => ({
+            email: u.email,
+            tokenPrefix: u.emailVerificationToken?.substring(0, 20) + '...',
+            isVerified: u.isVerified,
+            tokenExpires: u.emailVerificationTokenExpires ? new Date(u.emailVerificationTokenExpires).toISOString() : 'null'
+          })));
+        }
         
         // Try to find user with token that matches (case-insensitive or URL-encoded)
         user = allUsers.find(u => {
           if (!u.emailVerificationToken) return false;
+          const uToken = u.emailVerificationToken;
           // Exact match
-          if (u.emailVerificationToken === token) return true;
+          if (uToken === token || uToken === decodedToken) return true;
           // Case-insensitive match
-          if (u.emailVerificationToken.toLowerCase() === token.toLowerCase()) return true;
-          // URL decoded match
-          try {
-            const decodedToken = decodeURIComponent(token);
-            if (u.emailVerificationToken === decodedToken) return true;
-          } catch (e) {
-            // Ignore decode errors
-          }
+          if (uToken.toLowerCase() === token.toLowerCase() || uToken.toLowerCase() === decodedToken.toLowerCase()) return true;
           return false;
         });
         
@@ -554,7 +586,8 @@ class AuthController {
               allUsers.slice(0, 5).map(u => ({
                 email: u.email,
                 role: u.role,
-                tokenPrefix: u.emailVerificationToken?.substring(0, 20) + '...'
+                tokenPrefix: u.emailVerificationToken?.substring(0, 20) + '...',
+                tokenLength: u.emailVerificationToken?.length
               }))
             );
           }
@@ -618,6 +651,14 @@ class AuthController {
 
       // VERIFY THE USER - This is the first time verification
       console.log(`🎉 [EMAIL VERIFICATION] Verifying user ${user.email} (role: ${user.role})`);
+      console.log(`📝 [DEBUG] User before verification:`, {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified,
+        hasToken: !!user.emailVerificationToken,
+        tokenExpires: user.emailVerificationTokenExpires ? new Date(user.emailVerificationTokenExpires).toISOString() : 'null'
+      });
 
       // Mark user as verified
       user.isVerified = true;
@@ -628,19 +669,58 @@ class AuthController {
       // But keep it in DB so we can find the user and show "Already Verified"
       user.emailVerificationTokenExpires = Date.now();
       
-      // Save user with error handling
+      // Save user with error handling - use updateOne to avoid validation issues
       try {
-        await user.save();
-        console.log(`✅ [EMAIL VERIFICATION] User ${user.email} saved successfully`);
+        // Use updateOne instead of save() to avoid triggering pre-save hooks that might cause issues
+        const updateResult = await User.updateOne(
+          { _id: user._id },
+          {
+            $set: {
+              isVerified: true,
+              emailVerificationTokenExpires: Date.now()
+            }
+          }
+        );
+        
+        console.log(`✅ [EMAIL VERIFICATION] User ${user.email} updated successfully`, {
+          matched: updateResult.matchedCount,
+          modified: updateResult.modifiedCount
+        });
+        
+        // Refresh user object from database to ensure we have latest data
+        user = await User.findById(user._id);
+        if (!user) {
+          throw new Error('User not found after update');
+        }
+        
+        console.log(`✅ [EMAIL VERIFICATION] User refreshed from database, isVerified: ${user.isVerified}`);
       } catch (saveError) {
         console.error('❌ [EMAIL VERIFICATION] Error saving user:', saveError);
         console.error('Save error details:', {
           email: user.email,
           role: user.role,
+          userId: user._id,
           errorMessage: saveError.message,
-          errorStack: saveError.stack
+          errorName: saveError.name,
+          errorStack: saveError.stack,
+          // If it's a validation error, log the validation errors
+          validationErrors: saveError.errors ? Object.keys(saveError.errors).map(key => ({
+            field: key,
+            message: saveError.errors[key].message
+          })) : null
         });
-        throw new Error(`Failed to save user: ${saveError.message}`);
+        
+        // Try alternative save method if updateOne failed
+        try {
+          console.log('🔄 [EMAIL VERIFICATION] Trying alternative save method...');
+          user.isVerified = true;
+          user.emailVerificationTokenExpires = Date.now();
+          await user.save({ validateBeforeSave: false });
+          console.log(`✅ [EMAIL VERIFICATION] User saved using alternative method`);
+        } catch (altSaveError) {
+          console.error('❌ [EMAIL VERIFICATION] Alternative save also failed:', altSaveError);
+          throw new Error(`Failed to save user: ${saveError.message}. Alternative method also failed: ${altSaveError.message}`);
+        }
       }
 
       // Generate JWT token with error handling
@@ -809,15 +889,46 @@ class AuthController {
 
   async logout(req, res) {
     try {
+      // Clear authentication cookies for both main auth and matches system
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        path: '/'
+      };
+
+      // Clear main auth cookies
+      res.clearCookie('accessToken', cookieOptions);
+      res.clearCookie('refreshToken', cookieOptions);
+      
+      // Clear matches module cookie
+      res.clearCookie('matches_token', cookieOptions);
+      
+      // Clear admin auth cookie if exists
+      res.clearCookie('admin_session', cookieOptions);
+
+      // Set cache prevention headers for logout response
+      res.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate, no-cache');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+
       res.status(200).json({
         success: true,
-        message: 'Logged out successfully'
+        message: 'Logged out successfully',
+        messageAr: 'تم تسجيل الخروج بنجاح'
       });
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error', {
+        error: error.message,
+        stack: error.stack,
+        userId: req.user?._id,
+        ip: req.ip
+      });
+      
       res.status(500).json({
         success: false,
         message: 'Logout failed',
+        messageAr: 'فشل تسجيل الخروج',
         code: 'LOGOUT_FAILED'
       });
     }

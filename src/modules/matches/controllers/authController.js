@@ -1,93 +1,91 @@
 const MatchUser = require('../models/MatchUser');
 const jwtService = require('../utils/jwtService');
 const emailService = require('../../../utils/email');
+const { validateEmail, validatePassword } = require('../middleware/security');
+const { ValidationError, asyncHandler } = require('../utils/errorHandler');
 
 class AuthController {
-  async register(req, res) {
+  register = asyncHandler(async (req, res) => {
+    const { email, password, name, firstName, lastName, phone } = req.body;
+
+    // Support both name and firstName/lastName
+    const finalName = name || (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName);
+
+    // Validation
+    if (!email || !password || !finalName) {
+      throw new ValidationError('Email, password, and name are required');
+    }
+
+    // Validate email format
+    if (!validateEmail(email)) {
+      throw new ValidationError('Invalid email format');
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      throw new ValidationError(passwordValidation.message);
+    }
+
+    // Check if user already exists
+    const existingUser = await MatchUser.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      throw new ValidationError('Email already registered');
+    }
+
+    // Create user (password will be hashed by pre-save hook)
+    const user = new MatchUser({
+      email: email.toLowerCase(),
+      password_hash: password,  // Will be hashed by model's pre-save hook
+      name: finalName,
+      phone: phone || null,
+      verified: false,
+      role: 'MatchUser'
+    });
+
+    // Generate verification token
+    const verificationToken = user.generateEmailVerificationToken();
+    await user.save();
+
+    // Send verification email (reusing existing service)
     try {
-      const { email, password, name, firstName, lastName, phone } = req.body;
+      const emailSent = await emailService.sendVerificationEmail(
+        {
+          email: user.email,
+          firstName: user.name,
+          role: 'MatchUser'
+        },
+        verificationToken
+      );
 
-      // Support both name and firstName/lastName
-      const finalName = name || (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName);
-
-      // Validation
-      if (!email || !password || !finalName) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email, password, and name are required'
-        });
-      }
-
-      // Check if user already exists
-      const existingUser = await MatchUser.findOne({ email: email.toLowerCase() });
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email already registered'
-        });
-      }
-
-      // Create user (password will be hashed by pre-save hook)
-      const user = new MatchUser({
-        email: email.toLowerCase(),
-        password_hash: password,  // Will be hashed by model's pre-save hook
-        name: finalName,
-        phone: phone || null,
-        verified: false,
-        role: 'MatchUser'
+      res.status(201).json({
+        success: true,
+        message: emailSent
+          ? 'Registration successful. Please check your email to verify your account.'
+          : 'Registration successful. Please verify your email to login.',
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          verified: user.verified,
+          role: user.role
+        }
       });
-
-      // Generate verification token
-      const verificationToken = user.generateEmailVerificationToken();
-      await user.save();
-
-      // Send verification email (reusing existing service)
-      try {
-        const emailSent = await emailService.sendVerificationEmail(
-          {
-            email: user.email,
-            firstName: user.name,
-            role: 'MatchUser'
-          },
-          verificationToken
-        );
-
-        res.status(201).json({
-          success: true,
-          message: emailSent
-            ? 'Registration successful. Please check your email to verify your account.'
-            : 'Registration successful. Please verify your email to login.',
-          user: {
-            id: user._id,
-            email: user.email,
-            name: user.name,
-            verified: user.verified,
-            role: user.role
-          }
-        });
-      } catch (emailError) {
-        console.error('Email service error (non-critical):', emailError);
-        res.status(201).json({
-          success: true,
-          message: 'Registration successful. Please verify your email to login.',
-          user: {
-            id: user._id,
-            email: user.email,
-            name: user.name,
-            verified: user.verified,
-            role: user.role
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Register error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error creating user',
-        error: error.message
+    } catch (emailError) {
+      console.error('Email service error (non-critical):', emailError);
+      res.status(201).json({
+        success: true,
+        message: 'Registration successful. Please verify your email to login.',
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          verified: user.verified,
+          role: user.role
+        }
       });
     }
-  }
+  });
 
   async verify(req, res) {
     try {

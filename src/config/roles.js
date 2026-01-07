@@ -65,6 +65,23 @@ const PERMISSIONS = {
   PUBLISH_JOBS: 'publish_jobs',
   MANAGE_OWN_JOBS: 'manage_own_jobs',
   VIEW_JOB_APPLICATIONS: 'view_job_applications',
+
+  // Club-specific permissions
+  MANAGE_OWN_CLUB_PROFILE: 'manage_own_club_profile',
+  VIEW_OWN_CLUB_PROFILE: 'view_own_club_profile',
+  MANAGE_CLUB_MEMBERS: 'manage_club_members',
+  VIEW_CLUB_MEMBERS: 'view_club_members',
+  APPROVE_MEMBERSHIP_REQUESTS: 'approve_membership_requests',
+  MANAGE_CLUB_TEAMS: 'manage_club_teams',
+  VIEW_CLUB_TEAMS: 'view_club_teams',
+  MANAGE_CLUB_EVENTS: 'manage_club_events',
+  VIEW_CLUB_EVENTS: 'view_club_events',
+  MANAGE_CLUB_FACILITIES: 'manage_club_facilities',
+  VIEW_CLUB_BOOKINGS: 'view_club_bookings',
+  APPROVE_BOOKINGS: 'approve_bookings',
+  MANAGE_CLUB_MEDIA: 'manage_club_media',
+  VIEW_CLUB_ANALYTICS: 'view_club_analytics',
+  VIEW_CLUB_STATS: 'view_club_stats',
 };
 
 const ROLE_PERMISSIONS = {
@@ -140,6 +157,43 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.MANAGE_OWN_JOBS,
     PERMISSIONS.VIEW_JOB_APPLICATIONS,
     PERMISSIONS.VIEW_JOBS
+  ],
+
+  [ROLES.CLUB]: [
+    // Profile Management
+    PERMISSIONS.MANAGE_OWN_CLUB_PROFILE,
+    PERMISSIONS.VIEW_OWN_CLUB_PROFILE,
+    
+    // Member Management
+    PERMISSIONS.MANAGE_CLUB_MEMBERS,
+    PERMISSIONS.VIEW_CLUB_MEMBERS,
+    PERMISSIONS.APPROVE_MEMBERSHIP_REQUESTS,
+    
+    // Team Management
+    PERMISSIONS.MANAGE_CLUB_TEAMS,
+    PERMISSIONS.VIEW_CLUB_TEAMS,
+    
+    // Job & Recruitment
+    PERMISSIONS.PUBLISH_JOBS,
+    PERMISSIONS.MANAGE_OWN_JOBS,
+    PERMISSIONS.VIEW_JOB_APPLICATIONS,
+    PERMISSIONS.MANAGE_RECRUITMENT,
+    
+    // Events & Activities
+    PERMISSIONS.MANAGE_CLUB_EVENTS,
+    PERMISSIONS.VIEW_CLUB_EVENTS,
+    
+    // Facilities & Bookings
+    PERMISSIONS.MANAGE_CLUB_FACILITIES,
+    PERMISSIONS.VIEW_CLUB_BOOKINGS,
+    PERMISSIONS.APPROVE_BOOKINGS,
+    
+    // Media & Gallery
+    PERMISSIONS.MANAGE_CLUB_MEDIA,
+    
+    // Analytics
+    PERMISSIONS.VIEW_CLUB_ANALYTICS,
+    PERMISSIONS.VIEW_CLUB_STATS
   ]
 };
 
