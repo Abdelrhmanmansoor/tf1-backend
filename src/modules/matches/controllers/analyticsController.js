@@ -3,11 +3,55 @@
  * Handles advanced analytics and statistical analysis requests
  */
 
-const analyticsService = require('../services/analyticsService');
-const kpiService = require('../services/kpiService');
-const statisticalModels = require('../services/statisticalModels');
-// Lazy load reportService to avoid circular dependency issues
-const getReportService = () => require('../services/reportService');
+// Safe require with error handling
+let analyticsService, kpiService, statisticalModels;
+let getReportService;
+
+try {
+  analyticsService = require('../services/analyticsService');
+  kpiService = require('../services/kpiService');
+  statisticalModels = require('../services/statisticalModels');
+  // Lazy load reportService to avoid circular dependency issues
+  getReportService = () => {
+    try {
+      return require('../services/reportService');
+    } catch (error) {
+      console.warn('ReportService not available:', error.message);
+      return null;
+    }
+  };
+} catch (error) {
+  console.error('Error loading analytics dependencies:', error);
+  // Create fallback services
+  analyticsService = {
+    getPlatformStats: () => Promise.resolve({}),
+    getUserAnalytics: () => Promise.resolve({}),
+    getGrowthTrend: () => Promise.resolve({}),
+    getSeasonality: () => Promise.resolve({}),
+    getUserPerformanceScore: () => Promise.resolve({}),
+    getPlatformHealth: () => Promise.resolve({}),
+    getComparativeAnalysis: () => Promise.resolve({}),
+    getPredictiveInsights: () => Promise.resolve({}),
+    getTrendingMatches: () => Promise.resolve([]),
+    getPopularSports: () => Promise.resolve([]),
+    getLeaderboard: () => Promise.resolve([]),
+    getKPIDashboard: () => Promise.resolve({}),
+    getCohortAnalysis: () => Promise.resolve({}),
+    getFunnelAnalysis: () => Promise.resolve({}),
+    getActivityHeatmap: () => Promise.resolve({}),
+    getMatchStats: () => Promise.resolve({})
+  };
+  kpiService = {
+    getDashboardKPIs: () => Promise.resolve({})
+  };
+  statisticalModels = {
+    linearRegression: () => ({}),
+    timeSeriesForecast: () => ({}),
+    monteCarloSimulation: () => ({}),
+    detectAnomalies: () => ({})
+  };
+  getReportService = () => null;
+}
 
 class AnalyticsController {
   /**
@@ -456,6 +500,13 @@ class AnalyticsController {
       };
 
       const reportService = getReportService();
+      if (!reportService) {
+        return res.status(503).json({
+          success: false,
+          message: 'Report service not available'
+        });
+      }
+      
       const report = await reportService.generateAnalyticsReport(options);
       
       res.json({
@@ -479,7 +530,21 @@ class AnalyticsController {
   async generateUserReport(req, res) {
     try {
       const userId = req.params.userId || req.matchUser?._id;
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'User ID required'
+        });
+      }
+      
       const reportService = getReportService();
+      if (!reportService) {
+        return res.status(503).json({
+          success: false,
+          message: 'Report service not available'
+        });
+      }
+      
       const report = await reportService.generateUserReport(userId);
       
       res.json({
@@ -503,6 +568,13 @@ class AnalyticsController {
   async generateHealthReport(req, res) {
     try {
       const reportService = getReportService();
+      if (!reportService) {
+        return res.status(503).json({
+          success: false,
+          message: 'Report service not available'
+        });
+      }
+      
       const report = await reportService.generateHealthReport();
       
       res.json({
@@ -529,6 +601,13 @@ class AnalyticsController {
       const period = req.query.period || 'month';
 
       const reportService = getReportService();
+      if (!reportService) {
+        return res.status(503).json({
+          success: false,
+          message: 'Report service not available'
+        });
+      }
+      
       let report;
       if (reportType === 'analytics') {
         report = await reportService.generateAnalyticsReport({ period });
