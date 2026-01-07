@@ -24,15 +24,30 @@ CSRF token missing
 - CSRF protection ضروري فقط للـ session-based authentication
 
 ### الحل المنفذ:
+
+#### 1. تعديل CSRF Middleware:
+تعديل `tf1-backend/src/middleware/csrf.js` لإضافة exception لـ matches routes:
+
+```javascript
+// Skip CSRF check for matches routes - they use JWT tokens (httpOnly cookies)
+// JWT-based authentication is CSRF-resistant by design
+if (req.path && (req.path.startsWith('/matches') || req.path.includes('/matches/'))) {
+  return next();
+}
+
+// Skip if explicitly marked to skip CSRF
+if (req.skipCSRF) {
+  return next();
+}
+```
+
+#### 2. إضافة middleware في matches routes:
 إضافة middleware في `tf1-backend/src/modules/matches/routes/index.js`:
 
 ```javascript
 // Middleware to skip CSRF check for matches routes
 // Matches routes use JWT tokens (httpOnly cookies) which are CSRF-resistant
-// CSRF protection is not needed for JWT-based authentication
 router.use((req, res, next) => {
-  // Skip CSRF validation for all matches routes
-  // JWT tokens in httpOnly cookies are protected against CSRF by design
   req.skipCSRF = true;
   next();
 });
@@ -42,7 +57,8 @@ router.use((req, res, next) => {
 
 ## 📋 الملفات المعدلة
 
-- `tf1-backend/src/modules/matches/routes/index.js`
+- `tf1-backend/src/middleware/csrf.js` - إضافة exception لـ matches routes
+- `tf1-backend/src/modules/matches/routes/index.js` - إضافة skipCSRF flag
 
 ---
 

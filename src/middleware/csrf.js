@@ -77,6 +77,17 @@ const verifyCsrf = (req, res, next) => {
     return next();
   }
 
+  // Skip CSRF check for matches routes - they use JWT tokens (httpOnly cookies)
+  // JWT-based authentication is CSRF-resistant by design
+  if (req.path && (req.path.startsWith('/matches') || req.path.includes('/matches/'))) {
+    return next();
+  }
+
+  // Skip if explicitly marked to skip CSRF (for routes that handle it differently)
+  if (req.skipCSRF) {
+    return next();
+  }
+
   // Get token from multiple sources (in priority order)
   const token = 
     req.headers['x-csrf-token'] || 
