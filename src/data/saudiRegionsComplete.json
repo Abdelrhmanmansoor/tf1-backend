@@ -556,10 +556,10 @@
           "neighborhoods": ["النبهانية", "بريدة", "الرس"]
         },
         {
-          "id": "riyadh-al-qassim",
-          "nameAr": "رياض الخبراء",
-          "nameEn": "Riyadh Al-Khabra",
-          "neighborhoods": ["رياض الخبراء", "عنيزة", "بريدة"]
+          "id": "al-ghat",
+          "nameAr": "الغاط",
+          "nameEn": "Al-Ghat",
+          "neighborhoods": ["الغاط", "الزلفي", "المجمعة"]
         }
       ]
     },
@@ -869,21 +869,26 @@
     }
   ],
   "sports": [
-    { "value": "football", "label": "كرة القدم", "labelEn": "Football" },
-    { "value": "basketball", "label": "كرة السلة", "labelEn": "Basketball" },
-    { "value": "volleyball", "label": "الكرة الطائرة", "labelEn": "Volleyball" },
-    { "value": "tennis", "label": "التنس", "labelEn": "Tennis" },
-    { "value": "handball", "label": "كرة اليد", "labelEn": "Handball" },
-    { "value": "badminton", "label": "الريشة الطائرة", "labelEn": "Badminton" },
-    { "value": "swimming", "label": "السباحة", "labelEn": "Swimming" },
-    { "value": "hockey", "label": "الهوكي", "labelEn": "Hockey" },
-    { "value": "gymnastics", "label": "الجمباز", "labelEn": "Gymnastics" },
-    { "value": "shooting", "label": "الرماية", "labelEn": "Shooting" },
-    { "value": "athletics", "label": "ألعاب القوى", "labelEn": "Athletics" },
-    { "value": "boxing", "label": "الملاكمة", "labelEn": "Boxing" },
-    { "value": "martial-arts", "label": "الفنون القتالية", "labelEn": "Martial Arts" },
-    { "value": "cycling", "label": "راكب الدراجات", "labelEn": "Cycling" },
-    { "value": "table-tennis", "label": "تنس الطاولة", "labelEn": "Table Tennis" }
+    { "value": "football", "label": "كرة القدم", "labelEn": "Football", "emoji": "⚽" },
+    { "value": "basketball", "label": "كرة السلة", "labelEn": "Basketball", "emoji": "🏀" },
+    { "value": "volleyball", "label": "الكرة الطائرة", "labelEn": "Volleyball", "emoji": "🏐" },
+    { "value": "tennis", "label": "التنس", "labelEn": "Tennis", "emoji": "🎾" },
+    { "value": "handball", "label": "كرة اليد", "labelEn": "Handball", "emoji": "🤾" },
+    { "value": "badminton", "label": "الريشة الطائرة", "labelEn": "Badminton", "emoji": "🏸" },
+    { "value": "swimming", "label": "السباحة", "labelEn": "Swimming", "emoji": "🏊" },
+    { "value": "hockey", "label": "الهوكي", "labelEn": "Hockey", "emoji": "🏑" },
+    { "value": "gymnastics", "label": "الجمباز", "labelEn": "Gymnastics", "emoji": "🤸" },
+    { "value": "shooting", "label": "الرماية", "labelEn": "Shooting", "emoji": "🏹" },
+    { "value": "athletics", "label": "ألعاب القوى", "labelEn": "Athletics", "emoji": "🏃" },
+    { "value": "boxing", "label": "الملاكمة", "labelEn": "Boxing", "emoji": "🥊" },
+    { "value": "martial-arts", "label": "الفنون القتالية", "labelEn": "Martial Arts", "emoji": "🥋" },
+    { "value": "cycling", "label": "راكب الدراجات", "labelEn": "Cycling", "emoji": "🚴" },
+    { "value": "table-tennis", "label": "تنس الطاولة", "labelEn": "Table Tennis", "emoji": "🏓" },
+    { "value": "squash", "label": "الاسكواش", "labelEn": "Squash", "emoji": "🎾" },
+    { "value": "cricket", "label": "الكريكيت", "labelEn": "Cricket", "emoji": "🏏" },
+    { "value": "rugby", "label": "الرجبي", "labelEn": "Rugby", "emoji": "🏈" },
+    { "value": "golf", "label": "الجولف", "labelEn": "Golf", "emoji": "⛳" },
+    { "value": "cricket", "label": "التجديف", "labelEn": "Rowing", "emoji": "🚣" }
   ],
   "levels": [
     { "value": "beginner", "label": "مبتدئ", "labelEn": "Beginner" },
