@@ -9,6 +9,6 @@ router.use(authenticate);
 router.use(matchesLimiter);
 
 // History route
-router.get('/matches/history', historyController.getMyMatchHistory);
+router.get('/matches/history', (req, res) => historyController.getMyMatchHistory(req, res));
 
 module.exports = router;
