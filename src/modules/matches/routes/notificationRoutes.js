@@ -9,8 +9,8 @@ router.use(authenticate);
 router.use(matchesLimiter);
 
 // Notification routes
-router.get('/', notificationController.getNotifications);
-router.post('/:id/read', notificationController.markAsRead);
-router.post('/mark-all-read', notificationController.markAllAsRead);
+router.get('/', (req, res) => notificationController.getNotifications(req, res));
+router.post('/:id/read', (req, res) => notificationController.markAsRead(req, res));
+router.post('/mark-all-read', (req, res) => notificationController.markAllAsRead(req, res));
 
 module.exports = router;

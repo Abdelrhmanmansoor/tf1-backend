@@ -6,77 +6,77 @@
 const express = require('express');
 const router = express.Router();
 const analyticsController = require('../controllers/analyticsController');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 
 /**
  * @route   GET /api/matches/analytics/platform
  * @desc    Get platform-wide statistics
  * @access  Public
  */
-router.get('/platform', analyticsController.getPlatformStats);
+router.get('/platform', (req, res) => analyticsController.getPlatformStats(req, res));
 
 /**
  * @route   GET /api/matches/analytics/user/:userId?
  * @desc    Get user analytics dashboard
  * @access  Private
  */
-router.get('/user/:userId?', authenticateToken, analyticsController.getUserAnalytics);
+router.get('/user/:userId?', authenticate, (req, res) => analyticsController.getUserAnalytics(req, res));
 
 /**
  * @route   GET /api/matches/analytics/growth-trend
  * @desc    Get growth trend analysis with linear regression
  * @access  Public
  */
-router.get('/growth-trend', analyticsController.getGrowthTrend);
+router.get('/growth-trend', (req, res) => analyticsController.getGrowthTrend(req, res));
 
 /**
  * @route   GET /api/matches/analytics/seasonality
  * @desc    Get seasonality analysis
  * @access  Public
  */
-router.get('/seasonality', analyticsController.getSeasonality);
+router.get('/seasonality', (req, res) => analyticsController.getSeasonality(req, res));
 
 /**
  * @route   GET /api/matches/analytics/performance/:userId?
  * @desc    Get user performance score (weighted metrics)
  * @access  Private
  */
-router.get('/performance/:userId?', authenticateToken, analyticsController.getUserPerformanceScore);
+router.get('/performance/:userId?', authenticate, (req, res) => analyticsController.getUserPerformanceScore(req, res));
 
 /**
  * @route   GET /api/matches/analytics/platform-health
  * @desc    Get platform health metrics with anomaly detection
  * @access  Public
  */
-router.get('/platform-health', analyticsController.getPlatformHealth);
+router.get('/platform-health', (req, res) => analyticsController.getPlatformHealth(req, res));
 
 /**
  * @route   GET /api/matches/analytics/comparative/:userId?
  * @desc    Get comparative analysis (user vs platform)
  * @access  Private
  */
-router.get('/comparative/:userId?', authenticateToken, analyticsController.getComparativeAnalysis);
+router.get('/comparative/:userId?', authenticate, (req, res) => analyticsController.getComparativeAnalysis(req, res));
 
 /**
  * @route   GET /api/matches/analytics/predictive/:userId?
  * @desc    Get predictive insights with forecasting
  * @access  Private
  */
-router.get('/predictive/:userId?', authenticateToken, analyticsController.getPredictiveInsights);
+router.get('/predictive/:userId?', authenticate, (req, res) => analyticsController.getPredictiveInsights(req, res));
 
 /**
  * @route   GET /api/matches/analytics/trending
  * @desc    Get trending matches
  * @access  Public
  */
-router.get('/trending', analyticsController.getTrendingMatches);
+router.get('/trending', (req, res) => analyticsController.getTrendingMatches(req, res));
 
 /**
  * @route   GET /api/matches/analytics/popular-sports
  * @desc    Get popular sports statistics
  * @access  Public
  */
-router.get('/popular-sports', analyticsController.getPopularSports);
+router.get('/popular-sports', (req, res) => analyticsController.getPopularSports(req, res));
 
 /**
  * @route   GET /api/matches/analytics/kpi
@@ -84,7 +84,7 @@ router.get('/popular-sports', analyticsController.getPopularSports);
  * @access  Public
  * @query   period - today|week|month|quarter|year (default: month)
  */
-router.get('/kpi', analyticsController.getKPIDashboard);
+router.get('/kpi', (req, res) => analyticsController.getKPIDashboard(req, res));
 
 /**
  * @route   GET /api/matches/analytics/cohort
@@ -92,7 +92,7 @@ router.get('/kpi', analyticsController.getKPIDashboard);
  * @access  Public
  * @query   cohortDate - ISO date string
  */
-router.get('/cohort', analyticsController.getCohortAnalysis);
+router.get('/cohort', (req, res) => analyticsController.getCohortAnalysis(req, res));
 
 /**
  * @route   GET /api/matches/analytics/funnel
@@ -100,7 +100,7 @@ router.get('/cohort', analyticsController.getCohortAnalysis);
  * @access  Public
  * @query   days - number of days (default: 30)
  */
-router.get('/funnel', analyticsController.getFunnelAnalysis);
+router.get('/funnel', (req, res) => analyticsController.getFunnelAnalysis(req, res));
 
 /**
  * @route   GET /api/matches/analytics/heatmap/:userId?
@@ -108,20 +108,57 @@ router.get('/funnel', analyticsController.getFunnelAnalysis);
  * @access  Private
  * @query   days - number of days (default: 30)
  */
-router.get('/heatmap/:userId?', authenticateToken, analyticsController.getActivityHeatmap);
+router.get('/heatmap/:userId?', authenticate, (req, res) => analyticsController.getActivityHeatmap(req, res));
 
 /**
  * @route   GET /api/matches/analytics/match/:matchId
  * @desc    Get match statistics
  * @access  Public
  */
-router.get('/match/:matchId', analyticsController.getMatchStats);
+router.get('/match/:matchId', (req, res) => analyticsController.getMatchStats(req, res));
 
 /**
  * @route   GET /api/matches/analytics/test-models
  * @desc    Test statistical models (for demonstration)
  * @access  Public
  */
-router.get('/test-models', analyticsController.testStatisticalModels);
+router.get('/test-models', (req, res) => analyticsController.testStatisticalModels(req, res));
+
+/**
+ * ============================================
+ * REPORT GENERATION ROUTES
+ * ============================================
+ */
+
+/**
+ * @route   GET /api/matches/analytics/reports/analytics
+ * @desc    Generate comprehensive analytics report
+ * @access  Public
+ * @query   period, includeGrowth, includeKPIs, includeHealth, includeFunnel, includeForecasts
+ */
+router.get('/reports/analytics', (req, res) => analyticsController.generateAnalyticsReport(req, res));
+
+/**
+ * @route   GET /api/matches/analytics/reports/user/:userId?
+ * @desc    Generate user performance report
+ * @access  Private
+ */
+router.get('/reports/user/:userId?', authenticate, (req, res) => analyticsController.generateUserReport(req, res));
+
+/**
+ * @route   GET /api/matches/analytics/reports/health
+ * @desc    Generate platform health report
+ * @access  Public
+ */
+router.get('/reports/health', (req, res) => analyticsController.generateHealthReport(req, res));
+
+/**
+ * @route   GET /api/matches/analytics/export/:reportType
+ * @desc    Export report in specified format (csv, excel, pdf)
+ * @access  Public/Private (depends on report type)
+ * @params  reportType - analytics|health|user
+ * @query   format - json|csv|excel|pdf, period
+ */
+router.get('/export/:reportType', (req, res) => analyticsController.exportReport(req, res));
 
 module.exports = router;

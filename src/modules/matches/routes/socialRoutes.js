@@ -8,20 +8,20 @@ const { matchesLimiter } = require('../middleware/rateLimiter');
 router.use(authenticate);
 
 // Friends
-router.post('/friends/request', matchesLimiter, socialController.sendFriendRequest);
-router.post('/friends/:friendshipId/accept', matchesLimiter, socialController.acceptFriendRequest);
-router.get('/friends', matchesLimiter, socialController.getFriends);
-router.get('/friends/requests', matchesLimiter, socialController.getPendingRequests);
-router.get('/friends/suggestions', matchesLimiter, socialController.getFriendSuggestions);
+router.post('/friends/request', matchesLimiter, (req, res) => socialController.sendFriendRequest(req, res));
+router.post('/friends/:friendshipId/accept', matchesLimiter, (req, res) => socialController.acceptFriendRequest(req, res));
+router.get('/friends', matchesLimiter, (req, res) => socialController.getFriends(req, res));
+router.get('/friends/requests', matchesLimiter, (req, res) => socialController.getPendingRequests(req, res));
+router.get('/friends/suggestions', matchesLimiter, (req, res) => socialController.getFriendSuggestions(req, res));
 
 // Match social features
-router.get('/matches/:matchId/friends', matchesLimiter, socialController.getFriendsInMatch);
+router.get('/matches/:matchId/friends', matchesLimiter, (req, res) => socialController.getFriendsInMatch(req, res));
 
 // Activity feed
-router.get('/feed', matchesLimiter, socialController.getActivityFeed);
+router.get('/feed', matchesLimiter, (req, res) => socialController.getActivityFeed(req, res));
 
 // Recommendations
-router.get('/recommendations', matchesLimiter, socialController.getRecommendations);
+router.get('/recommendations', matchesLimiter, (req, res) => socialController.getRecommendations(req, res));
 
 module.exports = router;
 

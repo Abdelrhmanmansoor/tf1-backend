@@ -9,10 +9,10 @@ router.use(authenticate);
 router.use(matchesLimiter);
 
 // Team routes
-router.post('/', teamController.createTeam);
-router.get('/my-teams', teamController.getMyTeams);
-router.get('/:id', teamController.getTeam);
-router.post('/:id/members', teamController.addMember);
-router.delete('/:id/members/:user_id', teamController.removeMember);
+router.post('/', (req, res) => teamController.createTeam(req, res));
+router.get('/my-teams', (req, res) => teamController.getMyTeams(req, res));
+router.get('/:id', (req, res) => teamController.getTeam(req, res));
+router.post('/:id/members', (req, res) => teamController.addMember(req, res));
+router.delete('/:id/members/:user_id', (req, res) => teamController.removeMember(req, res));
 
 module.exports = router;

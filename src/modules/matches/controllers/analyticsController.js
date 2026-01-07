@@ -6,6 +6,7 @@
 const analyticsService = require('../services/analyticsService');
 const kpiService = require('../services/kpiService');
 const statisticalModels = require('../services/statisticalModels');
+const reportService = require('../services/reportService');
 
 class AnalyticsController {
   /**
@@ -428,6 +429,144 @@ class AnalyticsController {
       res.status(500).json({
         success: false,
         message: 'Failed to test statistical models',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * ============================================
+   * REPORT GENERATION ENDPOINTS
+   * ============================================
+   */
+
+  /**
+   * Generate comprehensive analytics report
+   */
+  async generateAnalyticsReport(req, res) {
+    try {
+      const options = {
+        period: req.query.period || 'month',
+        includeGrowth: req.query.includeGrowth !== 'false',
+        includeKPIs: req.query.includeKPIs !== 'false',
+        includeHealth: req.query.includeHealth !== 'false',
+        includeFunnel: req.query.includeFunnel !== 'false',
+        includeForecasts: req.query.includeForecasts !== 'false'
+      };
+
+      const report = await reportService.generateAnalyticsReport(options);
+      
+      res.json({
+        success: true,
+        data: report,
+        export_formats: ['json', 'csv', 'excel', 'pdf']
+      });
+    } catch (error) {
+      console.error('Error generating analytics report:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to generate analytics report',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Generate user performance report
+   */
+  async generateUserReport(req, res) {
+    try {
+      const userId = req.params.userId || req.user?._id;
+      const report = await reportService.generateUserReport(userId);
+      
+      res.json({
+        success: true,
+        data: report,
+        export_formats: ['json', 'csv', 'excel', 'pdf']
+      });
+    } catch (error) {
+      console.error('Error generating user report:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to generate user report',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Generate platform health report
+   */
+  async generateHealthReport(req, res) {
+    try {
+      const report = await reportService.generateHealthReport();
+      
+      res.json({
+        success: true,
+        data: report
+      });
+    } catch (error) {
+      console.error('Error generating health report:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to generate health report',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Export report in specified format
+   */
+  async exportReport(req, res) {
+    try {
+      const reportType = req.params.reportType || 'analytics';
+      const format = req.query.format || 'json';
+      const period = req.query.period || 'month';
+
+      let report;
+      if (reportType === 'analytics') {
+        report = await reportService.generateAnalyticsReport({ period });
+      } else if (reportType === 'health') {
+        report = await reportService.generateHealthReport();
+      } else if (reportType === 'user' && req.user) {
+        report = await reportService.generateUserReport(req.user._id);
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid report type'
+        });
+      }
+
+      const exportedData = reportService.formatReportForExport(report, format);
+
+      // Set appropriate headers based on format
+      if (format === 'csv') {
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${reportType}-report-${Date.now()}.csv"`);
+        return res.send(exportedData);
+      } else if (format === 'excel') {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="${reportType}-report-${Date.now()}.json"`);
+        return res.json(exportedData);
+      } else if (format === 'pdf') {
+        res.setHeader('Content-Type', 'application/json');
+        return res.json({
+          success: true,
+          message: 'PDF generation requires additional frontend processing',
+          data: exportedData
+        });
+      }
+
+      res.json({
+        success: true,
+        data: exportedData
+      });
+    } catch (error) {
+      console.error('Error exporting report:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to export report',
         error: error.message
       });
     }

@@ -8,16 +8,16 @@ const { matchesLimiter } = require('../middleware/rateLimiter');
 router.use(authenticate);
 
 // Get matches for swiping
-router.get('/discover', matchesLimiter, swipeController.getSwipeMatches);
+router.get('/discover', matchesLimiter, (req, res) => swipeController.getSwipeMatches(req, res));
 
 // Swipe on a match
-router.post('/:matchId/swipe', matchesLimiter, swipeController.swipe);
+router.post('/:matchId/swipe', matchesLimiter, (req, res) => swipeController.swipe(req, res));
 
 // Undo last swipe (premium feature)
-router.post('/undo', matchesLimiter, swipeController.undoSwipe);
+router.post('/undo', matchesLimiter, (req, res) => swipeController.undoSwipe(req, res));
 
 // Get interested users for your match
-router.get('/match/:matchId/interested', matchesLimiter, swipeController.getInterestedUsers);
+router.get('/match/:matchId/interested', matchesLimiter, (req, res) => swipeController.getInterestedUsers(req, res));
 
 module.exports = router;
 

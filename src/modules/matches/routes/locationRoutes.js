@@ -4,12 +4,12 @@ const locationController = require('../controllers/locationController');
 const { matchesLimiter } = require('../middleware/rateLimiter');
 
 // Public location endpoints (no auth required)
-router.get('/regions', matchesLimiter, locationController.getRegions);
-router.get('/cities', matchesLimiter, locationController.getCities);
-router.get('/cities/:cityId/districts', matchesLimiter, locationController.getDistricts);
-router.get('/search', matchesLimiter, locationController.searchLocations);
-router.get('/:id', matchesLimiter, locationController.getLocationDetails);
-router.get('/:id/hierarchy', matchesLimiter, locationController.getLocationHierarchy);
+router.get('/regions', matchesLimiter, (req, res) => locationController.getRegions(req, res));
+router.get('/cities', matchesLimiter, (req, res) => locationController.getCities(req, res));
+router.get('/cities/:cityId/districts', matchesLimiter, (req, res) => locationController.getDistricts(req, res));
+router.get('/search', matchesLimiter, (req, res) => locationController.searchLocations(req, res));
+router.get('/:id', matchesLimiter, (req, res) => locationController.getLocationDetails(req, res));
+router.get('/:id/hierarchy', matchesLimiter, (req, res) => locationController.getLocationHierarchy(req, res));
 
 module.exports = router;
 
