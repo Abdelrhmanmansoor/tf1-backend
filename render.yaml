@@ -2,6 +2,7 @@ services:
   - type: web
     name: sportsplatform-be
     env: node
+    rootDir: tf1-backend
     buildCommand: npm install
     startCommand: node server.js
     envVars:

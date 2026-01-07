@@ -9,7 +9,12 @@ export const AuthProvider = ({ children }) => {
   const [isLoggedOut, setIsLoggedOut] = useState(false);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    // Check sessionStorage first, then localStorage for backward compatibility during migration
+    let storedUser = sessionStorage.getItem('user');
+    if (!storedUser) {
+      storedUser = localStorage.getItem('user');
+    }
+    
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
@@ -42,14 +47,23 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.login(email, password);
       
-      const { user, accessToken, refreshToken, requiresVerification } = response.data;
+      const { user, accessToken, refreshToken, requiresVerification } = response.data.data || response.data;
       
       if (accessToken) {
-        localStorage.setItem('token', accessToken);
+        // Store tokens in sessionStorage (cleared when tab closes)
+        // NOT localStorage (persistent and XSS vulnerable)
+        sessionStorage.setItem('accessToken', accessToken);
+        
+        // Refresh token is stored in httpOnly cookie by server
         if (refreshToken) {
-          localStorage.setItem('refreshToken', refreshToken);
+          sessionStorage.setItem('refreshToken', refreshToken);
         }
+        
+        // Store user info
+        sessionStorage.setItem('user', JSON.stringify(user));
+        // Also keep in localStorage for backward compatibility during migration
         localStorage.setItem('user', JSON.stringify(user));
+        
         setUser(user);
         setIsLoggedOut(false);
       }
@@ -92,22 +106,27 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Clear all authentication data
+    // Clear all authentication data from both storages
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('user');
+    
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    
     sessionStorage.clear();
     
     setUser(null);
     setIsLoggedOut(true);
 
-    // Use replace to prevent back button from working
+    // Prevent back button from showing cached page
     window.history.pushState(null, null, window.location.href);
     window.addEventListener('popstate', () => {
       window.history.pushState(null, null, window.location.href);
     });
 
-    // Prevent caching by redirecting
+    // Redirect using replace (removes logout from history)
     window.location.replace('/login');
   };
 

@@ -2,16 +2,17 @@ import axios from 'axios';
 
 const API_URL = '/api/v1';
 
-console.log('API URL:', API_URL);
-
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Include cookies in all requests
 });
 
-let isRefreshing = false;
+// ==================== TOKEN REFRESH LOCKING ====================
+// Use Promise-based locking instead of boolean flag to prevent race conditions
+let refreshPromise = null;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
@@ -27,10 +28,13 @@ const processQueue = (error, token = null) => {
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    // Get token from sessionStorage (cleared when tab closes)
+    // NOT from localStorage (persistent and XSS vulnerable)
+    const token = sessionStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Refresh token is now in httpOnly cookie, sent automatically
     return config;
   },
   (error) => Promise.reject(error)
@@ -42,56 +46,50 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
-        }).catch(err => Promise.reject(err));
-      }
+      // Only refresh token once, queue other requests
+      if (!refreshPromise) {
+        refreshPromise = new Promise(async (resolve, reject) => {
+          try {
+            const response = await axios.post(`${API_URL}/auth/refresh-token`, {}, {
+              withCredentials: true // Include cookies for refresh
+            });
 
-      originalRequest._retry = true;
-      isRefreshing = true;
+            const { accessToken, refreshToken: newRefreshToken } = response.data.data || response.data;
+            
+            // Store new access token in sessionStorage (memory-based, cleared on tab close)
+            if (accessToken) {
+              sessionStorage.setItem('accessToken', accessToken);
+              api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+            }
+            
+            // Refresh token is in httpOnly cookie, handled automatically by browser
+            if (newRefreshToken) {
+              sessionStorage.setItem('refreshToken', newRefreshToken);
+            }
 
-      const refreshToken = localStorage.getItem('refreshToken');
-      
-      if (!refreshToken) {
-        isRefreshing = false;
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
-
-      try {
-        const response = await axios.post(`${API_URL}/auth/refresh-token`, {
-          refreshToken
+            processQueue(null, accessToken);
+            resolve(accessToken);
+          } catch (err) {
+            // Token refresh failed - clear all auth and redirect to login
+            sessionStorage.removeItem('accessToken');
+            sessionStorage.removeItem('refreshToken');
+            sessionStorage.removeItem('user');
+            window.location.href = '/login';
+            processQueue(err, null);
+            reject(err);
+          } finally {
+            refreshPromise = null; // Release lock for next refresh
+          }
         });
+      }
 
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
-        
-        localStorage.setItem('token', accessToken);
-        if (newRefreshToken) {
-          localStorage.setItem('refreshToken', newRefreshToken);
-        }
-
-        api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-        
-        processQueue(null, accessToken);
-        
+      // Wait for refresh to complete
+      try {
+        const token = await refreshPromise;
+        originalRequest.headers.Authorization = `Bearer ${token}`;
         return api(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
+      } catch (err) {
+        return Promise.reject(err);
       }
     }
 
@@ -103,9 +101,13 @@ export const authService = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   register: (data) => api.post('/auth/register', data),
   logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    // Clear local session storage
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('user');
+    
+    // Call logout endpoint to clear cookies server-side
+    return api.post('/auth/logout');
   },
   refreshToken: (refreshToken) => api.post('/auth/refresh-token', { refreshToken }),
 };
