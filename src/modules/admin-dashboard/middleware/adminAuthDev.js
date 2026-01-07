@@ -4,6 +4,7 @@
  */
 
 const crypto = require('crypto');
+const logger = require('../../../middleware/logger') || console;
 
 // Mock admin keys for development
 const MOCK_ADMIN_KEYS = {
@@ -90,7 +91,7 @@ const authenticateAdminKey = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Admin authentication error:', error);
+    logger.error('Admin authentication error:', error);
     return res.status(500).json({
       success: false,
       message: 'Authentication error',

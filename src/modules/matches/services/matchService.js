@@ -4,6 +4,7 @@ const Participation = require('../models/Participation');
 const MatchNotification = require('../models/MatchNotification');
 const StateMachine = require('../utils/stateMachine');
 const cache = require('../utils/cache');
+const logger = require('../../../middleware/logger') || console;
 
 class MatchService {
   async createMatch(userId, data, isNewFormat = false) {
@@ -273,7 +274,7 @@ class MatchService {
       // Notify match full
       if (match.current_players >= match.max_players) {
         await this.notifyMatchFull(match, session).catch(err => {
-          console.error(`Failed to notify match full for match ${match._id}:`, err);
+          logger.error(`Failed to notify match full for match ${match._id}:`, err);
         });
       }
 
@@ -284,7 +285,7 @@ class MatchService {
 
       // Send notification asynchronously
       this.notifyPlayerJoined(match, userId).catch(err => {
-        console.error(`Failed to notify player joined for match ${match._id}, user ${userId}:`, err);
+        logger.error(`Failed to notify player joined for match ${match._id}, user ${userId}:`, err);
       });
 
       return { participation: participation[0], match };

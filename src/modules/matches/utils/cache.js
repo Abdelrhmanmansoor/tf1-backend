@@ -3,6 +3,7 @@
  * Supports both Redis and in-memory caching
  */
 
+const logger = require('../../../middleware/logger') || console;
 let redis = null;
 const memoryCache = new Map();
 
@@ -17,22 +18,22 @@ try {
   });
 
   client.on('error', (err) => {
-    console.warn('Redis client error:', err.message);
+    logger.warn('Redis client error:', err.message);
     redis = null;
   });
 
   client.on('connect', () => {
-    console.log('✓ Redis cache connected');
+    logger.info('✓ Redis cache connected');
     redis = client;
   });
 
   // Connect to Redis
   client.connect().catch(() => {
-    console.warn('Redis not available, using in-memory cache');
+    logger.warn('Redis not available, using in-memory cache');
     redis = null;
   });
 } catch (error) {
-  console.warn('Redis not installed, using in-memory cache');
+  logger.warn('Redis not installed, using in-memory cache');
   redis = null;
 }
 
@@ -59,7 +60,7 @@ const get = async (key) => {
     
     return null;
   } catch (error) {
-    console.error('Cache get error:', error);
+    logger.error('Cache get error:', error);
     return null;
   }
 };
@@ -82,7 +83,7 @@ const set = async (key, value, ttl = 300) => {
       });
     }
   } catch (error) {
-    console.error('Cache set error:', error);
+    logger.error('Cache set error:', error);
   }
 };
 
@@ -97,7 +98,7 @@ const del = async (key) => {
       memoryCache.delete(key);
     }
   } catch (error) {
-    console.error('Cache delete error:', error);
+    logger.error('Cache delete error:', error);
   }
 };
 
@@ -120,7 +121,7 @@ const delPattern = async (pattern) => {
       }
     }
   } catch (error) {
-    console.error('Cache delete pattern error:', error);
+    logger.error('Cache delete pattern error:', error);
   }
 };
 
@@ -135,7 +136,7 @@ const clear = async () => {
       memoryCache.clear();
     }
   } catch (error) {
-    console.error('Cache clear error:', error);
+    logger.error('Cache clear error:', error);
   }
 };
 
@@ -168,7 +169,7 @@ const cacheMiddleware = (ttl = 300) => {
         // Only cache successful responses
         if (res.statusCode === 200) {
           set(cacheKey, data, ttl).catch(err => {
-            console.error('Failed to cache response:', err);
+            logger.error('Failed to cache response:', err);
           });
         }
         return originalJson(data);
@@ -176,7 +177,7 @@ const cacheMiddleware = (ttl = 300) => {
 
       next();
     } catch (error) {
-      console.error('Cache middleware error:', error);
+      logger.error('Cache middleware error:', error);
       next();
     }
   };

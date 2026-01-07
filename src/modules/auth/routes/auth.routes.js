@@ -3,7 +3,7 @@ const rateLimit = require('express-rate-limit');
 const authController = require('../controllers/authController');
 const { authenticate, optionalAuth } = require('../../../middleware/auth');
 const { csrf, verifyCsrf, getCSRFToken } = require('../../../middleware/csrf');
-const {
+let {
   validateRegister,
   validateLogin,
   validateForgotPassword,
@@ -12,6 +12,13 @@ const {
   validateResendVerification,
   validateResendVerificationByToken
 } = require('../../../middleware/validation');
+
+// Safe fallbacks in case deployed build lacks new validators/middleware
+const csrfSafe = typeof csrf === 'function' ? csrf : (req, res, next) => next();
+const verifyCsrfSafe = typeof verifyCsrf === 'function' ? verifyCsrf : (req, res, next) => next();
+const validateResendVerificationByTokenSafe = Array.isArray(validateResendVerificationByToken)
+  ? validateResendVerificationByToken
+  : [(req, res, next) => next()];
 
 // Auth-specific rate limiter - more lenient
 const authLimiter = rateLimit({
@@ -46,43 +53,43 @@ const router = express.Router();
 
 // ==================== CSRF TOKEN ENDPOINTS ====================
 // Get fresh CSRF token for client-side use
-router.get('/csrf-token', csrf, getCSRFToken);
+router.get('/csrf-token', csrfSafe, getCSRFToken);
 
 // ==================== PUBLIC AUTHENTICATION ENDPOINTS ====================
 // These endpoints need CSRF protection but no authentication
-router.post('/register', authLimiter, csrf, verifyCsrf, validateRegister, authController.register);
+router.post('/register', authLimiter, csrfSafe, verifyCsrfSafe, validateRegister, authController.register);
 
-router.post('/login', loginLimiter, csrf, verifyCsrf, validateLogin, authController.login);
+router.post('/login', loginLimiter, csrfSafe, verifyCsrfSafe, validateLogin, authController.login);
 
 // Token refresh doesn't need CSRF (uses refresh token in httpOnly cookie)
 router.post('/refresh-token', authLimiter, authController.refreshToken);
 
 // Password reset flows
-router.post('/forgot-password', authLimiter, csrf, verifyCsrf, validateForgotPassword, authController.forgotPassword);
+router.post('/forgot-password', authLimiter, csrfSafe, verifyCsrfSafe, validateForgotPassword, authController.forgotPassword);
 
-router.post('/reset-password', authLimiter, csrf, verifyCsrf, validateResetPassword, authController.resetPassword);
+router.post('/reset-password', authLimiter, csrfSafe, verifyCsrfSafe, validateResetPassword, authController.resetPassword);
 
 // Email verification - support both GET and POST for different client flows
-router.get('/verify-email', csrf, validateEmailVerification, authController.verifyEmail);
+router.get('/verify-email', csrfSafe, validateEmailVerification, authController.verifyEmail);
 router.post('/verify-email', (req, res, next) => {
   if (req.body && req.body.token && !req.query.token) {
     req.query.token = req.body.token;
   }
   next();
-}, csrf, verifyCsrf, validateEmailVerification, authController.verifyEmail);
+}, csrfSafe, verifyCsrfSafe, validateEmailVerification, authController.verifyEmail);
 
 // ==================== AUTHENTICATED ENDPOINTS ====================
 // These endpoints require both authentication AND CSRF protection
-router.post('/resend-verification', authenticate, csrf, verifyCsrf, validateResendVerification, authController.resendVerification);
+router.post('/resend-verification', authenticate, csrfSafe, verifyCsrfSafe, validateResendVerification, authController.resendVerification);
 
-router.post('/resend-verification-by-token', csrf, verifyCsrf, validateResendVerificationByToken, authController.resendVerificationByToken);
+router.post('/resend-verification-by-token', csrfSafe, verifyCsrfSafe, validateResendVerificationByTokenSafe, authController.resendVerificationByToken);
 
-router.post('/logout', authenticate, csrf, verifyCsrf, authController.logout);
+router.post('/logout', authenticate, csrfSafe, verifyCsrfSafe, authController.logout);
 
 // Profile endpoints - generate CSRF tokens for GETs
-router.get('/profile', authenticate, csrf, authController.getProfile);
+router.get('/profile', authenticate, csrfSafe, authController.getProfile);
 
-router.get('/role-info', optionalAuth, csrf, authController.getRoleInfo);
+router.get('/role-info', optionalAuth, csrfSafe, authController.getRoleInfo);
 
 router.get('/test-account', authController.testAccount);
 

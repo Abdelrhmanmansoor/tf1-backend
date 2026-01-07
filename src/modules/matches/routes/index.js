@@ -7,6 +7,7 @@ const matchRoutes = require('./matchRoutes');
 const teamRoutes = require('./teamRoutes');
 const historyRoutes = require('./historyRoutes');
 const notificationRoutes = require('./notificationRoutes');
+const locationRoutes = require('./locationRoutes');
 
 // Import auth controller and rate limiter for direct routes
 const authController = require('../controllers/authController');
@@ -22,6 +23,7 @@ router.use('/api/matches', matchRoutes);
 router.use('/api/teams', teamRoutes);
 router.use('/api/me', historyRoutes);
 router.use('/api/notifications', notificationRoutes);
+router.use('/api/locations', locationRoutes);
 
 // Legacy routes for backward compatibility (direct under /matches)
 router.use('/auth', authRoutes);
@@ -29,5 +31,6 @@ router.use('/matches', matchRoutes);
 router.use('/teams', teamRoutes);
 router.use('/me', historyRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/locations', locationRoutes);
 
 module.exports = router;

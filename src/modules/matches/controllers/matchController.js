@@ -1,8 +1,10 @@
 const matchService = require('../services/matchService');
 const invitationService = require('../services/invitationService');
 const ratingService = require('../services/ratingService');
+const locationService = require('../services/locationService');
 const { asyncHandler } = require('../utils/errorHandler');
 const { validateMatchCreation, validateRating, validateInvitation } = require('../utils/validators');
+const { ValidationError } = require('../utils/errorHandler');
 
 class MatchController {
   createMatch = asyncHandler(async (req, res) => {
@@ -15,39 +17,86 @@ class MatchController {
     // Validate based on format
     validateMatchCreation(req.body, isNewFormat);
 
-    // Validate location_id and derive area/city/location strings
-    let resolvedArea = area || 'منطقة';
-    let resolvedCity = city || 'مدينة';
-    let resolvedLocation = location || venue || 'موقع';
-    
-    if (isNewFormat && location_id) {
-      const Location = require('../../../models/Location');
-      const loc = await Location.findById(location_id);
-      if (loc) {
+    // Validate and resolve location
+    let resolvedArea = area;
+    let resolvedCity = city;
+    let resolvedLocation = location || venue;
+    let finalLocationId = location_id;
+
+    if (isNewFormat) {
+      // If location_id provided, use it
+      if (location_id) {
+        const Location = require('../../../models/Location');
+        const loc = await Location.findById(location_id);
+        
+        if (!loc) {
+          throw new ValidationError('Location ID not found');
+        }
+
         if (loc.level === 'region') {
-          resolvedArea = loc.name_ar || loc.name_en || 'منطقة';
-          resolvedCity = loc.name_ar || loc.name_en || 'مدينة';
-          resolvedLocation = loc.slug || (loc.name_en || loc.name_ar);
+          resolvedArea = loc.name_ar || loc.name_en;
+          resolvedCity = loc.name_ar || loc.name_en;
+          resolvedLocation = loc.slug || loc.name_en || loc.name_ar;
         } else if (loc.level === 'city' || loc.level === 'governorate') {
-          resolvedCity = loc.name_ar || loc.name_en || 'مدينة';
+          resolvedCity = loc.name_ar || loc.name_en;
           if (loc.parent_id) {
             const parent = await Location.findById(loc.parent_id);
-            resolvedArea = parent?.name_ar || parent?.name_en || 'منطقة';
+            resolvedArea = parent?.name_ar || parent?.name_en || resolvedCity;
           } else {
-            resolvedArea = 'منطقة';
+            resolvedArea = resolvedCity;
           }
-          resolvedLocation = loc.slug || (loc.name_en || loc.name_ar);
+          resolvedLocation = loc.slug || loc.name_en || loc.name_ar;
         } else if (loc.level === 'district') {
-          resolvedLocation = loc.name_ar || loc.name_en || 'حي';
+          resolvedLocation = loc.name_ar || loc.name_en;
           if (loc.parent_id) {
             const cityParent = await Location.findById(loc.parent_id);
             resolvedCity = cityParent?.name_ar || cityParent?.name_en || 'مدينة';
             if (cityParent?.parent_id) {
               const regionParent = await Location.findById(cityParent.parent_id);
-              resolvedArea = regionParent?.name_ar || regionParent?.name_en || 'منطقة';
+              resolvedArea = regionParent?.name_ar || regionParent?.name_en || resolvedCity;
+            } else {
+              resolvedArea = resolvedCity;
             }
           }
         }
+        finalLocationId = location_id;
+      } 
+      // If city and area provided, validate and get/create location
+      else if (city && area) {
+        // Validate city exists
+        const cityLocation = await locationService.validateCity(city);
+        if (!cityLocation) {
+          throw new ValidationError(`المدينة "${city}" غير موجودة. يرجى اختيار مدينة صحيحة`);
+        }
+
+        // Validate area exists for this city
+        if (area) {
+          const areaLocation = await locationService.validateArea(city, area);
+          if (!areaLocation) {
+            throw new ValidationError(`المنطقة "${area}" غير موجودة في مدينة "${city}"`);
+          }
+          finalLocationId = areaLocation._id;
+          resolvedArea = areaLocation.name_ar || areaLocation.name_en;
+        }
+        
+        resolvedCity = cityLocation.name_ar || cityLocation.name_en;
+        resolvedLocation = location || area || cityLocation.name_ar;
+      }
+      // If only city provided
+      else if (city) {
+        const cityLocation = await locationService.validateCity(city);
+        if (!cityLocation) {
+          throw new ValidationError(`المدينة "${city}" غير موجودة. يرجى اختيار مدينة صحيحة`);
+        }
+        
+        resolvedCity = cityLocation.name_ar || cityLocation.name_en;
+        resolvedArea = resolvedCity;
+        resolvedLocation = location || resolvedCity;
+        finalLocationId = cityLocation._id;
+      }
+      // No location info provided
+      else {
+        throw new ValidationError('يجب تحديد المدينة على الأقل (city أو location_id)');
       }
     }
 
@@ -71,7 +120,7 @@ class MatchController {
         venue: venue || '',
         status: 'open',
         current_players: 0,
-        location_id
+        location_id: finalLocationId
       };
     } else {
       // Legacy format

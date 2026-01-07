@@ -2,6 +2,8 @@
  * Error handling utilities for matches system
  */
 
+const logger = require('../../../middleware/logger') || console;
+
 class AppError extends Error {
   constructor(message, statusCode = 500, code = 'INTERNAL_ERROR') {
     super(message);
@@ -60,7 +62,7 @@ const errorHandler = (err, req, res, next) => {
 
   // Log error for debugging
   if (process.env.NODE_ENV === 'development') {
-    console.error('Error:', err);
+    logger.error('Error:', err);
   }
 
   // Mongoose bad ObjectId

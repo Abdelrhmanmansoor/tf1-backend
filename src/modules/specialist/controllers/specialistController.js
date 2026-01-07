@@ -7,6 +7,7 @@ const SpecialistClient = require('../models/SpecialistClient');
 const SpecialistProgram = require('../models/SpecialistProgram');
 const User = require('../../shared/models/User');
 const { uploadSpecialistAvatar, uploadSpecialistBanner, cleanupOldImage } = require('../../../config/cloudinary');
+const logger = require('../../../middleware/logger') || console;
 
 // ============================================
 // PROFILE MANAGEMENT
@@ -1727,7 +1728,7 @@ exports.uploadAvatar = async (req, res) => {
       avatar: profile.avatar
     });
   } catch (error) {
-    console.error('Avatar upload error:', error);
+    logger.error('Avatar upload error:', error);
     res.status(500).json({
       success: false,
       message: 'Error uploading avatar',
@@ -1781,7 +1782,7 @@ exports.uploadBanner = async (req, res) => {
       banner: profile.banner
     });
   } catch (error) {
-    console.error('Banner upload error:', error);
+    logger.error('Banner upload error:', error);
     res.status(500).json({
       success: false,
       message: 'Error uploading banner',
@@ -1821,7 +1822,7 @@ exports.deleteAvatar = async (req, res) => {
       message: 'Avatar deleted successfully'
     });
   } catch (error) {
-    console.error('Avatar delete error:', error);
+    logger.error('Avatar delete error:', error);
     res.status(500).json({
       success: false,
       message: 'Error deleting avatar',
@@ -1861,7 +1862,7 @@ exports.deleteBanner = async (req, res) => {
       message: 'Banner deleted successfully'
     });
   } catch (error) {
-    console.error('Banner delete error:', error);
+    logger.error('Banner delete error:', error);
     res.status(500).json({
       success: false,
       message: 'Error deleting banner',
@@ -1894,7 +1895,7 @@ exports.getCertifications = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get certifications error:', error);
+    logger.error('Get certifications error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching certifications',
@@ -1956,7 +1957,7 @@ exports.addCertification = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Add certification error:', error);
+    logger.error('Add certification error:', error);
     res.status(500).json({
       success: false,
       message: 'Error adding certification',
@@ -2025,7 +2026,7 @@ exports.updateCertification = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Update certification error:', error);
+    logger.error('Update certification error:', error);
     res.status(500).json({
       success: false,
       message: 'Error updating certification',
@@ -2071,7 +2072,7 @@ exports.deleteCertification = async (req, res) => {
       messageAr: 'تم حذف الشهادة بنجاح'
     });
   } catch (error) {
-    console.error('Delete certification error:', error);
+    logger.error('Delete certification error:', error);
     res.status(500).json({
       success: false,
       message: 'Error deleting certification',
@@ -2112,7 +2113,7 @@ exports.getSessionById = async (req, res) => {
       data: { session }
     });
   } catch (error) {
-    console.error('Get session by ID error:', error);
+    logger.error('Get session by ID error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching session',
@@ -2166,7 +2167,7 @@ exports.getStudents = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get students error:', error);
+    logger.error('Get students error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching students',
@@ -2215,7 +2216,7 @@ exports.getStudentById = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get student by ID error:', error);
+    logger.error('Get student by ID error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching student',

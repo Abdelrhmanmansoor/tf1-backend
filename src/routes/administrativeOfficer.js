@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../middleware/auth');
 const { checkTeamPermission, logAction } = require('../middleware/rbac');
+const logger = require('../middleware/logger') || console;
 
 router.use(authenticate);
 router.use(authorize('admin', 'administrative-officer'));
@@ -33,7 +34,7 @@ router.get('/dashboard', logAction('dashboard', 'view', 'Administrative Officer 
       }
     });
   } catch (error) {
-    console.error('Administrative Officer dashboard error:', error);
+    logger.error('Administrative Officer dashboard error:', error);
     res.status(500).json({
       success: false,
       error: {
