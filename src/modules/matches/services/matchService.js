@@ -49,6 +49,11 @@ class MatchService {
 
     const match = await Match.create(matchData);
     
+    // Award points for creating match
+    await gamificationService.updateMatchStats(userId, 'create').catch(err => {
+      console.error('Error awarding points:', err);
+    });
+    
     // Invalidate matches list cache
     await cache.invalidateMatchCache(match._id);
     

@@ -3,10 +3,11 @@ const Participation = require('../models/Participation');
 const UserStats = require('../models/UserStats');
 const SwipeAction = require('../models/SwipeAction');
 const cache = require('../utils/cache');
+const statisticalModels = require('./statisticalModels');
 
 /**
  * Analytics & Statistics Service
- * Comprehensive analytics for matches system
+ * Comprehensive analytics for matches system with real statistical models
  */
 
 class AnalyticsService {
