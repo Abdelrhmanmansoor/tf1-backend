@@ -150,6 +150,24 @@ export const matchService = {
   leaveMatch: (id) => api.post(`/matches/${id}/leave`),
   getMyMatches: () => api.get('/matches/my-matches'),
   getRegions: () => api.get('/matches/regions'),
+  
+  // Social Features
+  getFriends: () => api.get('/matches/api/social/friends'),
+  getFriendRequests: () => api.get('/matches/api/social/friends/requests'),
+  getFriendSuggestions: () => api.get('/matches/api/social/friends/suggestions'),
+  getFriendsInMatch: (matchId) => api.get(`/matches/api/social/matches/${matchId}/friends`),
+  sendFriendRequest: (friendId) => api.post('/matches/api/social/friends/request', { friendId }),
+  acceptFriendRequest: (friendshipId) => api.post(`/matches/api/social/friends/${friendshipId}/accept`),
+  getActivityFeed: (limit = 50) => api.get('/matches/api/social/feed', { params: { limit } }),
+  getRecommendations: (limit = 20) => api.get('/matches/api/social/recommendations', { params: { limit } }),
+  
+  // Analytics Features
+  getUserAnalytics: (userId) => api.get(`/matches/api/analytics/user${userId ? `/${userId}` : ''}`),
+  getUserPerformance: (userId) => api.get(`/matches/api/analytics/performance${userId ? `/${userId}` : ''}`),
+  getMatchStats: (matchId) => api.get(`/matches/api/analytics/match/${matchId}`),
+  getLeaderboard: (type = 'points') => api.get('/matches/api/analytics/leaderboard', { params: { type } }),
+  getTrendingMatches: () => api.get('/matches/api/analytics/trending'),
+  getPlatformStats: () => api.get('/matches/api/analytics/platform'),
 };
 
 export const profileService = {

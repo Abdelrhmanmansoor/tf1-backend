@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react';
 import { matchService } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import CascadingSelect from '../components/CascadingSelect';
+import MatchFriends from '../components/MatchFriends';
+import MatchStatistics from '../components/MatchStatistics';
 
 const MatchHub = () => {
   const { user } = useAuth();
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [regionsData, setRegionsData] = useState(null);
+  const [selectedMatchForDetails, setSelectedMatchForDetails] = useState(null);
+  const [showDetailsPanel, setShowDetailsPanel] = useState(false);
   const [filters, setFilters] = useState({
     region: '',
     city: '',
@@ -238,6 +242,16 @@ const MatchHub = () => {
                     ? '✓ مسجل' 
                     : 'انضم الآن'}
                 </button>
+                <button 
+                  className="details-btn"
+                  onClick={() => {
+                    setSelectedMatchForDetails(match);
+                    setShowDetailsPanel(true);
+                  }}
+                  title="عرض الأصدقاء والإحصائيات"
+                >
+                  👥 التفاصيل
+                </button>
               </div>
             </div>
           ))
@@ -362,6 +376,152 @@ const MatchHub = () => {
           </div>
         </div>
       )}
+
+      {/* Details Panel for Friends and Statistics */}
+      {showDetailsPanel && selectedMatchForDetails && (
+        <div className="details-panel-overlay">
+          <div className="details-panel">
+            <button 
+              className="close-btn"
+              onClick={() => setShowDetailsPanel(false)}
+              title="إغلاق"
+            >
+              ✕
+            </button>
+            <h2>{selectedMatchForDetails.name}</h2>
+            
+            <div className="details-grid">
+              <div className="details-column">
+                <MatchStatistics 
+                  matchId={selectedMatchForDetails._id}
+                  userId={user?._id}
+                />
+              </div>
+              <div className="details-column">
+                <MatchFriends matchId={selectedMatchForDetails._id} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        .details-panel-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.7);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+
+        .details-panel {
+          background: white;
+          border-radius: 16px;
+          padding: 30px;
+          max-width: 1200px;
+          width: 100%;
+          max-height: 90vh;
+          overflow-y: auto;
+          position: relative;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .details-panel h2 {
+          margin-top: 0;
+          color: #333;
+          font-size: 24px;
+          margin-bottom: 20px;
+        }
+
+        .close-btn {
+          position: absolute;
+          top: 15px;
+          right: 15px;
+          background: #f0f0f0;
+          border: none;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          cursor: pointer;
+          font-size: 20px;
+          color: #333;
+          transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+          background: #e0e0e0;
+          transform: scale(1.1);
+        }
+
+        .details-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+          .details-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .details-column {
+          min-height: 400px;
+        }
+
+        .match-actions {
+          display: flex;
+          gap: 10px;
+          margin-top: 10px;
+        }
+
+        .join-btn,
+        .details-btn {
+          padding: 8px 16px;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 600;
+          transition: all 0.3s;
+        }
+
+        .join-btn {
+          background: #1976d2;
+          color: white;
+          flex: 1;
+        }
+
+        .join-btn:hover:not(:disabled) {
+          background: #1565c0;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+        }
+
+        .join-btn:disabled {
+          background: #ccc;
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+
+        .details-btn {
+          background: #9c27b0;
+          color: white;
+          padding: 8px 12px;
+        }
+
+        .details-btn:hover {
+          background: #7b1fa2;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(156, 39, 176, 0.3);
+        }
+      `}</style>
     </div>
   );
 };

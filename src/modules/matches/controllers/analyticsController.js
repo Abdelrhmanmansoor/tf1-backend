@@ -558,15 +558,26 @@ class AnalyticsController {
         });
       }
 
+  /**
+   * Get user leaderboard
+   */
+  async getLeaderboard(req, res) {
+    try {
+      const { type = 'points', limit = 50 } = req.query;
+      const leaderboard = await analyticsService.getLeaderboard(type, parseInt(limit));
       res.json({
         success: true,
-        data: exportedData
+        data: {
+          leaderboard,
+          type,
+          count: leaderboard.length
+        }
       });
     } catch (error) {
-      console.error('Error exporting report:', error);
+      console.error('Error getting leaderboard:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to export report',
+        message: 'Failed to get leaderboard',
         error: error.message
       });
     }

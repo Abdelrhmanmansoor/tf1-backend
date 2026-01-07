@@ -934,6 +934,50 @@ class AnalyticsService {
       }
     };
   }
+
+  /**
+   * Get user leaderboard with rankings
+   */
+  async getLeaderboard(type = 'points', limit = 50) {
+    const cacheKey = `analytics:leaderboard:${type}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) return cached;
+
+    const MatchUser = require('../models/MatchUser');
+    
+    let sortField = 'total_points';
+    let displayField = 'totalPoints';
+
+    if (type === 'wins') {
+      sortField = 'matches_won';
+      displayField = 'totalWins';
+    } else if (type === 'matches') {
+      sortField = 'matches_completed';
+      displayField = 'totalMatches';
+    }
+
+    const leaderboard = await UserStats.find()
+      .populate('user_id', 'name email profilePicture')
+      .sort({ [sortField]: -1 })
+      .limit(parseInt(limit))
+      .lean();
+
+    const formatted = leaderboard.map((stat, index) => ({
+      rank: index + 1,
+      _id: stat.user_id?._id || stat.user_id,
+      name: stat.user_id?.name || stat.username || 'Unknown',
+      email: stat.user_id?.email,
+      profilePicture: stat.user_id?.profilePicture,
+      totalPoints: stat.total_points || 0,
+      totalWins: stat.matches_won || 0,
+      totalMatches: stat.matches_completed || 0,
+      attendanceRate: stat.attendance_rate || 0,
+      averageRating: stat.average_rating || 0
+    }));
+
+    await cache.set(cacheKey, formatted, 600); // 10 minutes
+    return formatted;
+  }
 }
 
 module.exports = new AnalyticsService();

@@ -83,6 +83,14 @@ router.get('/trending', (req, res) => analyticsController.getTrendingMatches(req
 router.get('/popular-sports', (req, res) => analyticsController.getPopularSports(req, res));
 
 /**
+ * @route   GET /api/matches/analytics/leaderboard
+ * @desc    Get user leaderboard with rankings
+ * @access  Public
+ * @query   type - points|wins|matches (default: points)
+ */
+router.get('/leaderboard', (req, res) => analyticsController.getLeaderboard(req, res));
+
+/**
  * @route   GET /api/matches/analytics/kpi
  * @desc    Get KPI dashboard
  * @access  Public
