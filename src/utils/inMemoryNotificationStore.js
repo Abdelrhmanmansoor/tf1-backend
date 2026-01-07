@@ -6,6 +6,7 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+const logger = require('../middleware/logger') || console;
 
 const STORAGE_FILE = path.join(__dirname, '../../data/notifications.json');
 
