@@ -75,7 +75,8 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // تحقق إذا كان الخطأ 401 (unauthorized) فقط - وليس من الشبكة أو من الـ timeout
+    if (error.response?.status === 401 && !originalRequest._retry && error.response) {
       // Only refresh token once, queue other requests
       if (!refreshPromise) {
         refreshPromise = new Promise(async (resolve, reject) => {
@@ -100,11 +101,15 @@ api.interceptors.response.use(
             processQueue(null, accessToken);
             resolve(accessToken);
           } catch (err) {
-            // Token refresh failed - clear all auth and redirect to login
-            sessionStorage.removeItem('accessToken');
-            sessionStorage.removeItem('refreshToken');
-            sessionStorage.removeItem('user');
-            window.location.href = '/login';
+            // Token refresh failed - لا تسجل خروج، فقط رفع الخطأ
+            console.warn('Token refresh failed, user may be logged out:', err);
+            // فقط سجل خروج إذا كان الخطأ من الـ authentication نفسه
+            if (err.response?.status === 401 || err.response?.status === 403) {
+              sessionStorage.removeItem('accessToken');
+              sessionStorage.removeItem('refreshToken');
+              sessionStorage.removeItem('user');
+              window.location.href = '/login';
+            }
             processQueue(err, null);
             reject(err);
           } finally {
@@ -117,10 +122,19 @@ api.interceptors.response.use(
       try {
         const token = await refreshPromise;
         originalRequest.headers.Authorization = `Bearer ${token}`;
+        originalRequest._retry = true; // Mark as retried
         return api(originalRequest);
       } catch (err) {
+        console.warn('Failed to refresh token, request will fail');
         return Promise.reject(err);
       }
+    }
+
+    // إذا كان الخطأ من الشبكة أو من الـ timeout، لا تسجل خروج
+    if (!error.response) {
+      // Network error or timeout - لا تسجل خروج
+      console.warn('Network error:', error.message);
+      return Promise.reject(error);
     }
 
     return Promise.reject(error);

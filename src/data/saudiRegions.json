@@ -152,6 +152,19 @@
         { "id": "abu-arish", "nameAr": "أبو عريش", "nameEn": "Abu Arish", "neighborhoods": ["أبو عريش"] },
         { "id": "farasan", "nameAr": "فرسان", "nameEn": "Farasan", "neighborhoods": ["فرسان"] }
       ]
+    },
+    {
+      "id": "najran",
+      "nameAr": "نجران",
+      "nameEn": "Najran",
+      "cities": [
+        { "id": "najran-city", "nameAr": "نجران", "nameEn": "Najran", "neighborhoods": ["نجران", "الشرقية", "الغربية"] },
+        { "id": "yanbu-nakl", "nameAr": "ينبع النخل", "nameEn": "Yanbu Nakl", "neighborhoods": ["ينبع النخل"] },
+        { "id": "habuna", "nameAr": "حبونا", "nameEn": "Habuna", "neighborhoods": ["حبونا"] },
+        { "id": "sharorah", "nameAr": "شرورة", "nameEn": "Sharorah", "neighborhoods": ["شرورة"] },
+        { "id": "arar-najran", "nameAr": "عرار", "nameEn": "Arar Najran", "neighborhoods": ["عرار"] },
+        { "id": "khubah", "nameAr": "خباة", "nameEn": "Khubah", "neighborhoods": ["خباة"] }
+      ]
     }
   ],
   "sports": [
