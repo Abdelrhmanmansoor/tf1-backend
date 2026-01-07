@@ -3,55 +3,19 @@
  * Handles advanced analytics and statistical analysis requests
  */
 
-// Safe require with error handling
-let analyticsService, kpiService, statisticalModels;
-let getReportService;
+const analyticsService = require('../services/analyticsService');
+const kpiService = require('../services/kpiService');
+const statisticalModels = require('../services/statisticalModels');
 
-try {
-  analyticsService = require('../services/analyticsService');
-  kpiService = require('../services/kpiService');
-  statisticalModels = require('../services/statisticalModels');
-  // Lazy load reportService to avoid circular dependency issues
-  getReportService = () => {
-    try {
-      return require('../services/reportService');
-    } catch (error) {
-      console.warn('ReportService not available:', error.message);
-      return null;
-    }
-  };
-} catch (error) {
-  console.error('Error loading analytics dependencies:', error);
-  // Create fallback services
-  analyticsService = {
-    getPlatformStats: () => Promise.resolve({}),
-    getUserAnalytics: () => Promise.resolve({}),
-    getGrowthTrend: () => Promise.resolve({}),
-    getSeasonality: () => Promise.resolve({}),
-    getUserPerformanceScore: () => Promise.resolve({}),
-    getPlatformHealth: () => Promise.resolve({}),
-    getComparativeAnalysis: () => Promise.resolve({}),
-    getPredictiveInsights: () => Promise.resolve({}),
-    getTrendingMatches: () => Promise.resolve([]),
-    getPopularSports: () => Promise.resolve([]),
-    getLeaderboard: () => Promise.resolve([]),
-    getKPIDashboard: () => Promise.resolve({}),
-    getCohortAnalysis: () => Promise.resolve({}),
-    getFunnelAnalysis: () => Promise.resolve({}),
-    getActivityHeatmap: () => Promise.resolve({}),
-    getMatchStats: () => Promise.resolve({})
-  };
-  kpiService = {
-    getDashboardKPIs: () => Promise.resolve({})
-  };
-  statisticalModels = {
-    linearRegression: () => ({}),
-    timeSeriesForecast: () => ({}),
-    monteCarloSimulation: () => ({}),
-    detectAnomalies: () => ({})
-  };
-  getReportService = () => null;
-}
+// Lazy load reportService to avoid circular dependency issues
+const getReportService = () => {
+  try {
+    return require('../services/reportService');
+  } catch (error) {
+    console.warn('ReportService not available:', error.message);
+    return null;
+  }
+};
 
 class AnalyticsController {
   /**
@@ -641,6 +605,21 @@ class AnalyticsController {
           data: exportedData
         });
       }
+
+      // Default: return JSON
+      return res.json({
+        success: true,
+        data: exportedData
+      });
+    } catch (error) {
+      console.error('Error exporting report:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to export report',
+        error: error.message
+      });
+    }
+  }
 
   /**
    * Get user leaderboard
