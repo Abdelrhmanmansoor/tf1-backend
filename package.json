@@ -12,7 +12,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "seed:locations": "node src/seeders/saudi-locations.js"
+    "seed:locations": "node src/seeders/saudi-locations.js",
+    "seed:sample": "node create-sample-data.js",
+    "setup:local": "setup-local-mongodb.bat"
   },
   "repository": {
     "type": "git",
