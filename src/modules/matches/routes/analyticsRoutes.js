@@ -16,11 +16,12 @@ const { authenticate } = require('../middleware/auth');
 router.get('/platform', (req, res) => analyticsController.getPlatformStats(req, res));
 
 /**
- * @route   GET /api/matches/analytics/user/:userId?
+ * @route   GET /api/matches/analytics/user/:userId
  * @desc    Get user analytics dashboard
  * @access  Private
  */
-router.get('/user/:userId?', authenticate, (req, res) => analyticsController.getUserAnalytics(req, res));
+router.get('/user', authenticate, (req, res) => analyticsController.getUserAnalytics(req, res));
+router.get('/user/:userId', authenticate, (req, res) => analyticsController.getUserAnalytics(req, res));
 
 /**
  * @route   GET /api/matches/analytics/growth-trend
@@ -37,11 +38,12 @@ router.get('/growth-trend', (req, res) => analyticsController.getGrowthTrend(req
 router.get('/seasonality', (req, res) => analyticsController.getSeasonality(req, res));
 
 /**
- * @route   GET /api/matches/analytics/performance/:userId?
+ * @route   GET /api/matches/analytics/performance/:userId
  * @desc    Get user performance score (weighted metrics)
  * @access  Private
  */
-router.get('/performance/:userId?', authenticate, (req, res) => analyticsController.getUserPerformanceScore(req, res));
+router.get('/performance', authenticate, (req, res) => analyticsController.getUserPerformanceScore(req, res));
+router.get('/performance/:userId', authenticate, (req, res) => analyticsController.getUserPerformanceScore(req, res));
 
 /**
  * @route   GET /api/matches/analytics/platform-health
@@ -51,18 +53,20 @@ router.get('/performance/:userId?', authenticate, (req, res) => analyticsControl
 router.get('/platform-health', (req, res) => analyticsController.getPlatformHealth(req, res));
 
 /**
- * @route   GET /api/matches/analytics/comparative/:userId?
+ * @route   GET /api/matches/analytics/comparative/:userId
  * @desc    Get comparative analysis (user vs platform)
  * @access  Private
  */
-router.get('/comparative/:userId?', authenticate, (req, res) => analyticsController.getComparativeAnalysis(req, res));
+router.get('/comparative', authenticate, (req, res) => analyticsController.getComparativeAnalysis(req, res));
+router.get('/comparative/:userId', authenticate, (req, res) => analyticsController.getComparativeAnalysis(req, res));
 
 /**
- * @route   GET /api/matches/analytics/predictive/:userId?
+ * @route   GET /api/matches/analytics/predictive/:userId
  * @desc    Get predictive insights with forecasting
  * @access  Private
  */
-router.get('/predictive/:userId?', authenticate, (req, res) => analyticsController.getPredictiveInsights(req, res));
+router.get('/predictive', authenticate, (req, res) => analyticsController.getPredictiveInsights(req, res));
+router.get('/predictive/:userId', authenticate, (req, res) => analyticsController.getPredictiveInsights(req, res));
 
 /**
  * @route   GET /api/matches/analytics/trending
@@ -103,12 +107,13 @@ router.get('/cohort', (req, res) => analyticsController.getCohortAnalysis(req, r
 router.get('/funnel', (req, res) => analyticsController.getFunnelAnalysis(req, res));
 
 /**
- * @route   GET /api/matches/analytics/heatmap/:userId?
+ * @route   GET /api/matches/analytics/heatmap/:userId
  * @desc    Get activity heatmap
  * @access  Private
  * @query   days - number of days (default: 30)
  */
-router.get('/heatmap/:userId?', authenticate, (req, res) => analyticsController.getActivityHeatmap(req, res));
+router.get('/heatmap', authenticate, (req, res) => analyticsController.getActivityHeatmap(req, res));
+router.get('/heatmap/:userId', authenticate, (req, res) => analyticsController.getActivityHeatmap(req, res));
 
 /**
  * @route   GET /api/matches/analytics/match/:matchId
@@ -139,11 +144,12 @@ router.get('/test-models', (req, res) => analyticsController.testStatisticalMode
 router.get('/reports/analytics', (req, res) => analyticsController.generateAnalyticsReport(req, res));
 
 /**
- * @route   GET /api/matches/analytics/reports/user/:userId?
+ * @route   GET /api/matches/analytics/reports/user/:userId
  * @desc    Generate user performance report
  * @access  Private
  */
-router.get('/reports/user/:userId?', authenticate, (req, res) => analyticsController.generateUserReport(req, res));
+router.get('/reports/user', authenticate, (req, res) => analyticsController.generateUserReport(req, res));
+router.get('/reports/user/:userId', authenticate, (req, res) => analyticsController.generateUserReport(req, res));
 
 /**
  * @route   GET /api/matches/analytics/reports/health
