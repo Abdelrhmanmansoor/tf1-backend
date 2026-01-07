@@ -926,6 +926,70 @@ class AuthController {
     }
   }
 
+  async resendVerificationByToken(req, res) {
+    try {
+      const { token } = req.body;
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: 'Verification token is required',
+          messageAr: 'رمز التحقق مطلوب',
+          code: 'TOKEN_MISSING'
+        });
+      }
+      let user = await User.findOne({ emailVerificationToken: token });
+      if (!user) {
+        // Try decoded token
+        let decodedToken = token;
+        try {
+          decodedToken = decodeURIComponent(token);
+        } catch (e) {}
+        user = await User.findOne({ emailVerificationToken: decodedToken });
+      }
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Invalid verification token',
+          messageAr: 'رابط التحقق غير صالح',
+          code: 'INVALID_TOKEN'
+        });
+      }
+      if (user.isVerified) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email address is already verified',
+          messageAr: 'البريد الإلكتروني مفعّل بالفعل',
+          code: 'ALREADY_VERIFIED'
+        });
+      }
+      const newToken = user.generateEmailVerificationToken();
+      await user.save();
+      const emailSent = await emailService.sendVerificationEmail(user, newToken);
+      if (!emailSent) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to send verification email. Please try again.',
+          messageAr: 'فشل إرسال بريد التحقق. يرجى المحاولة مرة أخرى.',
+          code: 'EMAIL_SEND_FAILED'
+        });
+      }
+      return res.status(200).json({
+        success: true,
+        message: 'Verification email sent. Please check your email.',
+        messageAr: 'تم إرسال بريد التحقق. يرجى التحقق من بريدك الإلكتروني.',
+        email: user.email
+      });
+    } catch (error) {
+      logger.error('Resend verification by token failed', { error: error.message });
+      res.status(500).json({
+        success: false,
+        message: 'Failed to resend verification email. Please try again.',
+        messageAr: 'فشل إعادة إرسال بريد التحقق. يرجى المحاولة مرة أخرى.',
+        code: 'RESEND_VERIFICATION_FAILED'
+      });
+    }
+  }
+
   async logout(req, res) {
     try {
       // Clear CSRF tokens for this user

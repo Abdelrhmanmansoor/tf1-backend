@@ -4,7 +4,7 @@ const Participation = require('../models/Participation');
 const MatchNotification = require('../models/MatchNotification');
 const StateMachine = require('../utils/stateMachine');
 const cache = require('../utils/cache');
-const logger = require('../../../middleware/logger') || console;
+const logger = require('../../../utils/logger') || console;
 
 class MatchService {
   async createMatch(userId, data, isNewFormat = false) {

@@ -7,7 +7,7 @@ const SpecialistClient = require('../models/SpecialistClient');
 const SpecialistProgram = require('../models/SpecialistProgram');
 const User = require('../../shared/models/User');
 const { uploadSpecialistAvatar, uploadSpecialistBanner, cleanupOldImage } = require('../../../config/cloudinary');
-const logger = require('../../../middleware/logger') || console;
+const logger = require('../../../utils/logger') || console;
 
 // ============================================
 // PROFILE MANAGEMENT

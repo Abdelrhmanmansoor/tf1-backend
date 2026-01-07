@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../middleware/auth');
 const { checkTeamPermission, logAction } = require('../middleware/rbac');
-const logger = require('../middleware/logger') || console;
+const logger = require('../utils/logger') || console;
 
 router.use(authenticate);
 router.use(authorize('admin', 'administrative-officer'));
