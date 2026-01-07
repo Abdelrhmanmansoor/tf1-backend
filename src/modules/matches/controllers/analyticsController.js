@@ -6,7 +6,8 @@
 const analyticsService = require('../services/analyticsService');
 const kpiService = require('../services/kpiService');
 const statisticalModels = require('../services/statisticalModels');
-const reportService = require('../services/reportService');
+// Lazy load reportService to avoid circular dependency issues
+const getReportService = () => require('../services/reportService');
 
 class AnalyticsController {
   /**
@@ -454,6 +455,7 @@ class AnalyticsController {
         includeForecasts: req.query.includeForecasts !== 'false'
       };
 
+      const reportService = getReportService();
       const report = await reportService.generateAnalyticsReport(options);
       
       res.json({
@@ -477,6 +479,7 @@ class AnalyticsController {
   async generateUserReport(req, res) {
     try {
       const userId = req.params.userId || req.matchUser?._id;
+      const reportService = getReportService();
       const report = await reportService.generateUserReport(userId);
       
       res.json({
@@ -499,6 +502,7 @@ class AnalyticsController {
    */
   async generateHealthReport(req, res) {
     try {
+      const reportService = getReportService();
       const report = await reportService.generateHealthReport();
       
       res.json({
@@ -524,6 +528,7 @@ class AnalyticsController {
       const format = req.query.format || 'json';
       const period = req.query.period || 'month';
 
+      const reportService = getReportService();
       let report;
       if (reportType === 'analytics') {
         report = await reportService.generateAnalyticsReport({ period });
