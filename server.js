@@ -146,7 +146,7 @@ app.use(
       }
       
       // Check if origin is in allowed list
-      if (allowedOrigins.includes(origin) || NODE_ENV === 'development') {
+      if (allowedOrigins.includes(origin) || origin.endsWith('tf1one.com') || NODE_ENV === 'development') {
         callback(null, true);
       } else {
         // Log but allow in development

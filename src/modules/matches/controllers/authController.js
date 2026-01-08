@@ -1,4 +1,5 @@
 const MatchUser = require('../models/MatchUser');
+const SharedUser = require('../../shared/models/User');
 const jwtService = require('../utils/jwtService');
 const emailService = require('../../../utils/email');
 const { validateEmail, validatePassword } = require('../middleware/security');
@@ -335,6 +336,14 @@ class AuthController {
       // Update user with new profile picture
       user.profilePicture = result.url;
       await user.save();
+
+      try {
+        const platformUser = await SharedUser.findOne({ email: user.email.toLowerCase() });
+        if (platformUser) {
+          platformUser.avatar = result.url;
+          await platformUser.save();
+        }
+      } catch (e) {}
 
       res.status(200).json({
         success: true,
