@@ -5,7 +5,7 @@ const handleValidationErrors = (req, res, next) => {
 
   console.log('📝 Validation check for:', req.path);
   console.log('📝 Request body:', JSON.stringify(req.body, null, 2));
-  console.log('📝 Role:', req.body.role);
+  console.log('📝 Role:', req.body?.role);
 
   if (!errors.isEmpty()) {
     const errorMessages = errors.array().map(error => ({
