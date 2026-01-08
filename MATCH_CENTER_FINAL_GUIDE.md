@@ -121,7 +121,7 @@ src/modules/matches/
 | User Matches | 5 دقائق | محدث متكرر |
 | User Analytics | 30 دقيقة | تحديث متوسط |
 | Leaderboard | 1 ساعة | تحديث بطيء |
-| Platform Stats | 1 ساعة | بيانات عامة |
+| Platform Stats | 1 ساعة | بيانات  عامة |
 | Location Data | 24 ساعة | بيانات ثابتة |
 
 #### فقدان الـ Cache (Cache Invalidation):

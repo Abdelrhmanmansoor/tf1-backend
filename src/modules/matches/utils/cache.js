@@ -1,100 +1,73 @@
 /**
  * Caching utilities for matches system
  * Supports both Redis and in-memory caching
- * Redis is OPTIONAL - works perfectly without it
  */
 
 const logger = require('./logger') || console;
 let redis = null;
 const memoryCache = new Map();
 
-// Initialize Redis ONLY if explicitly configured
+// Try to initialize Redis if available
 try {
-  // Check if Redis is explicitly disabled
-  if (process.env.NO_REDIS === 'true') {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Cache] Redis explicitly disabled via NO_REDIS=true. Using in-memory cache.');
+  const redisClient = require('redis');
+  
+  // Build Redis URL or use socket configuration
+  const redisHost = process.env.REDIS_HOST || 'localhost';
+  const redisPort = process.env.REDIS_PORT || 6379;
+  const redisPassword = process.env.REDIS_PASSWORD;
+  const redisDb = process.env.REDIS_DB || 0;
+  
+  // Build connection URL
+  let redisUrl;
+  if (redisPassword) {
+    redisUrl = `redis://:${redisPassword}@${redisHost}:${redisPort}/${redisDb}`;
+  } else {
+    redisUrl = `redis://${redisHost}:${redisPort}/${redisDb}`;
+  }
+  
+  const client = redisClient.createClient({
+    url: redisUrl,
+    socket: {
+      reconnectStrategy: (retries) => {
+        // Stop retrying after 3 attempts
+        if (retries > 3) {
+          logger.warn('Redis connection failed after 3 retries, falling back to in-memory cache');
+          return new Error('Max retries reached');
+        }
+        // Wait 1 second between retries
+        return 1000;
+      }
+    }
+  });
+
+  let errorLogged = false;
+  
+  client.on('error', (err) => {
+    // Only log the error once to avoid spam
+    if (!errorLogged) {
+      logger.warn('Redis not available, using in-memory cache');
+      errorLogged = true;
     }
     redis = null;
-  } else {
-    const redisHost = process.env.REDIS_HOST;
-    
-    // CRITICAL: In production, NEVER attempt connection without REDIS_HOST
-    // This prevents deployment failures and connection warnings
-    if (!redisHost || redisHost.trim() === '') {
-      // Redis not configured - silently use in-memory cache
-      // Only log in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Cache] Redis not configured (REDIS_HOST not set). Using in-memory cache.');
-      }
-      redis = null;
-    } else {
-      // Redis host is configured - attempt connection
-      const redisClient = require('redis');
-      const redisPort = process.env.REDIS_PORT || 6379;
-      const redisPassword = process.env.REDIS_PASSWORD;
-      const redisDb = process.env.REDIS_DB || 0;
-      const hostToUse = redisHost.trim();
-      
-      // Build connection URL
-      let redisUrl;
-      if (redisPassword) {
-        redisUrl = `redis://:${redisPassword}@${hostToUse}:${redisPort}/${redisDb}`;
-      } else {
-        redisUrl = `redis://${hostToUse}:${redisPort}/${redisDb}`;
-      }
-      
-      const client = redisClient.createClient({
-        url: redisUrl,
-        socket: {
-          reconnectStrategy: false, // Disable automatic reconnection completely
-          connectTimeout: 2000, // Fast timeout - fail quickly
-          lazyConnect: true // Don't connect immediately - connect manually
-        },
-        disableClientInfo: true
-      });
+  });
 
-      // Suppress ALL error events - Redis is optional
-      // Don't log errors unless in development
-      client.on('error', () => {
-        // Silently handle - Redis is optional
-        redis = null;
-      });
+  client.on('connect', () => {
+    logger.info('✓ Redis cache connected');
+    redis = client;
+    errorLogged = false;
+  });
+  
+  client.on('ready', () => {
+    redis = client;
+  });
 
-      client.on('connect', () => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`[Cache] ✓ Redis connected to ${hostToUse}:${redisPort}`);
-        }
-        redis = client;
-      });
-      
-      client.on('ready', () => {
-        redis = client;
-      });
-
-      // Attempt connection asynchronously - don't block startup
-      // Wrap in try-catch to suppress ALL errors
-      (async () => {
-        try {
-          await client.connect();
-        } catch (err) {
-          // Silently fail - Redis is optional
-          // NO logging - this is expected if Redis is not available
-          redis = null;
-          // Close client to prevent memory leaks
-          try {
-            await client.quit().catch(() => {});
-          } catch {}
-        }
-      })();
-    }
-  }
+  // Connect to Redis
+  client.connect().catch((err) => {
+    logger.warn('Redis not available, using in-memory cache');
+    redis = null;
+  });
 } catch (error) {
-  // Silently handle initialization errors - Redis is optional
-  // Only log in development
-  if (process.env.NODE_ENV === 'development') {
-    console.warn(`[Cache] Redis initialization error: ${error.message}. Using in-memory cache.`);
-  }
+  logger.warn('Redis not installed, using in-memory cache');
   redis = null;
 }
 
@@ -121,7 +94,7 @@ const get = async (key) => {
     
     return null;
   } catch (error) {
-    // Silently fail - cache is optional
+    logger.error('Cache get error:', error);
     return null;
   }
 };
@@ -144,7 +117,7 @@ const set = async (key, value, ttl = 300) => {
       });
     }
   } catch (error) {
-    // Silently fail - cache is optional
+    logger.error('Cache set error:', error);
   }
 };
 
@@ -159,7 +132,7 @@ const del = async (key) => {
       memoryCache.delete(key);
     }
   } catch (error) {
-    // Silently fail - cache is optional
+    logger.error('Cache delete error:', error);
   }
 };
 
@@ -182,7 +155,7 @@ const delPattern = async (pattern) => {
       }
     }
   } catch (error) {
-    // Silently fail - cache is optional
+    logger.error('Cache delete pattern error:', error);
   }
 };
 
@@ -197,7 +170,7 @@ const clear = async () => {
       memoryCache.clear();
     }
   } catch (error) {
-    // Silently fail - cache is optional
+    logger.error('Cache clear error:', error);
   }
 };
 
@@ -229,8 +202,8 @@ const cacheMiddleware = (ttl = 300) => {
       res.json = function(data) {
         // Only cache successful responses
         if (res.statusCode === 200) {
-          set(cacheKey, data, ttl).catch(() => {
-            // Silently fail - cache is optional
+          set(cacheKey, data, ttl).catch(err => {
+            logger.error('Failed to cache response:', err);
           });
         }
         return originalJson(data);
@@ -238,7 +211,7 @@ const cacheMiddleware = (ttl = 300) => {
 
       next();
     } catch (error) {
-      // Silently fail and continue
+      logger.error('Cache middleware error:', error);
       next();
     }
   };
@@ -270,14 +243,16 @@ const getOrSet = async (key, fn, ttl = 300) => {
 };
 
 // Cleanup expired entries from memory cache every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, data] of memoryCache.entries()) {
-    if (data.expiry <= now) {
-      memoryCache.delete(key);
+if (!redis) {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, data] of memoryCache.entries()) {
+      if (data.expiry <= now) {
+        memoryCache.delete(key);
+      }
     }
-  }
-}, 5 * 60 * 1000);
+  }, 5 * 60 * 1000);
+}
 
 module.exports = {
   get,
@@ -289,3 +264,4 @@ module.exports = {
   invalidateMatchCache,
   getOrSet
 };
+
