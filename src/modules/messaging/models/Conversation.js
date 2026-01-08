@@ -122,7 +122,7 @@ const conversationSchema = new mongoose.Schema({
 // Indexes
 conversationSchema.index({ 'participants.userId': 1 });
 conversationSchema.index({ applicationId: 1, status: 1 });
-conversationSchema.index({ jobId: 1 });
+// Removed duplicate index on jobId to avoid Mongoose warning
 conversationSchema.index({ createdAt: -1 });
 conversationSchema.index({ lastMessageAt: -1 });
 
@@ -213,4 +213,5 @@ conversationSchema.statics.createConversation = async function(
   }
 };
 
-module.exports = mongoose.model('Conversation', conversationSchema);
+// Use a distinct model name to avoid conflict with existing global Conversation model
+module.exports = mongoose.models.ApplicationConversation || mongoose.model('ApplicationConversation', conversationSchema);

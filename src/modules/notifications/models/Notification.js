@@ -159,4 +159,5 @@ notificationSchema.statics.createNotification = async function(
   }
 };
 
-module.exports = mongoose.model('Notification', notificationSchema);
+// Use a distinct model name to avoid conflict with existing global Notification model
+module.exports = mongoose.models.ApplicationNotification || mongoose.model('ApplicationNotification', notificationSchema);

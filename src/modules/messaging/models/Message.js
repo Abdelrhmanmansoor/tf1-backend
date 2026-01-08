@@ -4,7 +4,7 @@ const messageSchema = new mongoose.Schema({
   // Link to conversation
   conversationId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Conversation',
+    ref: 'ApplicationConversation',
     required: true,
     index: true
   },
@@ -87,7 +87,7 @@ const messageSchema = new mongoose.Schema({
 
 // Indexes
 messageSchema.index({ conversationId: 1, createdAt: -1 });
-messageSchema.index({ senderId: 1 });
+// Removed duplicate senderId index to avoid Mongoose warning
 messageSchema.index({ 'readBy.userId': 1 });
 
 // Methods
@@ -120,4 +120,5 @@ messageSchema.methods.softDelete = function() {
   return this.save();
 };
 
-module.exports = mongoose.model('Message', messageSchema);
+// Use a distinct model name to avoid conflict with existing global Message model
+module.exports = mongoose.models.ApplicationMessage || mongoose.model('ApplicationMessage', messageSchema);
