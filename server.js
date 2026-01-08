@@ -267,6 +267,9 @@ app.use(compression());
 app.use(sanitizeRequest); // Prevent NoSQL injection
 
 // ==================== ROOT & HEALTH CHECK ====================
+// Explicitly handle CSRF token route to avoid 404
+app.get('/api/v1/auth/csrf-token', getCSRFToken);
+
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
