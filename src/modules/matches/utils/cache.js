@@ -43,16 +43,16 @@ try {
   let errorLogged = false;
   
   client.on('error', (err) => {
-    // Only log the error once to avoid spam
+    // Only log the error once to avoid spam, but include details
     if (!errorLogged) {
-      logger.warn('Redis not available, using in-memory cache');
+      logger.warn(`Redis connection failed: ${err.message}. Using in-memory cache.`);
       errorLogged = true;
     }
     redis = null;
   });
 
   client.on('connect', () => {
-    logger.info('✓ Redis cache connected');
+    logger.info(`✓ Redis cache connected to ${redisHost}:${redisPort}`);
     redis = client;
     errorLogged = false;
   });

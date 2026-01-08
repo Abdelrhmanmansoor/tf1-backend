@@ -621,7 +621,7 @@ const cvSchema = new mongoose.Schema({
 
 // Indexes for performance
 cvSchema.index({ user: 1, 'meta.updatedAt': -1 });
-cvSchema.index({ sessionId: 1 });
+// sessionId index is already defined in the field with sparse: true
 cvSchema.index({ 'meta.template': 1 });
 cvSchema.index({ 'meta.isATSFriendly': 1 });
 
