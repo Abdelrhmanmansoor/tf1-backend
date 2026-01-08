@@ -40,3 +40,4 @@ interestedUserSchema.index({ match_id: 1, priority: -1, interested_at: -1 });
 
 module.exports = mongoose.model('MSInterestedUser', interestedUserSchema, 'ms_interested_users');
 
+

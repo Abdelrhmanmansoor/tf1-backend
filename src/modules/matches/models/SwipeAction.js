@@ -34,3 +34,4 @@ swipeActionSchema.index({ match_id: 1, direction: 1 });
 
 module.exports = mongoose.model('MSSwipeAction', swipeActionSchema, 'ms_swipe_actions');
 
+

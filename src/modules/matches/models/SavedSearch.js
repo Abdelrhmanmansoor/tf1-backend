@@ -29,3 +29,4 @@ savedSearchSchema.index({ user_id: 1, created_at: -1 });
 
 module.exports = mongoose.model('MSSavedSearch', savedSearchSchema, 'ms_saved_searches');
 
+

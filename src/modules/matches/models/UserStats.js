@@ -74,3 +74,4 @@ userStatsSchema.index({ current_streak: -1 });
 
 module.exports = mongoose.model('MSUserStats', userStatsSchema, 'ms_user_stats');
 
+

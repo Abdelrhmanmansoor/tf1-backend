@@ -46,3 +46,4 @@ pushQueueSchema.index({ status: 1, scheduled_at: 1 });
 
 module.exports = mongoose.model('MSPushQueue', pushQueueSchema, 'ms_push_queue');
 
+

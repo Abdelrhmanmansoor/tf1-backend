@@ -39,3 +39,4 @@ friendshipSchema.index({ friend_id: 1, status: 1 });
 
 module.exports = mongoose.model('MSFriendship', friendshipSchema, 'ms_friendships');
 
+

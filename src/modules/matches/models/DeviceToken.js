@@ -33,3 +33,4 @@ deviceTokenSchema.index({ user_id: 1, active: 1 });
 
 module.exports = mongoose.model('MSDeviceToken', deviceTokenSchema, 'ms_device_tokens');
 
+

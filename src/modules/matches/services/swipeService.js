@@ -414,3 +414,4 @@ class SwipeService {
 
 module.exports = new SwipeService();
 
+

@@ -124,3 +124,4 @@ class SwipeController {
 
 module.exports = new SwipeController();
 
+

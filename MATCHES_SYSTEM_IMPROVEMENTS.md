@@ -350,3 +350,4 @@ await cache.delPattern('cache:*/matches*');
 **الحالة**: ✅ جاهز للاستخدام  
 **الإصدار**: 2.0.0
 
+
