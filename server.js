@@ -160,8 +160,8 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-admin-key', 'X-Admin-Key', 'Accept'],
-    exposedHeaders: ['Content-Type', 'Content-Length'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-admin-key', 'X-Admin-Key', 'Accept', 'X-CSRF-Token', 'X-XSRF-TOKEN', 'x-csrf-token', 'x-xsrf-token'],
+    exposedHeaders: ['Content-Type', 'Content-Length', 'X-CSRF-Token', 'X-XSRF-TOKEN'],
   })
 );
 
