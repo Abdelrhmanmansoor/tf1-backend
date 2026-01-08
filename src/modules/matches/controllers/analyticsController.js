@@ -620,9 +620,72 @@ class AnalyticsController {
       });
     }
   }
-}
 
-module.exports = new AnalyticsController();
+  /**
+   * Get seasonality analysis
+   */
+  async getSeasonality(req, res) {
+    try {
+      const days = parseInt(req.query.days) || 60;
+      const seasonality = await analyticsService.getSeasonalityAnalysis(days);
+      res.json({
+        success: true,
+        data: seasonality,
+        model_info: {
+          type: 'Seasonal Decomposition',
+          description: 'Identifies recurring patterns in user activity'
+        }
+      });
+    } catch (error) {
+      console.error('Error getting seasonality:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get seasonality analysis',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Get user performance score with weighted metrics
+   */
+  async getUserPerformanceScore(req, res) {
+    try {
+      const userId = req.params.userId || req.matchUser?._id;
+      const score = await analyticsService.getUserPerformanceScore(userId);
+      res.json({
+        success: true,
+        data: score,
+        model_info: {
+          type: 'Weighted Score Calculation',
+          description: 'Multi-dimensional performance evaluation'
+        }
+      });
+    } catch (error) {
+      console.error('Error getting performance score:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get performance score',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Get platform health metrics
+   */
+  async getPlatformHealth(req, res) {
+    try {
+      const health = await analyticsService.getPlatformHealthMetrics();
+      res.json({
+        success: true,
+        data: health,
+        model_info: {
+          type: 'Anomaly Detection + Statistical Analysis',
+          description: 'Comprehensive platform health assessment'
+        }
+      });
+    } catch (error) {
       console.error('Error getting platform health:', error);
       res.status(500).json({
         success: false,
