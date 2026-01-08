@@ -29,20 +29,36 @@ const processQueue = (error, token = null) => {
 // ==================== CSRF TOKEN MANAGEMENT ====================
 // Helper function to get CSRF token from cookie or generate new one
 const getCSRFToken = async () => {
-  // First check if CSRF token exists in cookies (set by server)
+  // First check sessionStorage (for performance)
+  let token = sessionStorage.getItem('csrfToken');
+  if (token && token !== 'undefined') {
+    return token;
+  }
+  
+  // Then check if CSRF token exists in cookies (set by server)
   const cookies = document.cookie.split(';').map(c => c.trim());
   const csrfCookie = cookies.find(c => c.startsWith('XSRF-TOKEN='));
   
   if (csrfCookie) {
-    return csrfCookie.split('=')[1];
+    token = csrfCookie.split('=')[1];
+    sessionStorage.setItem('csrfToken', token);
+    return token;
   }
   
   // If no token in cookie, request one from server
   try {
     const response = await axios.get(`${API_URL}/auth/csrf-token`, { withCredentials: true });
-    return response.data?.token || response.data?.csrfToken;
+    token = response.data?.data?.token || response.data?.token;
+    
+    if (token) {
+      sessionStorage.setItem('csrfToken', token);
+      return token;
+    }
+    
+    console.warn('No CSRF token in response:', response.data);
+    return null;
   } catch (err) {
-    console.warn('Failed to fetch CSRF token:', err);
+    console.error('Failed to fetch CSRF token:', err);
     return null;
   }
 };
@@ -61,6 +77,11 @@ api.interceptors.request.use(
       const csrfToken = await getCSRFToken();
       if (csrfToken) {
         config.headers['X-CSRF-Token'] = csrfToken;
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`✅ CSRF Token added for ${config.method.toUpperCase()} ${config.url}`);
+        }
+      } else {
+        console.warn(`⚠️ No CSRF token available for ${config.method.toUpperCase()} ${config.url}`);
       }
     }
     

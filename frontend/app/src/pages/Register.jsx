@@ -26,7 +26,32 @@ const Register = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Initialize CSRF token when component mounts
+    const initCSRFToken = async () => {
+      try {
+        const response = await fetch('/api/v1/auth/csrf-token', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.data?.token || data.token) {
+          const token = data.data?.token || data.token;
+          sessionStorage.setItem('csrfToken', token);
+          console.log('✅ CSRF token initialized for registration');
+        }
+      } catch (error) {
+        console.error('❌ Failed to initialize CSRF token:', error);
+      }
+    };
+    
+    // First fetch options, then initialize CSRF token
     fetchOptions();
+    initCSRFToken();
   }, []);
 
   const fetchOptions = async () => {

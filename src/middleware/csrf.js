@@ -204,7 +204,12 @@ const getCSRFToken = (req, res) => {
 
   res.status(200).json({
     success: true,
-    token: token
+    message: 'CSRF token generated',
+    data: {
+      token: token,
+      csrfToken: token  // Alternative format for compatibility
+    },
+    token: token  // Also at root level for compatibility
   });
 };
 
