@@ -47,15 +47,20 @@ const API_VERSION = process.env.API_VERSION || 'v1';
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
   'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://tf1one.com',
+  'https://www.tf1one.com',
 ];
 
 // In development, allow additional origins but NOT wildcard
 if (NODE_ENV === 'development') {
   // Add common development origins
-  allowedOrigins.push('http://localhost:5000');
-  allowedOrigins.push('http://localhost:5173');
-  allowedOrigins.push('http://127.0.0.1:3000');
-  allowedOrigins.push('http://127.0.0.1:5000');
+  if (!allowedOrigins.includes('http://localhost:5000')) allowedOrigins.push('http://localhost:5000');
+  if (!allowedOrigins.includes('http://localhost:5173')) allowedOrigins.push('http://localhost:5173');
+  if (!allowedOrigins.includes('http://127.0.0.1:3000')) allowedOrigins.push('http://127.0.0.1:3000');
+  if (!allowedOrigins.includes('http://127.0.0.1:5000')) allowedOrigins.push('http://127.0.0.1:5000');
   
   // Add Replit domain if specified
   if (process.env.REPLIT_DEV_DOMAIN) {
