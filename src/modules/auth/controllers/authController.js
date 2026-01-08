@@ -858,8 +858,11 @@ class AuthController {
 
       const successResponse = {
         success: true,
-        message: 'Email verified successfully! Welcome to SportX Platform.',
-        messageAr: 'تم التحقق من البريد الإلكتروني بنجاح! مرحباً بك في منصة SportX.',
+        message: '✅ تم التحقق من بريدك الإلكتروني بنجاح! يمكنك تسجيل الدخول الآن.',
+        messageEn: '✅ Your email has been verified successfully! You can now login.',
+        code: 'VERIFICATION_SUCCESS',
+        verified: true,
+        isVerified: true,
         user: {
           ...userObject,
           permissions: permissions
@@ -874,6 +877,7 @@ class AuthController {
       });
 
       console.log(`✅ [EMAIL VERIFICATION] User ${user.email} (role: ${user.role}) verified successfully`);
+      console.log('📤 [EMAIL VERIFICATION] Response:', JSON.stringify({ success: successResponse.success, message: successResponse.message, code: successResponse.code }));
 
       return res.status(200).json(successResponse);
 

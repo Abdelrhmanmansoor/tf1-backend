@@ -30,6 +30,9 @@ const siteSettingsRoutes = require('./src/routes/siteSettings');
 const locationsRoutes = require('./src/routes/locations');
 const openaiWebhookRoutes = require('./src/modules/integrations/openai/webhook.routes');
 const adminDashboardRoutes = require('./src/modules/admin-dashboard/routes');
+const notificationRoutes = require('./src/modules/notifications/routes/notificationRoutes');
+const messagingRoutes = require('./src/modules/messaging/routes/messagingRoutes');
+const jobPublisherRoutes = require('./src/modules/job-publisher/routes/jobPublisherRoutes');
 const securityHeadersMiddleware = require('./src/middleware/securityHeaders');
 const { seedRegions } = require('./src/utils/seedLocations');
 const { createSearchIndexes } = require('./src/config/searchIndexes');
@@ -341,6 +344,15 @@ app.use(`/api/${API_VERSION}/matches`, matchesSystemRoutes); // Support /api/v1/
 app.use(`/api/${API_VERSION}/profile`, profileRoutes);
 app.use(`/api/${API_VERSION}/jobs`, jobsRoutes);
 app.use(`/api/${API_VERSION}/locations`, locationsRoutes);
+
+// Job Publisher Routes
+app.use(`/api/${API_VERSION}/job-publisher`, jobPublisherRoutes);
+
+// Notifications Routes
+app.use(`/api/${API_VERSION}/notifications`, notificationRoutes);
+
+// Messaging Routes
+app.use(`/api/${API_VERSION}/messages`, messagingRoutes);
 
 // Leader & Team Dashboard Routes
 app.use(`/api/${API_VERSION}/sports-admin`, sportsAdminRoutes);
