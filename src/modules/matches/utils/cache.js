@@ -45,7 +45,10 @@ try {
   client.on('error', (err) => {
     // Only log the error once to avoid spam, but include details
     if (!errorLogged) {
-      logger.warn(`Redis connection failed: ${err.message}. Using in-memory cache.`);
+      const errorMessage = err.message || err.toString() || JSON.stringify(err);
+      logger.warn(`Redis connection failed: ${errorMessage}. Using in-memory cache.`);
+      // Log full error object for debugging if needed
+      if (!err.message) console.error('Full Redis Error Object:', err);
       errorLogged = true;
     }
     redis = null;
