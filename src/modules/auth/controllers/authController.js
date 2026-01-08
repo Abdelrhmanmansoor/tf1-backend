@@ -839,7 +839,7 @@ class AuthController {
         // Ensure role is valid before getting permissions
         if (user.role && typeof user.role === 'string') {
           permissions = getUserPermissions(user.role);
-          console.log(`✅ [EMAIL VERIFICATION] Permissions retrieved for role ${user.role}:`, permissions?.length || 0, 'permissions');
+          console.log(`✅ [EMAIL VERIFICATION] Permissions retrieved for role ${user.role}:`, (permissions?.length || 0), 'permissions');
         } else {
           console.warn(`⚠️ [EMAIL VERIFICATION] Invalid role type: ${typeof user.role}, value: ${user.role}`);
           permissions = [];
@@ -1015,7 +1015,18 @@ class AuthController {
         });
       }
       const newToken = user.generateEmailVerificationToken();
-      await user.save();
+      
+      // CRITICAL FIX: Use updateOne to ensure token is saved even if there are validation errors
+      await User.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            emailVerificationToken: user.emailVerificationToken,
+            emailVerificationTokenExpires: user.emailVerificationTokenExpires
+          }
+        }
+      );
+      
       const emailSent = await emailService.sendVerificationEmail(user, newToken);
       if (!emailSent) {
         return res.status(500).json({
