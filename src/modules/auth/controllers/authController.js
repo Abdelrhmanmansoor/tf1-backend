@@ -699,6 +699,20 @@ class AuthController {
         tokenExpires: user.emailVerificationTokenExpires ? new Date(user.emailVerificationTokenExpires).toISOString() : 'null'
       });
 
+      // CRITICAL: Validate role is in enum before proceeding
+      const validRoles = ['player', 'coach', 'club', 'specialist', 'team', 'admin', 'administrator', 
+                          'administrative-officer', 'age-group-supervisor', 'sports-director', 
+                          'executive-director', 'secretary', 'sports-administrator', 'applicant', 'job-publisher'];
+      if (!validRoles.includes(user.role)) {
+        console.error(`❌ [EMAIL VERIFICATION] Invalid role: ${user.role}`);
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid user role',
+          messageAr: 'دور المستخدم غير صالح',
+          code: 'INVALID_ROLE'
+        });
+      }
+
       // Mark user as verified
       user.isVerified = true;
       // CRITICAL FIX: Do NOT clear the token immediately to prevent "Failed" on refresh
@@ -710,9 +724,14 @@ class AuthController {
       
       // Save user with error handling - use updateOne to avoid validation issues
       try {
-        // Use updateOne instead of save() to avoid triggering pre-save hooks that might cause issues
+        // CRITICAL FIX: Use updateOne with explicit role support for all roles including job-publisher and applicant
         const updateResult = await User.updateOne(
-          { _id: user._id },
+          { 
+            _id: user._id,
+            role: { $in: ['player', 'coach', 'club', 'specialist', 'team', 'admin', 'administrator', 
+                          'administrative-officer', 'age-group-supervisor', 'sports-director', 
+                          'executive-director', 'secretary', 'sports-administrator', 'applicant', 'job-publisher'] }
+          },
           {
             $set: {
               isVerified: true,
@@ -721,10 +740,21 @@ class AuthController {
           }
         );
         
-        console.log(`✅ [EMAIL VERIFICATION] User ${user.email} updated successfully`, {
+        console.log(`✅ [EMAIL VERIFICATION] User ${user.email} (role: ${user.role}) update attempted`, {
           matched: updateResult.matchedCount,
           modified: updateResult.modifiedCount
         });
+
+        // If no document was matched, it means role might not be in enum or user doesn't exist
+        if (updateResult.matchedCount === 0) {
+          console.error(`❌ [EMAIL VERIFICATION] No user matched for update - role: ${user.role}, id: ${user._id}`);
+          throw new Error(`User update failed: No document matched. Role: ${user.role}`);
+        }
+        
+        if (updateResult.modifiedCount === 0 && user.isVerified === false) {
+          console.warn(`⚠️ [EMAIL VERIFICATION] User ${user.email} was not modified - may already be verified or update failed`);
+          // Still continue - might already be verified
+        }
         
         // Refresh user object from database to ensure we have latest data
         user = await User.findById(user._id);
@@ -732,7 +762,7 @@ class AuthController {
           throw new Error('User not found after update');
         }
         
-        console.log(`✅ [EMAIL VERIFICATION] User refreshed from database, isVerified: ${user.isVerified}`);
+        console.log(`✅ [EMAIL VERIFICATION] User refreshed from database, isVerified: ${user.isVerified}, role: ${user.role}`);
       } catch (saveError) {
         console.error('❌ [EMAIL VERIFICATION] Error saving user:', saveError);
         console.error('Save error details:', {
@@ -749,15 +779,29 @@ class AuthController {
           })) : null
         });
         
-        // Try alternative save method if updateOne failed
+        // Try alternative save method if updateOne failed - use validateBeforeSave: false to skip validation
         try {
-          console.log('🔄 [EMAIL VERIFICATION] Trying alternative save method...');
+          console.log('🔄 [EMAIL VERIFICATION] Trying alternative save method with validateBeforeSave: false...');
           user.isVerified = true;
           user.emailVerificationTokenExpires = Date.now();
-          await user.save({ validateBeforeSave: false });
-          console.log(`✅ [EMAIL VERIFICATION] User saved using alternative method`);
+          // Skip validation and middleware hooks to ensure save succeeds
+          await user.save({ validateBeforeSave: false, runValidators: false });
+          console.log(`✅ [EMAIL VERIFICATION] User saved using alternative method (skip validation)`);
+          
+          // Refresh user after save
+          user = await User.findById(user._id);
+          if (!user) {
+            throw new Error('User not found after alternative save');
+          }
         } catch (altSaveError) {
           console.error('❌ [EMAIL VERIFICATION] Alternative save also failed:', altSaveError);
+          console.error('Alternative save error details:', {
+            email: user.email,
+            role: user.role,
+            userId: user._id,
+            errorMessage: altSaveError.message,
+            errorName: altSaveError.name
+          });
           throw new Error(`Failed to save user: ${saveError.message}. Alternative method also failed: ${altSaveError.message}`);
         }
       }
@@ -792,15 +836,23 @@ class AuthController {
       // Get permissions with error handling - wrap in try-catch to prevent breaking verification
       let permissions = [];
       try {
-        permissions = getUserPermissions(user.role);
-        console.log(`✅ [EMAIL VERIFICATION] Permissions retrieved for role ${user.role}:`, permissions);
+        // Ensure role is valid before getting permissions
+        if (user.role && typeof user.role === 'string') {
+          permissions = getUserPermissions(user.role);
+          console.log(`✅ [EMAIL VERIFICATION] Permissions retrieved for role ${user.role}:`, permissions?.length || 0, 'permissions');
+        } else {
+          console.warn(`⚠️ [EMAIL VERIFICATION] Invalid role type: ${typeof user.role}, value: ${user.role}`);
+          permissions = [];
+        }
       } catch (permissionsError) {
         console.error('⚠️ [EMAIL VERIFICATION] Error getting permissions (non-critical):', permissionsError);
         console.error('Permissions error details:', {
           role: user.role,
-          errorMessage: permissionsError.message
+          roleType: typeof user.role,
+          errorMessage: permissionsError.message,
+          errorStack: permissionsError.stack
         });
-        // Don't throw - just use empty permissions array
+        // Don't throw - just use empty permissions array to not break verification
         permissions = [];
       }
 
