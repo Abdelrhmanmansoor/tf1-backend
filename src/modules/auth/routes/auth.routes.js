@@ -53,10 +53,12 @@ const router = express.Router();
 
 // ==================== CSRF TOKEN ENDPOINTS ====================
 // Get fresh CSRF token for client-side use
-router.get('/csrf-token', csrfSafe, getCSRFToken);
+// This should be called by frontend BEFORE submitting any form
+router.get('/csrf-token', getCSRFToken);
 
 // ==================== PUBLIC AUTHENTICATION ENDPOINTS ====================
 // These endpoints need CSRF protection but no authentication
+// Order: CSRF generation -> CSRF verification -> validation -> controller
 router.post('/register', authLimiter, csrfSafe, verifyCsrfSafe, validateRegister, authController.register);
 
 router.post('/login', loginLimiter, csrfSafe, verifyCsrfSafe, validateLogin, authController.login);
@@ -70,7 +72,7 @@ router.post('/forgot-password', authLimiter, csrfSafe, verifyCsrfSafe, validateF
 router.post('/reset-password', authLimiter, csrfSafe, verifyCsrfSafe, validateResetPassword, authController.resetPassword);
 
 // Email verification - support both GET and POST for different client flows
-router.get('/verify-email', csrfSafe, validateEmailVerification, authController.verifyEmail);
+router.get('/verify-email', validateEmailVerification, authController.verifyEmail);
 router.post('/verify-email', (req, res, next) => {
   if (req.body && req.body.token && !req.query.token) {
     req.query.token = req.body.token;
@@ -86,10 +88,10 @@ router.post('/resend-verification-by-token', csrfSafe, verifyCsrfSafe, validateR
 
 router.post('/logout', authenticate, csrfSafe, verifyCsrfSafe, authController.logout);
 
-// Profile endpoints - generate CSRF tokens for GETs
-router.get('/profile', authenticate, csrfSafe, authController.getProfile);
+// Profile endpoints
+router.get('/profile', authenticate, authController.getProfile);
 
-router.get('/role-info', optionalAuth, csrfSafe, authController.getRoleInfo);
+router.get('/role-info', optionalAuth, authController.getRoleInfo);
 
 router.get('/test-account', authController.testAccount);
 
