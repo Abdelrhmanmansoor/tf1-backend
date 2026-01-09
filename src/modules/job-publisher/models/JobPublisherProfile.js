@@ -134,12 +134,68 @@ const jobPublisherProfileSchema = new mongoose.Schema({
     default: []
   },
 
+  // Company Benefits (مزايا الشركة)
+  companyBenefits: {
+    type: [String],
+    default: [],
+    // Examples: health insurance, remote work, flexible hours, training, etc.
+  },
+
+  // Work Environment Photos (صور بيئة العمل)
+  workEnvironmentPhotos: [{
+    url: String,
+    caption: String,
+    uploadDate: Date
+  }],
+
+  // Company Awards & Certifications (جوائز وشهادات)
+  awards: [{
+    title: String,
+    description: String,
+    issuer: String,
+    date: Date,
+    certificateUrl: String
+  }],
+
+  // Employee Testimonials (آراء الموظفين)
+  employeeTestimonials: [{
+    employeeName: String,
+    position: String,
+    testimonial: String,
+    date: Date,
+    verified: Boolean
+  }],
+
+  // Hiring Process Info
+  hiringProcess: {
+    averageTimeToHire: Number, // in days
+    processSteps: [String], // e.g., ['Application Review', 'Phone Interview', 'In-person Interview', 'Offer']
+    description: String
+  },
+
+  // Company Video (فيديو تعريفي)
+  companyVideoUrl: String,
+
+  // Office Locations (مواقع المكاتب)
+  officeLocations: [{
+    address: String,
+    city: String,
+    country: String,
+    isPrimary: Boolean,
+    coordinates: {
+      latitude: Number,
+      longitude: Number
+    }
+  }],
+
   // Social Media Links
   socialMediaLinks: {
     linkedin: String,
     twitter: String,
     facebook: String,
-    instagram: String
+    instagram: String,
+    youtube: String,
+    website: String
   },
 
   // Profile Verification

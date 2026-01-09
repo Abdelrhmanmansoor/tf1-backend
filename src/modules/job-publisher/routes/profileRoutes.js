@@ -50,8 +50,17 @@ router.put('/', profileController.updateProfile);
 // Upload company logo
 router.post('/upload-logo', upload.single('logo'), profileController.uploadLogo);
 
+// Upload work environment photos
+router.post('/upload-work-photo', upload.single('photo'), profileController.uploadWorkPhoto);
+
 // Upload documents
 router.post('/upload-document', upload.single('document'), profileController.uploadDocument);
+
+// Add award/certification
+router.post('/add-award', profileController.addAward);
+
+// Add employee testimonial
+router.post('/add-testimonial', profileController.addTestimonial);
 
 // Verify national address
 router.post('/verify-national-address', profileController.verifyNationalAddress);

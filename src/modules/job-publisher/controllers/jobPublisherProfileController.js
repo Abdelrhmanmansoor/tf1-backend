@@ -315,6 +315,122 @@ exports.verifyNationalAddress = catchAsync(async (req, res) => {
 });
 
 /**
+ * @route   POST /api/v1/job-publisher/profile/upload-work-photo
+ * @desc    Upload work environment photos
+ * @access  Private (job-publisher)
+ */
+exports.uploadWorkPhoto = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+  const { caption } = req.body;
+
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: 'No photo uploaded',
+      messageAr: 'لم يتم تحميل صورة'
+    });
+  }
+
+  const photoPath = `/uploads/work-photos/${req.file.filename}`;
+
+  const profile = await JobPublisherProfile.findOne({ userId });
+  if (!profile) {
+    return res.status(404).json({
+      success: false,
+      message: 'Profile not found',
+      messageAr: 'البروفايل غير موجود'
+    });
+  }
+
+  profile.workEnvironmentPhotos.push({
+    url: photoPath,
+    caption: caption || '',
+    uploadDate: new Date()
+  });
+
+  await profile.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Work photo uploaded successfully',
+    messageAr: 'تم تحميل صورة بيئة العمل بنجاح',
+    photoUrl: photoPath
+  });
+});
+
+/**
+ * @route   POST /api/v1/job-publisher/profile/add-award
+ * @desc    Add company award or certification
+ * @access  Private (job-publisher)
+ */
+exports.addAward = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+  const { title, description, issuer, date, certificateUrl } = req.body;
+
+  const profile = await JobPublisherProfile.findOne({ userId });
+  if (!profile) {
+    return res.status(404).json({
+      success: false,
+      message: 'Profile not found',
+      messageAr: 'البروفايل غير موجود'
+    });
+  }
+
+  profile.awards.push({
+    title,
+    description,
+    issuer,
+    date: date || new Date(),
+    certificateUrl: certificateUrl || null
+  });
+
+  await profile.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Award added successfully',
+    messageAr: 'تم إضافة الجائزة بنجاح',
+    award: profile.awards[profile.awards.length - 1]
+  });
+});
+
+/**
+ * @route   POST /api/v1/job-publisher/profile/add-testimonial
+ * @desc    Add employee testimonial
+ * @access  Private (job-publisher)
+ */
+exports.addTestimonial = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+  const { employeeName, position, testimonial } = req.body;
+
+  const profile = await JobPublisherProfile.findOne({ userId });
+  if (!profile) {
+    return res.status(404).json({
+      success: false,
+      message: 'Profile not found',
+      messageAr: 'البروفايل غير موجود'
+    });
+  }
+
+  profile.employeeTestimonials.push({
+    employeeName,
+    position,
+    testimonial,
+    date: new Date(),
+    verified: false
+  });
+
+  await profile.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Testimonial added successfully',
+    messageAr: 'تم إضافة رأي الموظف بنجاح',
+    testimonial: profile.employeeTestimonials[profile.employeeTestimonials.length - 1]
+  });
+});
+
+/**
  * @route   GET /api/v1/job-publisher/profile/public/:publisherId
  * @desc    Get public profile information
  * @access  Public
