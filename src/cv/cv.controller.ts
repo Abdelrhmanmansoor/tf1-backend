@@ -16,6 +16,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { CVService } from './cv.service';
+import { CVAIService } from './services';
 import { CreateCVDto, UpdateCVDto, ExportCVDto, ImportCVDto } from './dtos';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
@@ -33,7 +34,10 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 @Controller('api/v1/cv')
 @UseGuards(JwtAuthGuard)
 export class CVController {
-  constructor(private cvService: CVService) {}
+  constructor(
+    private cvService: CVService,
+    private aiService: CVAIService,
+  ) {}
 
   // ═══════════════════════════════════════════════════════════════════════
   // CRUD OPERATIONS
@@ -392,6 +396,198 @@ export class CVController {
   @Get('stats')
   async getStatistics(@CurrentUser() userId: string): Promise<any> {
     return this.cvService.getCVStatistics(userId);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // AI-POWERED FEATURES
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /**
+   * Generate professional summary using AI
+   *
+   * POST /api/v1/cv/:id/ai/generate-summary
+   *
+   * @param cvId CV ID
+   * @param userId Current user ID
+   * @param language Target language (en/ar)
+   * @returns Generated summary
+   */
+  @Post(':id/ai/generate-summary')
+  async generateSummary(
+    @Param('id') cvId: string,
+    @CurrentUser() userId: string,
+    @Body('language') language: 'en' | 'ar' = 'en',
+  ): Promise<{ summary: string }> {
+    const cv = await this.cvService.getCV(cvId, userId);
+    const summary = await this.aiService.generateSummary(cv.data, language);
+    return { summary };
+  }
+
+  /**
+   * Improve job description using AI
+   *
+   * POST /api/v1/cv/:id/ai/improve-description
+   *
+   * @param cvId CV ID
+   * @param userId Current user ID
+   * @param dto Request data
+   * @returns Improved description
+   */
+  @Post(':id/ai/improve-description')
+  async improveDescription(
+    @Param('id') cvId: string,
+    @CurrentUser() userId: string,
+    @Body()
+    dto: {
+      description: string;
+      jobTitle: string;
+      language?: 'en' | 'ar';
+    },
+  ): Promise<{ improved: string }> {
+    const improved = await this.aiService.improveJobDescription(
+      dto.description,
+      dto.jobTitle,
+      dto.language || 'en',
+    );
+    return { improved };
+  }
+
+  /**
+   * Analyze CV and get comprehensive feedback
+   *
+   * POST /api/v1/cv/:id/ai/analyze
+   *
+   * @param cvId CV ID
+   * @param userId Current user ID
+   * @returns Analysis results
+   */
+  @Post(':id/ai/analyze')
+  async analyzeCV(
+    @Param('id') cvId: string,
+    @CurrentUser() userId: string,
+  ): Promise<any> {
+    const cv = await this.cvService.getCV(cvId, userId);
+    return await this.aiService.analyzeCV(cv.data);
+  }
+
+  /**
+   * Tailor CV for specific job
+   *
+   * POST /api/v1/cv/:id/ai/tailor
+   *
+   * @param cvId CV ID
+   * @param userId Current user ID
+   * @param dto Job description
+   * @returns Tailored CV
+   */
+  @Post(':id/ai/tailor')
+  async tailorCV(
+    @Param('id') cvId: string,
+    @CurrentUser() userId: string,
+    @Body('jobDescription') jobDescription: string,
+  ): Promise<any> {
+    const cv = await this.cvService.getCV(cvId, userId);
+    return await this.aiService.tailorCVForJob(cv.data, jobDescription);
+  }
+
+  /**
+   * Generate bullet points using AI
+   *
+   * POST /api/v1/cv/ai/generate-bullets
+   *
+   * @param dto Context for generation
+   * @returns Generated bullet points
+   */
+  @Post('ai/generate-bullets')
+  async generateBulletPoints(
+    @Body()
+    dto: {
+      jobTitle: string;
+      company?: string;
+      industry?: string;
+      count?: number;
+      language?: 'en' | 'ar';
+    },
+  ): Promise<{ bullets: string[] }> {
+    const bullets = await this.aiService.generateBulletPoints(
+      {
+        jobTitle: dto.jobTitle,
+        company: dto.company,
+        industry: dto.industry,
+      },
+      dto.count || 3,
+      dto.language || 'en',
+    );
+    return { bullets };
+  }
+
+  /**
+   * Get skill suggestions using AI
+   *
+   * POST /api/v1/cv/ai/suggest-skills
+   *
+   * @param dto Job title and current skills
+   * @returns Suggested skills
+   */
+  @Post('ai/suggest-skills')
+  async suggestSkills(
+    @Body() dto: { jobTitle: string; currentSkills: string[] },
+  ): Promise<{ skills: string[] }> {
+    const skills = await this.aiService.suggestSkills(
+      dto.jobTitle,
+      dto.currentSkills,
+    );
+    return { skills };
+  }
+
+  /**
+   * Generate cover letter using AI
+   *
+   * POST /api/v1/cv/:id/ai/cover-letter
+   *
+   * @param cvId CV ID
+   * @param userId Current user ID
+   * @param dto Job and company details
+   * @returns Generated cover letter
+   */
+  @Post(':id/ai/cover-letter')
+  async generateCoverLetter(
+    @Param('id') cvId: string,
+    @CurrentUser() userId: string,
+    @Body()
+    dto: {
+      jobDescription: string;
+      companyName: string;
+      language?: 'en' | 'ar';
+    },
+  ): Promise<{ coverLetter: string }> {
+    const cv = await this.cvService.getCV(cvId, userId);
+    const coverLetter = await this.aiService.generateCoverLetter(
+      cv.data,
+      dto.jobDescription,
+      dto.companyName,
+      dto.language || 'en',
+    );
+    return { coverLetter };
+  }
+
+  /**
+   * Extract keywords from text using AI
+   *
+   * POST /api/v1/cv/ai/extract-keywords
+   *
+   * @param dto Text to analyze
+   * @returns Extracted keywords
+   */
+  @Post('ai/extract-keywords')
+  async extractKeywords(
+    @Body() dto: { text: string; count?: number },
+  ): Promise<{ keywords: string[] }> {
+    const keywords = await this.aiService.extractKeywords(
+      dto.text,
+      dto.count || 10,
+    );
+    return { keywords };
   }
 
   // ═══════════════════════════════════════════════════════════════════════
