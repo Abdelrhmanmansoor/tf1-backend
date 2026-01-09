@@ -1,0 +1,410 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Model (Extended from existing Users collection)
+model User {
+  id                    String          @id @default(cuid())
+  email                 String          @unique
+  name                  String?
+  phone                 String?
+  profileImage          String?
+  isEmailVerified       Boolean         @default(false)
+  isPhoneVerified       Boolean         @default(false)
+  role                  UserRole        @default(APPLICANT)
+  status                UserStatus      @default(ACTIVE)
+  
+  // CV System Relations
+  cvs                   CV[]
+  cvVersions            CVVersion[]
+  cvExports             CVExport[]
+  
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  deletedAt             DateTime?
+  
+  @@index([email])
+  @@index([role])
+  @@index([createdAt])
+}
+
+enum UserRole {
+  APPLICANT
+  JOB_PUBLISHER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  DELETED
+}
+
+// ============================================
+// CV SYSTEM MODELS
+// ============================================
+
+// Main CV Model
+model CV {
+  id                    String          @id @default(cuid())
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Basic Info
+  title                 String          @default("My Resume")
+  slug                  String          @unique @default(cuid())
+  summary               String?
+  
+  // Template Configuration
+  template              String          @default("AwesomeCV")
+  templateVersion       String          @default("1.0.0")
+  colorScheme           String?         @default("blue")
+  
+  // Visibility & Sharing
+  isPublic              Boolean         @default(false)
+  isArchived            Boolean         @default(false)
+  publicUrl             String?         @unique
+  viewCount             Int             @default(0)
+  
+  // Content (Stored as JSON)
+  personalInfo          Json?
+  summary_             String?
+  experience            Json?           // Array of work experiences
+  education             Json?           // Array of educational qualifications
+  skills                Json?           // Array of skills with proficiency
+  projects              Json?           // Array of personal projects
+  certifications        Json?           // Array of certifications
+  languages             Json?           // Array of languages
+  volunteer             Json?           // Array of volunteer work
+  publications          Json?           // Array of publications
+  awards                Json?           // Array of awards
+  customSections        Json?           // Array of custom sections
+  
+  // Relations
+  versions              CVVersion[]
+  exports               CVExport[]
+  
+  // Metadata
+  lastModifiedBy        String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  deletedAt             DateTime?
+  
+  @@index([userId])
+  @@index([template])
+  @@index([isPublic])
+  @@index([createdAt])
+}
+
+// CV Version History
+model CVVersion {
+  id                    String          @id @default(cuid())
+  cvId                  String
+  cv                    CV              @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  versionNumber         Int
+  versionLabel          String?
+  
+  // Snapshot of CV content
+  cvSnapshot            Json            // Complete CV data at this version
+  
+  // Change tracking
+  changeDescription     String?
+  changeType            String          @default("manual") // manual, import, auto-save
+  
+  createdAt             DateTime        @default(now())
+  createdBy             String?
+  
+  @@unique([cvId, versionNumber])
+  @@index([cvId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// CV Export History & Tracking
+model CVExport {
+  id                    String          @id @default(cuid())
+  cvId                  String
+  cv                    CV              @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Export Configuration
+  format                ExportFormat    @default(PDF)
+  template              String
+  theme                 String?
+  
+  // File Information
+  fileName              String
+  fileSize              Int?            // In bytes
+  filePath              String?
+  fileUrl               String?
+  mimeType              String
+  
+  // Export Details
+  exportReason          String?         // "download", "share", "preview", etc.
+  isArchived            Boolean         @default(false)
+  
+  // Metadata
+  createdAt             DateTime        @default(now())
+  expiresAt             DateTime?
+  
+  @@index([cvId])
+  @@index([userId])
+  @@index([format])
+  @@index([createdAt])
+}
+
+enum ExportFormat {
+  PDF
+  HTML
+  JSON
+  YAML
+  DOCX
+}
+
+// ============================================
+// RESUME PARSER & IMPORT MODELS
+// ============================================
+
+// Parser Configuration
+model ParserConfig {
+  id                    String          @id @default(cuid())
+  name                  String          @unique
+  displayName           String
+  description           String?
+  version               String          @default("1.0.0")
+  
+  // Parser Details
+  supportedFormats      String[]        // JSON, YAML, CSV, etc.
+  inputSchema           Json
+  outputSchema          Json
+  
+  // Validation Rules
+  isActive              Boolean         @default(true)
+  minConfidenceScore    Float           @default(0.8)
+  
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  
+  @@index([isActive])
+}
+
+// Import History & Tracking
+model CVImport {
+  id                    String          @id @default(cuid())
+  cvId                  String?
+  userId                String
+  
+  // Source Information
+  sourceFormat          String
+  sourceParser          String
+  sourceFileName        String?
+  
+  // Import Result
+  status                ImportStatus    @default(PENDING)
+  successCount          Int             @default(0)
+  errorCount            Int             @default(0)
+  warningCount          Int             @default(0)
+  
+  // Validation
+  rawData               Json
+  validationErrors      Json?
+  validationWarnings    Json?
+  mappedData            Json?
+  
+  // Metadata
+  createdAt             DateTime        @default(now())
+  completedAt           DateTime?
+  duration              Int?            // In milliseconds
+}
+
+enum ImportStatus {
+  PENDING
+  VALIDATING
+  PROCESSING
+  SUCCESS
+  PARTIAL
+  FAILED
+  CANCELLED
+}
+
+// ============================================
+// TEMPLATE & STYLING MODELS
+// ============================================
+
+// Template Library
+model Template {
+  id                    String          @id @default(cuid())
+  name                  String          @unique
+  displayName           String
+  description           String?
+  
+  // Template Details
+  category              String          // "modern", "classic", "creative", "minimal"
+  format                String          @default("html") // html, latex, docx
+  version               String          @default("1.0.0")
+  
+  // Styling
+  defaultTheme          String?
+  cssPath               String?
+  latexPath             String?
+  preview               String?
+  
+  // Metadata
+  isActive              Boolean         @default(true)
+  popularity           Int             @default(0)
+  rating               Float?
+  
+  sections              Json            // Available sections for this template
+  
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  
+  @@index([isActive])
+  @@index([category])
+}
+
+// Color Schemes
+model ColorScheme {
+  id                    String          @id @default(cuid())
+  name                  String          @unique
+  displayName           String
+  
+  // Color Palette
+  primary               String          // Hex color
+  secondary             String
+  accent                String
+  background            String
+  text                  String
+  lightGray             String
+  darkGray              String
+  
+  // Additional colors for specific elements
+  accentLight           String?
+  borderColor           String?
+  
+  isActive              Boolean         @default(true)
+  createdAt             DateTime        @default(now())
+  
+  @@index([isActive])
+}
+
+// ============================================
+// ANALYTICS & TRACKING MODELS
+// ============================================
+
+// Public CV Views Analytics
+model CVAnalytics {
+  id                    String          @id @default(cuid())
+  cvId                  String
+  publicUrl             String
+  
+  // View Metrics
+  totalViews            Int             @default(0)
+  uniqueVisitors        Int             @default(0)
+  lastViewedAt          DateTime?
+  
+  // Device & Browser Stats
+  viewsByDevice         Json?           // {mobile: 0, tablet: 0, desktop: 0}
+  viewsByBrowser        Json?           // {chrome: 0, firefox: 0, safari: 0}
+  
+  // Geographic Info
+  viewsByCountry        Json?
+  viewsByCity           Json?
+  
+  // Engagement
+  averageTimeOnPage     Int?            // In seconds
+  bounceRate            Float?
+  
+  // Period Analytics
+  periodStartDate       DateTime
+  periodEndDate         DateTime
+  
+  @@index([cvId])
+  @@index([publicUrl])
+}
+
+// User Activity Log
+model ActivityLog {
+  id                    String          @id @default(cuid())
+  userId                String
+  cvId                  String?
+  
+  // Activity Details
+  action                String          // "created", "updated", "exported", "viewed", "shared"
+  actionType            String
+  description           String?
+  
+  // Context
+  ipAddress             String?
+  userAgent             String?
+  referer               String?
+  
+  metadata              Json?
+  
+  createdAt             DateTime        @default(now())
+  
+  @@index([userId])
+  @@index([cvId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ============================================
+// FEATURE FLAGS & CONFIGURATION
+// ============================================
+
+model FeatureFlag {
+  id                    String          @id @default(cuid())
+  key                   String          @unique
+  description           String?
+  
+  // Configuration
+  isEnabled             Boolean         @default(false)
+  enabledForPercentage   Float?         // 0-100
+  enabledForUsers       String[]        // User IDs
+  
+  // Metadata
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  
+  @@index([isEnabled])
+}
+
+// System Settings
+model SystemSetting {
+  id                    String          @id @default(cuid())
+  key                   String          @unique
+  value                 String
+  description           String?
+  type                  SettingType     @default(STRING)
+  
+  updatedAt             DateTime        @updatedAt
+  updatedBy             String?
+}
+
+enum SettingType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+}
+
+// ============================================
+// PERFORMANCE OPTIMIZATION INDEXES
+// ============================================
+// Note: Additional indexes can be added as needed for performance optimization
+// All commonly queried fields already have @index decorators above

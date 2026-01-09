@@ -371,6 +371,42 @@ exports.updateApplicationStatus = catchAsync(async (req, res) => {
       }
     };
 
+    // Create conversation if status is interviewed
+    if (status === 'interviewed') {
+      try {
+        const Conversation = require('../../../models/Conversation');
+        const conversation = await Conversation.findOrCreateDirectConversation(
+          publisherId,
+          application.applicantId,
+          'club', // Publisher acts as club/employer
+          applicant?.role || 'applicant'
+        );
+
+        // Send system message in conversation
+        const Message = require('../../../models/Message');
+        await Message.create({
+          conversationId: conversation._id,
+          senderId: publisherId,
+          content: `Hello ${applicant.firstName}, we would like to schedule an interview for the ${job.title} position.`,
+          messageType: 'text',
+          readBy: [{ userId: publisherId, readAt: new Date() }]
+        });
+        
+        // Notify about new message via socket
+        const io = req.app.get('io');
+        if (io) {
+          io.to(application.applicantId.toString()).emit('new_message', {
+            conversationId: conversation._id,
+            // ... message data
+          });
+        }
+        
+        logger.info(`Conversation created/retrieved for interview between ${publisherId} and ${application.applicantId}`);
+      } catch (chatError) {
+        logger.error('Error creating interview conversation:', chatError);
+      }
+    }
+
     const notifData = statusMessages[status];
     if (notifData) {
       const { notification, source } = await saveNotification({
