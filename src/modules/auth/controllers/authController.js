@@ -891,11 +891,70 @@ class AuthController {
         method: req.method
       });
 
-      // Return more specific error message with Arabic translation
+      // CRITICAL FIX: Check if verification actually succeeded in DB despite the error
+      // This can happen if token generation fails but isVerified was already set to true
+      try {
+        const { token } = req.query;
+        if (token) {
+          // Try to find user and check if they're verified
+          let checkUser = await User.findOne({ emailVerificationToken: token });
+          if (!checkUser) {
+            try {
+              const decodedToken = decodeURIComponent(token);
+              checkUser = await User.findOne({ emailVerificationToken: decodedToken });
+            } catch (e) {
+              // Ignore decode error
+            }
+          }
+          
+          // If user is verified, return success even though error occurred
+          if (checkUser && checkUser.isVerified) {
+            console.log('✅ [EMAIL VERIFICATION] Account was verified despite error - returning success response');
+            
+            // Generate token and return success
+            try {
+              const tokenPair = jwtService.generateTokenPair(checkUser);
+              const userObject = checkUser.toSafeObject(true);
+              const permissions = getUserPermissions(checkUser.role);
+              
+              return res.status(200).json({
+                success: true,
+                message: '✅ تم التحقق من بريدك الإلكتروني بنجاح! يمكنك تسجيل الدخول الآن.',
+                messageEn: '✅ Your email has been verified successfully! You can now login.',
+                code: 'VERIFICATION_SUCCESS',
+                verified: true,
+                isVerified: true,
+                user: {
+                  ...userObject,
+                  permissions: permissions
+                },
+                accessToken: tokenPair.accessToken
+              });
+            } catch (tokenError) {
+              // Even if token generation fails, account is verified - return success without token
+              console.warn('⚠️ [EMAIL VERIFICATION] Token generation failed but account is verified');
+              return res.status(200).json({
+                success: true,
+                message: '✅ تم التحقق من بريدك الإلكتروني بنجاح! يمكنك تسجيل الدخول الآن.',
+                messageEn: '✅ Your email has been verified successfully! You can now login.',
+                code: 'VERIFICATION_SUCCESS',
+                verified: true,
+                isVerified: true,
+                note: 'Please login to get your access token'
+              });
+            }
+          }
+        }
+      } catch (checkError) {
+        console.error('❌ [EMAIL VERIFICATION] Error checking verification status:', checkError);
+        // Continue to return error if check fails
+      }
+
+      // Return error only if verification didn't succeed in DB
       return res.status(500).json({
         success: false,
-        message: 'Email verification failed. Please try again later.',
-        messageAr: 'فشل التحقق من البريد الإلكتروني. يرجى المحاولة مرة أخرى لاحقاً.',
+        message: 'Email verification failed. Please try again later. If your account is verified, please try logging in.',
+        messageAr: 'فشل التحقق من البريد الإلكتروني. يرجى المحاولة مرة أخرى لاحقاً. إذا كان حسابك مفعّل، جرب تسجيل الدخول.',
         code: 'VERIFICATION_FAILED',
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
