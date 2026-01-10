@@ -82,7 +82,7 @@ router.post('/jobs', authorize('club'), clubController.createJob);
 router.get('/jobs', authorize('club'), clubController.getJobs);
 
 // Get single job posting by ID
-router.get('/jobs/:jobId', clubController.getJobById);
+router.get('/jobs/:jobId', authorize('club'), clubController.getJobById);
 
 // Update job posting
 router.put('/jobs/:jobId', authorize('club'), clubController.updateJob);
@@ -97,7 +97,7 @@ router.put('/jobs/:jobId/extend', authorize('club'), clubController.extendJobDea
 router.get('/applications', authorize('club'), clubController.getJobApplications);
 
 // Get single application by ID
-router.get('/applications/:applicationId', clubController.getApplicationById);
+router.get('/applications/:applicationId', authorize('club'), clubController.getApplicationById);
 
 // Review application (move to under review)
 router.post('/applications/:applicationId/review', authorize('club'), clubController.reviewApplication);
