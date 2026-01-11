@@ -11,6 +11,8 @@ import AgeGroupSupervisor from './pages/AgeGroupSupervisor';
 import AdminDashboard from './pages/AdminDashboard';
 import LeaderDashboard from './pages/LeaderDashboard';
 import ClubDashboard from './pages/ClubDashboard';
+import JobPublisherDashboard from './pages/JobPublisherDashboard';
+import ApplicantDashboard from './pages/ApplicantDashboard';
 import './App.css';
 
 // Basic protected route - requires authentication only
@@ -167,6 +169,24 @@ function App() {
                 element={
                   <RoleProtectedRoute allowedRoles={['club']}>
                     <ClubDashboard />
+                  </RoleProtectedRoute>
+                }
+              />
+              {/* Job Publisher Dashboard - restricted to job-publisher role */}
+              <Route 
+                path="/dashboard/publisher"
+                element={
+                  <RoleProtectedRoute allowedRoles={['job-publisher']}>
+                    <JobPublisherDashboard />
+                  </RoleProtectedRoute>
+                }
+              />
+              {/* Applicant Dashboard - restricted to applicant role */}
+              <Route 
+                path="/dashboard/applicant"
+                element={
+                  <RoleProtectedRoute allowedRoles={['applicant']}>
+                    <ApplicantDashboard />
                   </RoleProtectedRoute>
                 }
               />

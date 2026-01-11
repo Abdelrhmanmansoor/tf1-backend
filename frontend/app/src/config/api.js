@@ -251,4 +251,30 @@ export const jobService = {
     api.get(`/jobs/applications/${applicationId}/download/${attachmentIndex}`, { responseType: 'blob' }),
 };
 
+export const jobPublisherService = {
+  getDashboard: () => api.get('/job-publisher/dashboard'),
+  getDashboardStats: () => api.get('/job-publisher/dashboard/stats'),
+  getMyJobs: (params = {}) => api.get('/job-publisher/jobs', { params }),
+  createJob: (data) => api.post('/job-publisher/jobs', data),
+  updateJob: (jobId, data) => api.put(`/job-publisher/jobs/${jobId}`, data),
+  deleteJob: (jobId) => api.delete(`/job-publisher/jobs/${jobId}`),
+  getJobApplications: (jobId, params = {}) => api.get(`/job-publisher/jobs/${jobId}/applications`, { params }),
+  getAllApplications: (params = {}) => api.get('/job-publisher/applications', { params }),
+  getApplicationDetails: (applicationId) => api.get(`/job-publisher/applications/${applicationId}`),
+  updateApplicationStatus: (applicationId, status, message = '') => 
+    api.put(`/job-publisher/applications/${applicationId}/status`, { status, message }),
+  getProfile: () => api.get('/job-publisher/profile'),
+  updateProfile: (data) => api.put('/job-publisher/profile', data),
+  createProfile: (data) => api.post('/job-publisher/profile', data),
+};
+
+export const applicantService = {
+  getDashboard: () => api.get('/applicant/dashboard'),
+  getMyApplications: (params = {}) => api.get('/applicant/applications', { params }),
+  getApplicationDetails: (applicationId) => api.get(`/applicant/applications/${applicationId}`),
+  withdrawApplication: (applicationId, reason = '') => 
+    api.put(`/applicant/applications/${applicationId}/withdraw`, { reason }),
+  getAvailableJobs: (params = {}) => api.get('/applicant/jobs', { params }),
+};
+
 export default api;

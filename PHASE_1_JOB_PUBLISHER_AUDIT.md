@@ -282,4 +282,66 @@ PUT  /api/v1/job-publisher/applications/:id/status - Update status
 
 ---
 
-Ready to proceed with Phase 3: Publisher Dashboard Frontend
+## PHASE 3 & 4 COMPLETION NOTES (January 11, 2026)
+
+### Changes Made:
+
+1. **Added API services to frontend**
+   - Added `jobPublisherService` with all publisher endpoints
+   - Added `applicantService` with all applicant endpoints
+   - Located in `frontend/app/src/config/api.js`
+
+2. **Created JobPublisherDashboard.jsx**
+   - Dashboard overview with stats (total jobs, active jobs, applications)
+   - Jobs management tab (create, view, delete jobs)
+   - Applications pipeline tab (view all applications, filter by status)
+   - Status update functionality with all pipeline stages
+   - Modal for application details and status changes
+   - Job creation form with all required fields
+
+3. **Created ApplicantDashboard.jsx**
+   - Dashboard overview with stats (total applications, pending, offers)
+   - Applications tab (view all applications with status)
+   - Available jobs tab (jobs not yet applied to)
+   - Application details modal with status timeline
+   - Withdraw application functionality
+   - Recommended jobs section
+
+4. **Updated App.jsx with routes**
+   - Added `/dashboard/publisher` route for job-publisher role
+   - Added `/dashboard/applicant` route for applicant role
+   - Both routes protected with RoleProtectedRoute
+
+5. **Fixed useEffect dependencies (Bug Fix)**
+   - JobPublisherDashboard: Split useEffect into 3 separate hooks for dashboard/jobs/applications
+   - Added pagination.page and statusFilter to appropriate dependency arrays
+   - ApplicantDashboard: Same pattern applied
+   - Filter changes now reset pagination to page 1
+
+6. **Fixed shared pagination state (Bug Fix)**
+   - JobPublisherDashboard: Separated into `jobsPagination` and `appsPagination`
+   - ApplicantDashboard: Separated into `appsPagination` and `jobsPagination`
+   - Each tab now has independent pagination state
+   - Prevents cross-tab pagination contamination
+
+7. **Added proper modal data fetching (Bug Fix)**
+   - JobPublisherDashboard: Added `fetchApplicationDetails` for fresh data on modal open
+   - ApplicantDashboard: Added `fetchApplicationDetails` for fresh data on modal open
+   - Applications modal now calls API to get full details before display
+
+8. **Added job-scoped applications filtering**
+   - "عرض الطلبات" button on jobs now filters applications to that specific job
+   - Added "عرض الكل" button to clear the job filter and show all applications
+   - Applications useEffect now depends on `selectedJob` state
+   - Shows job title in applications header when filtered
+
+9. **Fixed post-action data refresh**
+   - JobPublisherDashboard: Status update now refreshes selectedApplication after change
+   - ApplicantDashboard: Withdraw action now refreshes selectedApplication after change
+   - Clearing job filter now resets appsPagination to page 1
+
+**Phase 3 & 4 Complete** ✅
+
+---
+
+Ready to proceed with Phase 5: API Reliability
