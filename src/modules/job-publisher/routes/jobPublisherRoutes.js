@@ -4,9 +4,11 @@ const jobPublisherController = require('../controllers/jobPublisherController');
 const applicationController = require('../controllers/applicationController');
 const profileRoutes = require('./profileRoutes');
 const { authenticate } = require('../../../middleware/auth');
+const { authenticatedRateLimiter } = require('../../../middleware/rateLimiter');
 
 // All routes require authentication and job-publisher role
 router.use(authenticate);
+router.use(authenticatedRateLimiter);
 
 // Middleware to ensure user is job-publisher
 const requireJobPublisher = (req, res, next) => {

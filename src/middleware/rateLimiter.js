@@ -70,8 +70,43 @@ const generalRateLimiter = rateLimit({
   legacyHeaders: false
 });
 
+/**
+ * Authenticated user rate limiting
+ * Keys on user ID for authenticated dashboards - more generous limits
+ * Applied AFTER authentication middleware
+ */
+const authenticatedRateLimiter = rateLimit({
+  windowMs: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS) || 300, // 300 requests per 15 min for authenticated users
+  message: {
+    success: false,
+    message: 'تم تجاوز عدد الطلبات المسموحة. يرجى المحاولة لاحقاً.',
+    messageAr: 'تم تجاوز عدد الطلبات المسموحة. يرجى المحاولة لاحقاً.',
+    messageEn: 'Too many requests. Please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Key by user ID if authenticated, otherwise fall back to IP
+    return req.user?._id?.toString() || req.ip;
+  },
+  skip: (req) => {
+    // Skip for admin users
+    return req.user?.role === 'admin';
+  },
+  handler: (req, res) => {
+    logger.warn(`⚠️ Auth Rate Limit Exceeded: User=${req.user?._id}, IP=${req.ip}`);
+    res.status(429).json({
+      success: false,
+      message: 'تم تجاوز عدد الطلبات المسموحة. يرجى المحاولة لاحقاً.',
+      messageEn: 'Too many requests. Please try again later.'
+    });
+  }
+});
+
 module.exports = {
   aiRateLimiter,
   uploadRateLimiter,
-  generalRateLimiter
+  generalRateLimiter,
+  authenticatedRateLimiter
 };

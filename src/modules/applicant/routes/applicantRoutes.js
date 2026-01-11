@@ -4,9 +4,11 @@ const applicantController = require('../controllers/applicantController');
 const { authenticate } = require('../../../middleware/auth');
 const { checkPermission } = require('../../../middleware/rbac');
 const { PERMISSIONS } = require('../../../config/roles');
+const { authenticatedRateLimiter } = require('../../../middleware/rateLimiter');
 
 // All routes require authentication and applicant role
 router.use(authenticate);
+router.use(authenticatedRateLimiter);
 
 // Middleware to ensure user is applicant
 const requireApplicant = (req, res, next) => {

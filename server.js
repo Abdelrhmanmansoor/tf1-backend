@@ -120,8 +120,8 @@ global.io = io;
 
 // ==================== TRUST PROXY ====================
 // Enable trust proxy for production (behind Render/Heroku/etc proxies)
-// Also enable if RENDER environment variable is present (Render.com deployment)
-if (NODE_ENV === 'production' || process.env.RENDER) {
+// Also enable if RENDER or REPLIT environment variable is present
+if (NODE_ENV === 'production' || process.env.RENDER || process.env.REPL_ID || process.env.REPLIT_DEV_DOMAIN) {
   app.set('trust proxy', 1);
   logger.info('Trust proxy enabled for production/cloud deployment');
 }

@@ -192,16 +192,18 @@ exports.getApplications = catchAsync(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    applications,
-    statistics: {
-      totalApplications: total,
-      ...grouped
-    },
-    pagination: {
-      total,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      pages: Math.ceil(total / parseInt(limit))
+    data: {
+      applications,
+      statistics: {
+        totalApplications: total,
+        ...grouped
+      },
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
     }
   });
 });
