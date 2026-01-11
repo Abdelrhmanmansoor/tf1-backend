@@ -1,0 +1,191 @@
+You are a Senior Full-Stack Engineer, Security Engineer, and QA Lead.
+
+Your mission is to fully upgrade, harden, and fix the "Job Publisher / Employer / Club" role in my platform in a production-ready way, while ensuring it is correctly linked and interoperable with the "Job Seeker" role.
+
+⚠️ STRICT RULES:
+1) You must NOT break existing features.
+2) Any API you touch must become 100% functional with zero runtime errors.
+3) Fix security issues immediately and ensure no endpoint can be exploited.
+4) All flows must be end-to-end tested.
+5) If you need to adopt ideas/features from any open-source project related to job boards / ATS / employer dashboards, you are allowed to do so ONLY as inspiration and implementation patterns, but you must integrate it cleanly within my architecture.
+6) Never implement a feature halfway: everything must be fully wired (UI → API → DB) and tested.
+7) No fake / placeholder code. No "TODO" left behind.
+
+========================================================
+✅ PHASE 1 — FULL AUDIT & MAPPING (YOU MUST DO THIS FIRST)
+========================================================
+1) Inspect the current codebase and generate a clear map of:
+   - Employer/Publisher dashboard pages
+   - API routes
+   - Services layer (client calls)
+   - Database schema models
+   - Auth flow (sessions/JWT)
+   - Roles & permissions
+
+2) Identify and list ALL issues:
+   - Broken buttons / dead UI actions
+   - Missing access control
+   - Incorrect API paths / payload mismatch
+   - Inconsistent auth headers / missing CSRF protection (if needed)
+   - UI state bugs, bad loading states, errors not handled
+   - Security vulnerabilities (IDOR, XSS, CSRF, SSRF, Injection)
+   - Performance bottlenecks
+   - Missing validations
+
+Deliverable:
+- A structured “Issue Tracker” table:
+  [Issue] [Severity] [Where] [How to reproduce] [Fix plan]
+
+========================================================
+✅ PHASE 2 — ROLE MODELING & PERMISSIONS (MANDATORY)
+========================================================
+Design a strict permission system and implement it everywhere:
+- Roles:
+  - JOB_SEEKER
+  - JOB_PUBLISHER (Employer/Club)
+  - ADMIN
+
+Rules:
+- Every /dashboard/publisher/* route MUST be protected.
+- Prevent unauthorized role access for UI + API.
+- No hidden client-only checks: enforce on server too.
+
+Implementation requirements:
+- Central middleware/guard used consistently
+- "Ownership" validation:
+   Example: publisher can only edit jobs they created.
+- No user can read other publisher private data.
+
+Deliverable:
+- A permission matrix table
+- Code implementation across routes + APIs
+
+========================================================
+✅ PHASE 3 — PUBLISHER DASHBOARD UPGRADE (FULL REBUILD QUALITY)
+========================================================
+Upgrade the Job Publisher dashboard to be modern, fast, and reliable.
+
+You MUST implement:
+A) Job Management (ATS-like)
+   - Create job (draft/published)
+   - Edit/close/reopen job
+   - Duplicate job
+   - Job templates
+   - Job post preview
+   - Job visibility options
+
+B) Applications Management
+   - View applicants per job
+   - Applicant pipeline stages:
+     [New] → [Reviewed] → [Shortlisted] → [Interview] → [Offer] → [Hired] / [Rejected]
+   - Notes + tags
+   - Score/rating per applicant
+   - Export CSV
+
+C) Messaging / Contact
+   - Publisher can send message to applicant
+   - Message history per application
+
+D) Analytics
+   - Views per job
+   - Application conversion rate
+   - Time-to-hire
+   - Source tracking (if available)
+
+E) Team Management (Optional but recommended)
+   - Invite team members
+   - Permission levels per member
+
+UI Requirements:
+- Provide clean UI with consistent design system
+- Proper loading/empty/error states
+- No broken routes
+- All buttons work
+
+========================================================
+✅ PHASE 4 — LINKING JOB PUBLISHER ↔ JOB SEEKER (CRITICAL)
+========================================================
+You must ensure full interoperability:
+
+For Job Seeker:
+- Browse jobs
+- Apply to jobs
+- Track application status
+- Receive updates from publisher
+- Maintain applicant profile/resume
+
+For Publisher:
+- Receive applications instantly
+- View job seeker profile/resume
+- Change pipeline stage (reflects immediately to seeker)
+- Send messages (seeker receives it)
+
+Requirement:
+- Every update by publisher MUST reflect in seeker dashboard in real time or near real time.
+
+========================================================
+✅ PHASE 5 — API RELIABILITY (ZERO ERRORS POLICY)
+========================================================
+Enforce API correctness:
+- Validate inputs using a schema (Zod/Joi/etc.)
+- Return consistent response format
+- Proper HTTP status codes
+- Logging + error handling
+
+Rules:
+- No "500 error" from invalid user inputs → should be 400 with message
+- Ensure token handling is consistent everywhere
+- Ensure all services hit the correct endpoints
+
+Deliverable:
+- API contract document
+- List of endpoints
+- Example request/response payloads
+
+========================================================
+✅ PHASE 6 — SECURITY HARDENING (NON-NEGOTIABLE)
+========================================================
+Perform full security patching:
+- Fix missing route guards
+- Prevent IDOR (ownership checks)
+- Prevent XSS (sanitize output)
+- Prevent injection (ORM safe queries)
+- CSRF mitigation if using cookies sessions
+- Rate limiting & brute-force protections (for login & sensitive actions)
+- Audit file uploads (if resumes/photos exist)
+- Ensure secrets are not exposed (env vars safe)
+
+Deliverable:
+- Security report: vulnerabilities found + patches applied
+
+========================================================
+✅ PHASE 7 — TESTING & QA (MUST)
+========================================================
+You MUST implement:
+- Unit tests for critical logic
+- Integration tests for API endpoints
+- End-to-end tests for key flows:
+   - Publisher creates job → seeker applies → publisher moves stage → seeker sees update
+   - Unauthorized access attempts blocked
+   - Edge cases
+
+Deliverable:
+- Test suite with clear commands to run
+- CI suggestion if possible
+
+========================================================
+✅ PHASE 8 — FINAL DELIVERY REQUIREMENTS
+========================================================
+You must provide:
+1) A final summary of all changes
+2) A list of all files modified
+3) Migration steps if DB changed
+4) A rollback plan
+5) Confirmation checklist:
+   - All APIs tested ✅
+   - No broken UI ✅
+   - No security gaps ✅
+   - Publisher↔Seeker linkage confirmed ✅
+   - Tests passing ✅
+
+Now start by PHASE 1. Do not jump ahead.
