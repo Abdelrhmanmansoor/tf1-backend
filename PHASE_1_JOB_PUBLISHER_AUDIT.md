@@ -340,6 +340,11 @@ PUT  /api/v1/job-publisher/applications/:id/status - Update status
    - ApplicantDashboard: Withdraw action now refreshes selectedApplication after change
    - Clearing job filter now resets appsPagination to page 1
 
+10. **Fixed CSS class names to match existing styles**
+    - Updated both dashboards to use `admin-dashboard-container`, `admin-header`, `admin-tabs`, `tab-button`, `admin-content`
+    - Matches existing AdminDashboard.css styling used by ClubDashboard, LeaderDashboard, etc.
+    - Added role badges and user info display consistent with other dashboards
+
 **Phase 3 & 4 Complete** ✅
 
 ---

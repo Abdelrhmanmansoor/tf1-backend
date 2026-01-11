@@ -512,38 +512,44 @@ const JobPublisherDashboard = () => {
   );
 
   return (
-    <div className="admin-dashboard publisher-dashboard">
-      <div className="dashboard-header">
-        <h1>لوحة تحكم ناشر الوظائف</h1>
-        <p>مرحباً، {user?.firstName || 'ناشر الوظائف'}</p>
+    <div className="admin-dashboard-container">
+      <div className="admin-header">
+        <div className="admin-header-content">
+          <h1>لوحة تحكم ناشر الوظائف</h1>
+          <p>مرحباً، {user?.firstName || 'ناشر الوظائف'}</p>
+        </div>
+        <div className="admin-user-info">
+          <span className="role-badge" style={{ backgroundColor: '#2196F3' }}>ناشر وظائف</span>
+          <span className="user-name">{user?.firstName} {user?.lastName}</span>
+        </div>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {error && <div className="error-message">❌ {error}</div>}
+      {success && <div className="success-message">{success}</div>}
 
-      <div className="dashboard-tabs">
+      <div className="admin-tabs">
         <button 
-          className={`tab ${activeTab === 'dashboard' ? 'active' : ''}`}
+          className={`tab-button ${activeTab === 'dashboard' ? 'active' : ''}`}
           onClick={() => setActiveTab('dashboard')}
         >
-          الرئيسية
+          📊 الرئيسية
         </button>
         <button 
-          className={`tab ${activeTab === 'jobs' ? 'active' : ''}`}
+          className={`tab-button ${activeTab === 'jobs' ? 'active' : ''}`}
           onClick={() => setActiveTab('jobs')}
         >
-          الوظائف
+          📋 الوظائف
         </button>
         <button 
-          className={`tab ${activeTab === 'applications' ? 'active' : ''}`}
+          className={`tab-button ${activeTab === 'applications' ? 'active' : ''}`}
           onClick={() => setActiveTab('applications')}
         >
-          الطلبات
+          📝 الطلبات
         </button>
       </div>
 
-      <div className="dashboard-content">
-        {loading && <div className="loading-spinner">جاري التحميل...</div>}
+      <div className="admin-content">
+        {loading && <div className="loading">جاري التحميل...</div>}
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'jobs' && renderJobs()}
         {activeTab === 'applications' && renderApplications()}
