@@ -6,6 +6,22 @@ const { getUserPermissions } = require('../../../middleware/rbac');
 const { clearUserCSRFTokens } = require('../../../middleware/csrf');
 const logger = require('../../../utils/logger');
 
+const isProduction = process.env.NODE_ENV === 'production';
+const ACCESS_TOKEN_MAX_AGE = parseInt(process.env.JWT_ACCESS_COOKIE_MS || `${15 * 60 * 1000}`, 10);
+const REFRESH_TOKEN_MAX_AGE = parseInt(process.env.JWT_REFRESH_COOKIE_MS || `${7 * 24 * 60 * 60 * 1000}`, 10);
+const REMEMBER_ME_REFRESH_MAX_AGE = parseInt(
+  process.env.JWT_REFRESH_REMEMBER_MS || `${30 * 24 * 60 * 60 * 1000}`,
+  10
+);
+
+const buildCookieOptions = maxAge => ({
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? 'strict' : 'lax',
+  path: '/',
+  maxAge,
+});
+
 // Global cache to prevent duplicate verification requests
 const verificationCache = new Map();
 
@@ -336,6 +352,13 @@ class AuthController {
 
       const { accessToken, refreshToken } = jwtService.generateTokenPair(user);
 
+      // Set signed tokens in secure cookies to reduce exposure surface
+      const accessMaxAge = ACCESS_TOKEN_MAX_AGE;
+      const refreshMaxAge = rememberMe ? REMEMBER_ME_REFRESH_MAX_AGE : REFRESH_TOKEN_MAX_AGE;
+
+      res.cookie('accessToken', accessToken, buildCookieOptions(accessMaxAge));
+      res.cookie('refreshToken', refreshToken, buildCookieOptions(refreshMaxAge));
+
       const userObject = user.toSafeObject(true); // Include email in response
 
       // Allow login even if email not verified, but include flag
@@ -346,6 +369,7 @@ class AuthController {
           ...userObject,
           permissions: getUserPermissions(user.role)
         },
+        // Keep tokens in body for backward compatibility while moving clients to cookies
         accessToken,
         refreshToken,
         requiresVerification: !user.isVerified

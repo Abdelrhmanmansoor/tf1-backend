@@ -2,11 +2,30 @@ const jwtService = require('../utils/jwt');
 const User = require('../modules/shared/models/User');
 const logger = require('../utils/logger');
 
+const resolveToken = req => {
+  if (req.headers.authorization) {
+    try {
+      return jwtService.extractTokenFromHeader(req.headers.authorization);
+    } catch (error) {
+      logger.warn('Failed to parse authorization header', {
+        message: error.message,
+        path: req.path,
+      });
+    }
+  }
+
+  if (req.cookies && req.cookies.accessToken) {
+    return req.cookies.accessToken;
+  }
+
+  return null;
+};
+
 const authenticate = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = resolveToken(req);
 
-    if (!authHeader) {
+    if (!token) {
       logger.warn('Authentication failed: No token provided', {
         ip: req.ip,
         path: req.path,
@@ -18,7 +37,6 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    const token = jwtService.extractTokenFromHeader(authHeader);
     const decoded = jwtService.verifyAccessToken(token);
 
     const user = await User.findById(decoded.userId).select('-password');
@@ -98,14 +116,13 @@ const authorize = (...roles) => {
 
 const optionalAuth = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = resolveToken(req);
 
-    if (!authHeader) {
+    if (!token) {
       req.user = null;
       return next();
     }
 
-    const token = jwtService.extractTokenFromHeader(authHeader);
     const decoded = jwtService.verifyAccessToken(token);
 
     const user = await User.findById(decoded.userId).select('-password');
