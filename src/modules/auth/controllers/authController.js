@@ -387,9 +387,9 @@ class AuthController {
 
   async refreshToken(req, res) {
     try {
-      const { refreshToken } = req.body;
+      const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
-      if (!refreshToken) {
+      if (!incomingRefreshToken) {
         return res.status(400).json({
           success: false,
           message: 'Refresh token is required',
@@ -400,7 +400,7 @@ class AuthController {
       // Verify the refresh token
       let decoded;
       try {
-        decoded = jwtService.verifyRefreshToken(refreshToken);
+        decoded = jwtService.verifyRefreshToken(incomingRefreshToken);
       } catch (error) {
         return res.status(401).json({
           success: false,
@@ -428,8 +428,11 @@ class AuthController {
         });
       }
 
-      // Generate new token pair
+      // Generate new token pair and rotate cookies
       const tokens = jwtService.generateTokenPair(user);
+
+      res.cookie('accessToken', tokens.accessToken, buildCookieOptions(ACCESS_TOKEN_MAX_AGE));
+      res.cookie('refreshToken', tokens.refreshToken, buildCookieOptions(REFRESH_TOKEN_MAX_AGE));
 
       res.status(200).json({
         success: true,
