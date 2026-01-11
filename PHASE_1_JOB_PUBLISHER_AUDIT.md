@@ -272,6 +272,14 @@ PUT  /api/v1/job-publisher/applications/:id/status - Update status
    - Updated server.js to enable trust proxy when `REPL_ID` or `REPLIT_DEV_DOMAIN` is present
    - Resolves rate limiter warning about X-Forwarded-For header
 
+6. **Created user-based rate limiter for authenticated routes**
+   - Added `authenticatedRateLimiter` that keys on user ID (not IP)
+   - 300 requests per 15 minutes for authenticated users
+   - Skips admin users
+   - Applied to job-publisher and applicant routes
+
 **Phase 2 Complete** ✅
+
+---
 
 Ready to proceed with Phase 3: Publisher Dashboard Frontend
