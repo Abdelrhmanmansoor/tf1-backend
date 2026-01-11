@@ -27,10 +27,13 @@ const mobileRoutes = require('./mobileRoutes');
 
 // Import auth controller and rate limiter for direct routes
 const authController = require('../controllers/authController');
-const { authLimiter } = require('../middleware/rateLimiter');
+const { authLimiter, matchesLimiter } = require('../middleware/rateLimiter');
 
 // Auto-initialize system middleware
 router.use(autoInitializer.ensureInitialized());
+
+// Global rate limit for all matches module routes (covers both /matches and /api/matches mounts)
+router.use(matchesLimiter);
 
 // Direct registration/login routes (for backward compatibility)
 router.post('/register', authLimiter, (req, res) => authController.register(req, res));
