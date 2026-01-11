@@ -406,32 +406,46 @@ clubMemberSchema.statics.getPendingRequests = async function(clubId) {
 
 // Get member statistics for a club
 clubMemberSchema.statics.getMemberStatistics = async function(clubId) {
-  const stats = await this.aggregate([
-    { $match: { clubId: new mongoose.Types.ObjectId(clubId), isDeleted: false } },
-    { $group: {
-      _id: '$status',
-      count: { $sum: 1 }
-    }}
-  ]);
-
-  const typeStats = await this.aggregate([
-    { $match: { clubId: new mongoose.Types.ObjectId(clubId), status: 'active', isDeleted: false } },
-    { $group: {
-      _id: '$memberType',
-      count: { $sum: 1 }
-    }}
-  ]);
-
-  // Get new members this month
+  // CRITICAL PERFORMANCE FIX: Run all queries in parallel using Promise.all
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
-  const newThisMonth = await this.countDocuments({
-    clubId,
-    joinDate: { $gte: startOfMonth },
-    isDeleted: false
-  });
+  const [stats, typeStats, newThisMonth] = await Promise.all([
+    // Get status statistics
+    this.aggregate([
+      { $match: { clubId: new mongoose.Types.ObjectId(clubId), isDeleted: false } },
+      { $group: {
+        _id: '$status',
+        count: { $sum: 1 }
+      }}
+    ]).catch(err => {
+      console.warn('[getMemberStatistics] Status stats error:', err.message);
+      return []; // Fallback
+    }),
+
+    // Get type statistics
+    this.aggregate([
+      { $match: { clubId: new mongoose.Types.ObjectId(clubId), status: 'active', isDeleted: false } },
+      { $group: {
+        _id: '$memberType',
+        count: { $sum: 1 }
+      }}
+    ]).catch(err => {
+      console.warn('[getMemberStatistics] Type stats error:', err.message);
+      return []; // Fallback
+    }),
+
+    // Get new members this month
+    this.countDocuments({
+      clubId,
+      joinDate: { $gte: startOfMonth },
+      isDeleted: false
+    }).catch(err => {
+      console.warn('[getMemberStatistics] New members error:', err.message);
+      return 0; // Fallback
+    })
+  ]);
 
   return {
     byStatus: stats,

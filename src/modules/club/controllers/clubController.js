@@ -2402,39 +2402,68 @@ exports.getDashboardStats = async (req, res) => {
       });
     }
 
-    // Get member statistics
-    const memberStats = await ClubMember.getMemberStatistics(req.user._id);
-
-    // Get active jobs
-    const activeJobs = await Job.countDocuments({
-      clubId: req.user._id,
-      status: 'active',
-      isDeleted: false
-    });
-
-    // Get pending applications
-    const pendingApplications = await JobApplication.countDocuments({
-      clubId: req.user._id,
-      status: 'new',
-      isDeleted: false
-    });
-
-    // Get upcoming events
-    const upcomingEvents = await Event.getUpcomingEvents(req.user._id, 7);
-
-    // Get pending membership requests
-    const pendingMembers = await ClubMember.countDocuments({
-      clubId: req.user._id,
-      status: 'pending',
-      isDeleted: false
-    });
-
-    // Get pending bookings
-    const pendingBookings = await FacilityBooking.countDocuments({
-      clubId: req.user._id,
-      status: 'pending',
-      isDeleted: false
-    });
+    // CRITICAL PERFORMANCE FIX: Run all queries in parallel using Promise.all
+    // This reduces total load time from sequential to parallel execution
+    const [
+      memberStats,
+      activeJobs,
+      pendingApplications,
+      upcomingEvents,
+      pendingMembers,
+      pendingBookings
+    ] = await Promise.all([
+      // Get member statistics with timeout fallback
+      ClubMember.getMemberStatistics(req.user._id).catch(err => {
+        console.warn('[getDashboardStats] Member stats error:', err.message);
+        return { newThisMonth: 0 }; // Fallback
+      }),
+      
+      // Get active jobs with timeout fallback
+      Job.countDocuments({
+        clubId: req.user._id,
+        status: 'active',
+        isDeleted: false
+      }).catch(err => {
+        console.warn('[getDashboardStats] Active jobs error:', err.message);
+        return 0; // Fallback
+      }),
+      
+      // Get pending applications with timeout fallback
+      JobApplication.countDocuments({
+        clubId: req.user._id,
+        status: 'new',
+        isDeleted: false
+      }).catch(err => {
+        console.warn('[getDashboardStats] Pending applications error:', err.message);
+        return 0; // Fallback
+      }),
+      
+      // Get upcoming events with timeout fallback
+      Event.getUpcomingEvents(req.user._id, 7).catch(err => {
+        console.warn('[getDashboardStats] Upcoming events error:', err.message);
+        return []; // Fallback
+      }),
+      
+      // Get pending membership requests with timeout fallback
+      ClubMember.countDocuments({
+        clubId: req.user._id,
+        status: 'pending',
+        isDeleted: false
+      }).catch(err => {
+        console.warn('[getDashboardStats] Pending members error:', err.message);
+        return 0; // Fallback
+      }),
+      
+      // Get pending bookings with timeout fallback
+      FacilityBooking.countDocuments({
+        clubId: req.user._id,
+        status: 'pending',
+        isDeleted: false
+      }).catch(err => {
+        console.warn('[getDashboardStats] Pending bookings error:', err.message);
+        return 0; // Fallback
+      })
+    ]);
 
     const stats = {
       profile: {
