@@ -683,6 +683,8 @@ class AuthController {
         const alreadyVerifiedResponse = {
           success: true,
           message: 'Your email is already verified! You can now login.',
+          messageAr: 'تم التحقق من بريدك الإلكتروني مسبقاً! يمكنك تسجيل الدخول الآن.',
+          code: 'ALREADY_VERIFIED',
           alreadyVerified: true
         };
 
