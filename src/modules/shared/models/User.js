@@ -65,7 +65,21 @@ const userSchema = new mongoose.Schema({
   // Basic account info
   firstName: String,
   lastName: String,
-  phone: String,
+  phone: {
+    type: String,
+    trim: true,
+    sparse: true, // Allow null but ensure unique when present
+    index: true
+  },
+  phoneVerified: {
+    type: Boolean,
+    default: false
+  },
+  preferredVerificationMethod: {
+    type: String,
+    enum: ['email', 'sms', 'whatsapp'],
+    default: 'email'
+  },
   avatar: String,
 
   // Account status
@@ -196,6 +210,8 @@ userSchema.methods.toSafeObject = function (includeEmail = false) {
     lastName: this.lastName,
     fullName: this.fullName,
     phone: this.phone,
+    phoneVerified: this.phoneVerified,
+    preferredVerificationMethod: this.preferredVerificationMethod,
     avatar: this.avatar,
     isVerified: this.isVerified,
     isActive: this.isActive,

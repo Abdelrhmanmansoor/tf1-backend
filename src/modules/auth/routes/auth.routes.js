@@ -95,4 +95,20 @@ router.get('/role-info', optionalAuth, authController.getRoleInfo);
 
 router.get('/test-account', authController.testAccount);
 
+// ==================== OTP VERIFICATION ENDPOINTS ====================
+// Send OTP via SMS, WhatsApp, or Email
+router.post('/send-otp', authLimiter, csrfSafe, verifyCsrfSafe, authController.sendOTP);
+
+// Verify OTP code
+router.post('/verify-otp', authLimiter, csrfSafe, verifyCsrfSafe, authController.verifyOTP);
+
+// Request password reset via phone OTP
+router.post('/forgot-password-otp', authLimiter, csrfSafe, verifyCsrfSafe, authController.forgotPasswordOTP);
+
+// Reset password using OTP
+router.post('/reset-password-otp', authLimiter, csrfSafe, verifyCsrfSafe, authController.resetPasswordOTP);
+
+// Get OTP balance (admin only)
+router.get('/otp-balance', authenticate, authController.getOTPBalance);
+
 module.exports = router;

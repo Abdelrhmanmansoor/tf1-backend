@@ -1,7 +1,9 @@
 const User = require('../../shared/models/User');
+const OTP = require('../../shared/models/OTP');
 const ClubProfile = require('../../club/models/ClubProfile');
 const jwtService = require('../../../utils/jwt');
 const emailService = require('../../../utils/email');
+const authenticaService = require('../../../services/authenticaService');
 const { getUserPermissions } = require('../../../middleware/rbac');
 const { clearUserCSRFTokens } = require('../../../middleware/csrf');
 const logger = require('../../../utils/logger');
@@ -887,8 +889,8 @@ class AuthController {
 
       const successResponse = {
         success: true,
-        message: '✅ تم التحقق من بريدك الإلكتروني بنجاح! يمكنك تسجيل الدخول الآن.',
-        messageEn: '✅ Your email has been verified successfully! You can now login.',
+        message: '✅ Your email has been verified successfully! You can now login.',
+        messageAr: '✅ تم التحقق من بريدك الإلكتروني بنجاح! يمكنك تسجيل الدخول الآن.',
         code: 'VERIFICATION_SUCCESS',
         verified: true,
         isVerified: true,
@@ -948,8 +950,8 @@ class AuthController {
               
               return res.status(200).json({
                 success: true,
-                message: '✅ تم التحقق من بريدك الإلكتروني بنجاح! يمكنك تسجيل الدخول الآن.',
-                messageEn: '✅ Your email has been verified successfully! You can now login.',
+                message: '✅ Your email has been verified successfully! You can now login.',
+                messageAr: '✅ تم التحقق من بريدك الإلكتروني بنجاح! يمكنك تسجيل الدخول الآن.',
                 code: 'VERIFICATION_SUCCESS',
                 verified: true,
                 isVerified: true,
@@ -964,8 +966,8 @@ class AuthController {
               console.warn('⚠️ [EMAIL VERIFICATION] Token generation failed but account is verified');
               return res.status(200).json({
                 success: true,
-                message: '✅ تم التحقق من بريدك الإلكتروني بنجاح! يمكنك تسجيل الدخول الآن.',
-                messageEn: '✅ Your email has been verified successfully! You can now login.',
+                message: '✅ Your email has been verified successfully! You can now login.',
+                messageAr: '✅ تم التحقق من بريدك الإلكتروني بنجاح! يمكنك تسجيل الدخول الآن.',
                 code: 'VERIFICATION_SUCCESS',
                 verified: true,
                 isVerified: true,
@@ -1271,6 +1273,500 @@ class AuthController {
       res.status(500).json({
         success: false,
         message: 'Failed to setup test account'
+      });
+    }
+  }
+
+  // ==================== OTP VERIFICATION METHODS ====================
+
+  /**
+   * Send OTP for phone verification
+   * @route POST /auth/send-otp
+   */
+  async sendOTP(req, res) {
+    try {
+      const { phone, email, type = 'registration', channel = 'sms' } = req.body;
+
+      // Validate inputs
+      if (!phone && !email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Phone number or email is required',
+          messageAr: 'رقم الهاتف أو البريد الإلكتروني مطلوب',
+          code: 'MISSING_CONTACT_INFO'
+        });
+      }
+
+      if (phone && !phone.startsWith('+')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Phone number must be in international format (e.g., +966XXXXXXXXX)',
+          messageAr: 'يجب أن يكون رقم الهاتف بالصيغة الدولية (مثال: +966XXXXXXXXX)',
+          code: 'INVALID_PHONE_FORMAT'
+        });
+      }
+
+      const validTypes = ['registration', 'password-reset', 'phone-verification', 'login'];
+      if (!validTypes.includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid OTP type',
+          messageAr: 'نوع رمز التحقق غير صالح',
+          code: 'INVALID_OTP_TYPE'
+        });
+      }
+
+      const validChannels = ['sms', 'whatsapp', 'email'];
+      if (!validChannels.includes(channel)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid channel. Must be sms, whatsapp, or email',
+          messageAr: 'القناة غير صالحة. يجب أن تكون sms أو whatsapp أو email',
+          code: 'INVALID_CHANNEL'
+        });
+      }
+
+      const identifier = phone || email;
+      const cooldownSeconds = parseInt(process.env.OTP_RESEND_COOLDOWN_SECONDS) || 60;
+
+      // Check cooldown
+      const lastOTP = await OTP.getLastOTP(identifier, type);
+      if (lastOTP && !lastOTP.canResend(cooldownSeconds)) {
+        const waitTime = Math.ceil((cooldownSeconds * 1000 - (Date.now() - lastOTP.createdAt.getTime())) / 1000);
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${waitTime} seconds before requesting a new OTP`,
+          messageAr: `يرجى الانتظار ${waitTime} ثانية قبل طلب رمز تحقق جديد`,
+          code: 'OTP_COOLDOWN',
+          waitTime
+        });
+      }
+
+      // For registration type, check if phone is already registered
+      if (type === 'registration' && phone) {
+        const existingUser = await User.findOne({ phone, phoneVerified: true });
+        if (existingUser) {
+          return res.status(400).json({
+            success: false,
+            message: 'This phone number is already registered and verified',
+            messageAr: 'رقم الهاتف هذا مسجل ومفعّل مسبقاً',
+            code: 'PHONE_ALREADY_REGISTERED'
+          });
+        }
+      }
+
+      // For password reset, check if phone exists
+      if (type === 'password-reset' && phone) {
+        const user = await User.findOne({ phone });
+        if (!user) {
+          return res.status(404).json({
+            success: false,
+            message: 'No account found with this phone number',
+            messageAr: 'لا يوجد حساب مرتبط بهذا الرقم',
+            code: 'PHONE_NOT_FOUND'
+          });
+        }
+      }
+
+      // Generate OTP
+      const otpCode = authenticaService.generateOTP(6);
+      const expiryMinutes = parseInt(process.env.OTP_EXPIRY_MINUTES) || 5;
+
+      // Send OTP via Authentica
+      let sendResult;
+      if (channel === 'email') {
+        sendResult = await authenticaService.sendEmailOTP(email, { customOtp: otpCode });
+      } else {
+        sendResult = await authenticaService.sendOTP(phone, channel, { customOtp: otpCode });
+      }
+
+      if (!sendResult.success) {
+        console.error('❌ [OTP] Failed to send OTP via Authentica:', sendResult.error);
+        return res.status(500).json({
+          success: false,
+          message: sendResult.message || 'Failed to send OTP',
+          messageAr: sendResult.messageAr || 'فشل في إرسال رمز التحقق',
+          code: 'OTP_SEND_FAILED'
+        });
+      }
+
+      // Save OTP record
+      await OTP.createOTP({
+        phone,
+        email,
+        otp: otpCode,
+        type,
+        channel,
+        expiryMinutes,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+
+      console.log(`📤 [OTP] OTP sent successfully via ${channel} to ${identifier.substring(0, 6)}****`);
+
+      res.status(200).json({
+        success: true,
+        message: `OTP sent successfully via ${channel}`,
+        messageAr: `تم إرسال رمز التحقق بنجاح عبر ${channel === 'sms' ? 'الرسائل القصيرة' : channel === 'whatsapp' ? 'واتساب' : 'البريد الإلكتروني'}`,
+        expiresIn: expiryMinutes * 60, // in seconds
+        channel
+      });
+
+    } catch (error) {
+      console.error('❌ [OTP] Send OTP error:', error);
+      logger.error('Send OTP failed', { error: error.message, stack: error.stack });
+
+      res.status(500).json({
+        success: false,
+        message: 'Failed to send OTP. Please try again.',
+        messageAr: 'فشل في إرسال رمز التحقق. يرجى المحاولة مرة أخرى.',
+        code: 'OTP_ERROR'
+      });
+    }
+  }
+
+  /**
+   * Verify OTP code
+   * @route POST /auth/verify-otp
+   */
+  async verifyOTP(req, res) {
+    try {
+      const { phone, email, otp, type = 'registration' } = req.body;
+
+      // Validate inputs
+      if (!phone && !email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Phone number or email is required',
+          messageAr: 'رقم الهاتف أو البريد الإلكتروني مطلوب',
+          code: 'MISSING_CONTACT_INFO'
+        });
+      }
+
+      if (!otp) {
+        return res.status(400).json({
+          success: false,
+          message: 'OTP code is required',
+          messageAr: 'رمز التحقق مطلوب',
+          code: 'MISSING_OTP'
+        });
+      }
+
+      const identifier = phone || email;
+
+      // Find valid OTP record
+      const otpResult = await OTP.findValidOTP(identifier, otp, type);
+
+      if (!otpResult) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or expired OTP code',
+          messageAr: 'رمز التحقق غير صالح أو منتهي الصلاحية',
+          code: 'INVALID_OTP'
+        });
+      }
+
+      if (otpResult.locked) {
+        return res.status(429).json({
+          success: false,
+          message: 'Too many failed attempts. Please request a new OTP.',
+          messageAr: 'تم تجاوز عدد المحاولات المسموح. يرجى طلب رمز تحقق جديد.',
+          code: 'OTP_LOCKED'
+        });
+      }
+
+      const otpRecord = otpResult.record;
+
+      // Verify with Authentica API as well (double verification)
+      const authenticaResult = await authenticaService.verifyOTP(phone, otp, email);
+      
+      if (!authenticaResult.success && !authenticaResult.verified) {
+        // Increment attempt on failure
+        await otpRecord.incrementAttempt();
+        
+        return res.status(400).json({
+          success: false,
+          message: authenticaResult.message || 'OTP verification failed',
+          messageAr: authenticaResult.messageAr || 'فشل التحقق من الرمز',
+          code: 'OTP_VERIFICATION_FAILED',
+          attemptsRemaining: otpRecord.maxAttempts - otpRecord.attempts
+        });
+      }
+
+      // Mark OTP as verified
+      await otpRecord.markVerified();
+
+      // Update user if this is for phone verification or registration
+      if (phone && (type === 'phone-verification' || type === 'registration')) {
+        const user = await User.findOne({ phone });
+        if (user) {
+          user.phoneVerified = true;
+          await user.save();
+          console.log(`✅ [OTP] Phone verified for user: ${user.email}`);
+        }
+      }
+
+      console.log(`✅ [OTP] OTP verified successfully for ${identifier.substring(0, 6)}****`);
+
+      res.status(200).json({
+        success: true,
+        verified: true,
+        message: 'OTP verified successfully',
+        messageAr: 'تم التحقق من الرمز بنجاح',
+        type
+      });
+
+    } catch (error) {
+      console.error('❌ [OTP] Verify OTP error:', error);
+      logger.error('Verify OTP failed', { error: error.message, stack: error.stack });
+
+      res.status(500).json({
+        success: false,
+        message: 'OTP verification failed. Please try again.',
+        messageAr: 'فشل التحقق من الرمز. يرجى المحاولة مرة أخرى.',
+        code: 'OTP_ERROR'
+      });
+    }
+  }
+
+  /**
+   * Request password reset via OTP (phone-based)
+   * @route POST /auth/forgot-password-otp
+   */
+  async forgotPasswordOTP(req, res) {
+    try {
+      const { phone, channel = 'sms' } = req.body;
+
+      if (!phone) {
+        return res.status(400).json({
+          success: false,
+          message: 'Phone number is required',
+          messageAr: 'رقم الهاتف مطلوب',
+          code: 'MISSING_PHONE'
+        });
+      }
+
+      if (!phone.startsWith('+')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Phone number must be in international format (e.g., +966XXXXXXXXX)',
+          messageAr: 'يجب أن يكون رقم الهاتف بالصيغة الدولية (مثال: +966XXXXXXXXX)',
+          code: 'INVALID_PHONE_FORMAT'
+        });
+      }
+
+      // Find user by phone
+      const user = await User.findOne({ phone });
+      if (!user) {
+        // Don't reveal if phone exists or not for security
+        return res.status(200).json({
+          success: true,
+          message: 'If this phone number is registered, you will receive an OTP',
+          messageAr: 'إذا كان هذا الرقم مسجلاً، ستصلك رسالة تحتوي على رمز التحقق'
+        });
+      }
+
+      // Check cooldown
+      const cooldownSeconds = parseInt(process.env.OTP_RESEND_COOLDOWN_SECONDS) || 60;
+      const lastOTP = await OTP.getLastOTP(phone, 'password-reset');
+      if (lastOTP && !lastOTP.canResend(cooldownSeconds)) {
+        const waitTime = Math.ceil((cooldownSeconds * 1000 - (Date.now() - lastOTP.createdAt.getTime())) / 1000);
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${waitTime} seconds before requesting a new OTP`,
+          messageAr: `يرجى الانتظار ${waitTime} ثانية قبل طلب رمز تحقق جديد`,
+          code: 'OTP_COOLDOWN',
+          waitTime
+        });
+      }
+
+      // Generate and send OTP
+      const otpCode = authenticaService.generateOTP(6);
+      const expiryMinutes = parseInt(process.env.OTP_EXPIRY_MINUTES) || 5;
+
+      const sendResult = await authenticaService.sendOTP(phone, channel, { customOtp: otpCode });
+
+      if (!sendResult.success) {
+        console.error('❌ [OTP] Failed to send password reset OTP:', sendResult.error);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to send OTP. Please try again.',
+          messageAr: 'فشل في إرسال رمز التحقق. يرجى المحاولة مرة أخرى.',
+          code: 'OTP_SEND_FAILED'
+        });
+      }
+
+      // Save OTP record
+      await OTP.createOTP({
+        userId: user._id,
+        phone,
+        otp: otpCode,
+        type: 'password-reset',
+        channel,
+        expiryMinutes,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+
+      console.log(`📤 [OTP] Password reset OTP sent to ${phone.substring(0, 6)}****`);
+
+      res.status(200).json({
+        success: true,
+        message: `Password reset OTP sent via ${channel}`,
+        messageAr: `تم إرسال رمز استعادة كلمة المرور عبر ${channel === 'sms' ? 'الرسائل القصيرة' : 'واتساب'}`,
+        expiresIn: expiryMinutes * 60
+      });
+
+    } catch (error) {
+      console.error('❌ [OTP] Forgot password OTP error:', error);
+      logger.error('Forgot password OTP failed', { error: error.message, stack: error.stack });
+
+      res.status(500).json({
+        success: false,
+        message: 'Failed to process request. Please try again.',
+        messageAr: 'فشل في معالجة الطلب. يرجى المحاولة مرة أخرى.',
+        code: 'REQUEST_FAILED'
+      });
+    }
+  }
+
+  /**
+   * Reset password using OTP (phone-based)
+   * @route POST /auth/reset-password-otp
+   */
+  async resetPasswordOTP(req, res) {
+    try {
+      const { phone, otp, newPassword } = req.body;
+
+      if (!phone || !otp || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: 'Phone, OTP, and new password are required',
+          messageAr: 'رقم الهاتف ورمز التحقق وكلمة المرور الجديدة مطلوبة',
+          code: 'MISSING_FIELDS'
+        });
+      }
+
+      // Validate password strength
+      if (newPassword.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 8 characters long',
+          messageAr: 'يجب أن تكون كلمة المرور 8 أحرف على الأقل',
+          code: 'WEAK_PASSWORD'
+        });
+      }
+
+      // Verify OTP
+      const otpResult = await OTP.findValidOTP(phone, otp, 'password-reset');
+
+      if (!otpResult) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or expired OTP code',
+          messageAr: 'رمز التحقق غير صالح أو منتهي الصلاحية',
+          code: 'INVALID_OTP'
+        });
+      }
+
+      if (otpResult.locked) {
+        return res.status(429).json({
+          success: false,
+          message: 'Too many failed attempts. Please request a new OTP.',
+          messageAr: 'تم تجاوز عدد المحاولات المسموح. يرجى طلب رمز تحقق جديد.',
+          code: 'OTP_LOCKED'
+        });
+      }
+
+      const otpRecord = otpResult.record;
+
+      // Verify with Authentica
+      const authenticaResult = await authenticaService.verifyOTP(phone, otp);
+      
+      if (!authenticaResult.success && !authenticaResult.verified) {
+        await otpRecord.incrementAttempt();
+        
+        return res.status(400).json({
+          success: false,
+          message: 'OTP verification failed',
+          messageAr: 'فشل التحقق من الرمز',
+          code: 'OTP_VERIFICATION_FAILED',
+          attemptsRemaining: otpRecord.maxAttempts - otpRecord.attempts
+        });
+      }
+
+      // Find user and update password
+      const user = await User.findOne({ phone });
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found',
+          messageAr: 'المستخدم غير موجود',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+
+      // Update password
+      user.password = newPassword;
+      user.phoneVerified = true; // Also verify phone since they just proved ownership
+      await user.save();
+
+      // Mark OTP as verified/used
+      await otpRecord.markVerified();
+
+      // Clear any existing sessions
+      await clearUserCSRFTokens(user._id.toString());
+
+      console.log(`✅ [OTP] Password reset successful for ${user.email}`);
+
+      res.status(200).json({
+        success: true,
+        message: 'Password reset successfully. You can now login with your new password.',
+        messageAr: 'تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.'
+      });
+
+    } catch (error) {
+      console.error('❌ [OTP] Reset password OTP error:', error);
+      logger.error('Reset password OTP failed', { error: error.message, stack: error.stack });
+
+      res.status(500).json({
+        success: false,
+        message: 'Failed to reset password. Please try again.',
+        messageAr: 'فشل في تغيير كلمة المرور. يرجى المحاولة مرة أخرى.',
+        code: 'RESET_FAILED'
+      });
+    }
+  }
+
+  /**
+   * Get Authentica balance (admin only)
+   * @route GET /auth/otp-balance
+   */
+  async getOTPBalance(req, res) {
+    try {
+      const result = await authenticaService.getBalance();
+      
+      if (!result.success) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to fetch OTP balance',
+          messageAr: 'فشل في جلب رصيد OTP',
+          error: result.error
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        balance: result.balance,
+        data: result.data
+      });
+
+    } catch (error) {
+      console.error('❌ [OTP] Get balance error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch balance',
+        messageAr: 'فشل في جلب الرصيد'
       });
     }
   }
