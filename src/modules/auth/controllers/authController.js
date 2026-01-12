@@ -1368,6 +1368,17 @@ class AuthController {
         }
       }
 
+      // Check if Authentica is configured
+      if ((channel === 'sms' || channel === 'whatsapp') && !authenticaService.isConfigured()) {
+        console.error('❌ [OTP] Authentica API is not configured');
+        return res.status(503).json({
+          success: false,
+          message: 'SMS/WhatsApp verification is not available. Please use email verification.',
+          messageAr: 'التحقق عبر SMS/واتساب غير متاح حالياً. يرجى استخدام التحقق بالبريد الإلكتروني.',
+          code: 'OTP_SERVICE_UNAVAILABLE'
+        });
+      }
+
       // Generate OTP
       const otpCode = authenticaService.generateOTP(6);
       const expiryMinutes = parseInt(process.env.OTP_EXPIRY_MINUTES) || 5;
@@ -1577,6 +1588,17 @@ class AuthController {
           messageAr: `يرجى الانتظار ${waitTime} ثانية قبل طلب رمز تحقق جديد`,
           code: 'OTP_COOLDOWN',
           waitTime
+        });
+      }
+
+      // Check if Authentica is configured
+      if (!authenticaService.isConfigured()) {
+        console.error('❌ [OTP] Authentica API is not configured for password reset');
+        return res.status(503).json({
+          success: false,
+          message: 'SMS/WhatsApp verification is not available. Please use email to reset your password.',
+          messageAr: 'التحقق عبر SMS/واتساب غير متاح حالياً. يرجى استخدام البريد الإلكتروني لإعادة تعيين كلمة المرور.',
+          code: 'OTP_SERVICE_UNAVAILABLE'
         });
       }
 
