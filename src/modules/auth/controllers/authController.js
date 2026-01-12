@@ -143,7 +143,8 @@ class AuthController {
         password,
         role,
         phone: phone || undefined,
-        location: location || undefined
+        location: location || undefined,
+        preferredVerificationMethod: req.body.preferredVerificationMethod || 'email'
       };
 
       // Add role-specific fields
@@ -268,21 +269,43 @@ class AuthController {
         }
       }
 
-      // Try to send verification email, but don't fail registration if it fails
-      try {
-        const emailSent = await emailService.sendVerificationEmail(user, verificationToken);
+      // Send verification based on preferred method
+      const preferredMethod = req.body.preferredVerificationMethod || 'email';
+      
+      if (preferredMethod === 'email') {
+        // Send email verification
+        try {
+          const emailSent = await emailService.sendVerificationEmail(user, verificationToken);
+          res.status(201).json({
+            success: true,
+            message: emailSent
+              ? 'Registration successful. Please check your email to verify your account.'
+              : 'Registration successful. You can now log in to your account.',
+            messageAr: emailSent
+              ? 'تم التسجيل بنجاح. يرجى التحقق من بريدك الإلكتروني لتفعيل حسابك.'
+              : 'تم التسجيل بنجاح. يمكنك الآن تسجيل الدخول.',
+            verificationMethod: 'email',
+            user: user.toSafeObject()
+          });
+        } catch (emailError) {
+          logger.warn('Email verification send failed', { userId: user._id, error: emailError.message });
+          res.status(201).json({
+            success: true,
+            message: 'Registration successful. You can now log in to your account.',
+            messageAr: 'تم التسجيل بنجاح. يمكنك الآن تسجيل الدخول.',
+            verificationMethod: 'email',
+            user: user.toSafeObject()
+          });
+        }
+      } else {
+        // SMS or WhatsApp - don't send email, frontend will handle OTP
+        console.log(`📱 [REGISTRATION] User ${user.email} chose ${preferredMethod} verification, skipping email`);
         res.status(201).json({
           success: true,
-          message: emailSent
-            ? 'Registration successful. Please check your email to verify your account.'
-            : 'Registration successful. You can now log in to your account.',
-          user: user.toSafeObject()
-        });
-      } catch (emailError) {
-        logger.warn('Email verification send failed', { userId: user._id, error: emailError.message });
-        res.status(201).json({
-          success: true,
-          message: 'Registration successful. You can now log in to your account.',
+          message: `Registration successful. Please verify your phone number via ${preferredMethod.toUpperCase()}.`,
+          messageAr: `تم التسجيل بنجاح. يرجى التحقق من رقم هاتفك عبر ${preferredMethod === 'sms' ? 'الرسائل القصيرة' : 'واتساب'}.`,
+          verificationMethod: preferredMethod,
+          phone: phone,
           user: user.toSafeObject()
         });
       }
