@@ -174,7 +174,21 @@ app.use(
     },
     credentials: true, // REQUIRED for cookies and CSRF tokens
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-admin-key', 'X-Admin-Key', 'Accept', 'X-CSRF-Token', 'X-XSRF-TOKEN', 'x-csrf-token', 'x-xsrf-token'],
+    // CRITICAL FIX: Add Cache-Control and Pragma to allowed headers
+    allowedHeaders: [
+      'Content-Type', 
+      'Authorization', 
+      'X-Requested-With', 
+      'x-admin-key', 
+      'X-Admin-Key', 
+      'Accept', 
+      'X-CSRF-Token', 
+      'X-XSRF-TOKEN', 
+      'x-csrf-token', 
+      'x-xsrf-token',
+      'Cache-Control',  // Required for CSRF token fetching
+      'Pragma'          // Required for CSRF token fetching
+    ],
     exposedHeaders: ['Content-Type', 'Content-Length', 'X-CSRF-Token', 'X-XSRF-TOKEN', 'Set-Cookie'],
     maxAge: 86400, // Cache preflight for 24 hours
   })
