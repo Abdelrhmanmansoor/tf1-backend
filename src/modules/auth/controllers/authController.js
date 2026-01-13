@@ -16,13 +16,23 @@ const REMEMBER_ME_REFRESH_MAX_AGE = parseInt(
   10
 );
 
-const buildCookieOptions = maxAge => ({
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? 'strict' : 'lax',
-  path: '/',
-  maxAge,
-});
+const buildCookieOptions = maxAge => {
+  const options = {
+    httpOnly: true,
+    secure: isProduction, // HTTPS only in production
+    sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin in production with Secure
+    path: '/',
+    maxAge,
+  };
+  
+  // Add domain for production cross-subdomain support
+  // Only set domain if explicitly configured (Vercel/custom domain)
+  if (isProduction && process.env.COOKIE_DOMAIN) {
+    options.domain = process.env.COOKIE_DOMAIN; // e.g., '.tf1one.com'
+  }
+  
+  return options;
+};
 
 // Global cache to prevent duplicate verification requests
 const verificationCache = new Map();
@@ -381,8 +391,28 @@ class AuthController {
       const accessMaxAge = ACCESS_TOKEN_MAX_AGE;
       const refreshMaxAge = rememberMe ? REMEMBER_ME_REFRESH_MAX_AGE : REFRESH_TOKEN_MAX_AGE;
 
-      res.cookie('accessToken', accessToken, buildCookieOptions(accessMaxAge));
-      res.cookie('refreshToken', refreshToken, buildCookieOptions(refreshMaxAge));
+      // CRITICAL FIX: Use access_token (with underscore) for consistency
+      const cookieOptions = buildCookieOptions(accessMaxAge);
+      const refreshCookieOptions = buildCookieOptions(refreshMaxAge);
+      
+      // Set cookies with proper names
+      res.cookie('access_token', accessToken, cookieOptions);
+      res.cookie('refresh_token', refreshToken, refreshCookieOptions);
+      
+      // Enhanced logging for debugging
+      logger.info('Login successful - cookies set', {
+        email: user.email,
+        userId: user._id,
+        cookieOptions: {
+          httpOnly: cookieOptions.httpOnly,
+          secure: cookieOptions.secure,
+          sameSite: cookieOptions.sameSite,
+          path: cookieOptions.path,
+          maxAge: cookieOptions.maxAge,
+        },
+        accessTokenLength: accessToken.length,
+        isProduction
+      });
 
       const userObject = user.toSafeObject(true); // Include email in response
 
@@ -412,7 +442,8 @@ class AuthController {
 
   async refreshToken(req, res) {
     try {
-      const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+      // Check both new (refresh_token) and legacy (refreshToken) cookie names
+      const incomingRefreshToken = req.cookies?.refresh_token || req.cookies?.refreshToken || req.body?.refreshToken;
 
       if (!incomingRefreshToken) {
         return res.status(400).json({
@@ -456,8 +487,8 @@ class AuthController {
       // Generate new token pair and rotate cookies
       const tokens = jwtService.generateTokenPair(user);
 
-      res.cookie('accessToken', tokens.accessToken, buildCookieOptions(ACCESS_TOKEN_MAX_AGE));
-      res.cookie('refreshToken', tokens.refreshToken, buildCookieOptions(REFRESH_TOKEN_MAX_AGE));
+      res.cookie('access_token', tokens.accessToken, buildCookieOptions(ACCESS_TOKEN_MAX_AGE));
+      res.cookie('refresh_token', tokens.refreshToken, buildCookieOptions(REFRESH_TOKEN_MAX_AGE));
 
       res.status(200).json({
         success: true,
@@ -1180,20 +1211,32 @@ class AuthController {
       // Clear authentication cookies for both main auth and matches system
       const cookieOptions = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
         path: '/'
       };
 
-      // Clear main auth cookies
-      res.clearCookie('accessToken', cookieOptions);
-      res.clearCookie('refreshToken', cookieOptions);
+      // Add domain if configured
+      if (isProduction && process.env.COOKIE_DOMAIN) {
+        cookieOptions.domain = process.env.COOKIE_DOMAIN;
+      }
+
+      // Clear main auth cookies (both new and legacy names)
+      res.clearCookie('access_token', cookieOptions);
+      res.clearCookie('refresh_token', cookieOptions);
+      res.clearCookie('accessToken', cookieOptions); // Legacy
+      res.clearCookie('refreshToken', cookieOptions); // Legacy
       
       // Clear matches module cookie
       res.clearCookie('matches_token', cookieOptions);
       
       // Clear admin auth cookie if exists
       res.clearCookie('admin_session', cookieOptions);
+
+      logger.info('Logout successful', {
+        userId: req.user?._id,
+        email: req.user?.email,
+      });
 
       // Set cache prevention headers for logout response
       res.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate, no-cache');

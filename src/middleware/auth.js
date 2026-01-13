@@ -3,6 +3,7 @@ const User = require('../modules/shared/models/User');
 const logger = require('../utils/logger');
 
 const resolveToken = req => {
+  // Try Authorization header first
   if (req.headers.authorization) {
     try {
       return jwtService.extractTokenFromHeader(req.headers.authorization);
@@ -14,8 +15,16 @@ const resolveToken = req => {
     }
   }
 
-  if (req.cookies && req.cookies.accessToken) {
-    return req.cookies.accessToken;
+  // Try cookies - check both access_token (new) and accessToken (legacy)
+  if (req.cookies) {
+    if (req.cookies.access_token) {
+      logger.debug('Token found in access_token cookie', { path: req.path });
+      return req.cookies.access_token;
+    }
+    if (req.cookies.accessToken) {
+      logger.debug('Token found in accessToken cookie (legacy)', { path: req.path });
+      return req.cookies.accessToken;
+    }
   }
 
   return null;
@@ -26,15 +35,20 @@ const authenticate = async (req, res, next) => {
     const token = resolveToken(req);
 
     if (!token) {
-      // Enhanced logging for debugging
+      // Enhanced debugging for missing tokens
+      const cookieHeader = req.headers.cookie || '';
+      const hasAuthHeader = !!req.headers.authorization;
+      const cookieNames = req.cookies ? Object.keys(req.cookies).join(', ') : '';
+      const hasAccessTokenCookie = !!(req.cookies && (req.cookies.access_token || req.cookies.accessToken));
+      
       logger.warn('Authentication failed: No token provided', {
         ip: req.ip,
         path: req.path,
-        hasAuthHeader: !!req.headers.authorization,
-        authHeaderValue: req.headers.authorization ? 'Bearer ***' : 'none',
-        hasCookies: !!req.cookies,
-        cookieNames: req.cookies ? Object.keys(req.cookies).join(', ') : 'none',
-        hasAccessTokenCookie: !!(req.cookies && req.cookies.accessToken),
+        hasAuthHeader,
+        hasCookies: cookieHeader.length > 0,
+        cookieNames,
+        hasAccessTokenCookie,
+        cookieHeaderLength: cookieHeader.length,
       });
       return res.status(401).json({
         success: false,
@@ -58,14 +72,6 @@ const authenticate = async (req, res, next) => {
         code: 'USER_NOT_FOUND',
       });
     }
-
-    // Log successful authentication
-    logger.info('Authentication successful', {
-      userId: user._id,
-      role: user.role,
-      path: req.path,
-      method: req.method,
-    });
 
     req.user = user;
     req.token = token;

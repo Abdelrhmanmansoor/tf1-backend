@@ -147,17 +147,19 @@ app.use(
           // Allow no-origin requests in development (Postman, mobile apps, etc.)
           return callback(null, true);
         }
-        // In production, reject no-origin requests to prevent SSRF
-        logger.warn('CORS: Request with no origin rejected in production');
-        return callback(new Error('Not allowed by CORS - origin required'));
+        // In production, allow no-origin for same-origin requests (cookies will still work)
+        logger.info('CORS: Request with no origin (same-origin or Postman)');
+        return callback(null, true);
       }
       
       // Check if origin is in allowed list (exact match or domain suffix)
       const isAllowed = allowedOrigins.includes(origin) || 
                        origin.endsWith('tf1one.com') || 
+                       origin.endsWith('.vercel.app') || // Allow Vercel preview deployments
                        (NODE_ENV === 'development');
       
       if (isAllowed) {
+        logger.debug(`CORS: Allowing origin: ${origin}`);
         callback(null, true);
       } else {
         if (NODE_ENV === 'development') {
@@ -170,10 +172,11 @@ app.use(
         callback(new Error('Not allowed by CORS'));
       }
     },
-    credentials: true, // REQUIRED for CSRF cookies
+    credentials: true, // REQUIRED for cookies and CSRF tokens
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-admin-key', 'X-Admin-Key', 'Accept', 'X-CSRF-Token', 'X-XSRF-TOKEN', 'x-csrf-token', 'x-xsrf-token'],
-    exposedHeaders: ['Content-Type', 'Content-Length', 'X-CSRF-Token', 'X-XSRF-TOKEN'],
+    exposedHeaders: ['Content-Type', 'Content-Length', 'X-CSRF-Token', 'X-XSRF-TOKEN', 'Set-Cookie'],
+    maxAge: 86400, // Cache preflight for 24 hours
   })
 );
 
