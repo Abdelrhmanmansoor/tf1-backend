@@ -140,29 +140,36 @@ app.use(
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, Postman, etc.) in development only
+      // In production, require exact origin match - NEVER allow '*' with credentials
       if (!origin) {
         if (NODE_ENV === 'development') {
+          // Allow no-origin requests in development (Postman, mobile apps, etc.)
           return callback(null, true);
         }
-        // In production, allow if it's from same domain or trusted
-        return callback(null, true); // Allow for API calls from same domain
+        // In production, reject no-origin requests to prevent SSRF
+        logger.warn('CORS: Request with no origin rejected in production');
+        return callback(new Error('Not allowed by CORS - origin required'));
       }
       
-      // Check if origin is in allowed list
-      if (allowedOrigins.includes(origin) || origin.endsWith('tf1one.com') || NODE_ENV === 'development') {
+      // Check if origin is in allowed list (exact match or domain suffix)
+      const isAllowed = allowedOrigins.includes(origin) || 
+                       origin.endsWith('tf1one.com') || 
+                       (NODE_ENV === 'development');
+      
+      if (isAllowed) {
         callback(null, true);
       } else {
-        // Log but allow in development
         if (NODE_ENV === 'development') {
+          // Log but allow in development
           logger.warn(`CORS: Request from unlisted origin: ${origin} (allowed in dev)`);
           return callback(null, true);
         }
+        // Strictly reject in production
         logger.warn(`CORS blocked request from origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));
       }
     },
-    credentials: true,
+    credentials: true, // REQUIRED for CSRF cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-admin-key', 'X-Admin-Key', 'Accept', 'X-CSRF-Token', 'X-XSRF-TOKEN', 'x-csrf-token', 'x-xsrf-token'],
     exposedHeaders: ['Content-Type', 'Content-Length', 'X-CSRF-Token', 'X-XSRF-TOKEN'],

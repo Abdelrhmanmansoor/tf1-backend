@@ -1,27 +1,33 @@
 /**
- * CSRF Protection Middleware - Secure Implementation
- * Protects against Cross-Site Request Forgery attacks
+ * CSRF Protection Middleware - Signed Double Submit Cookie Implementation
+ * Stateless CSRF protection that works across multiple instances without Redis
  * 
  * Design:
- * 1. Token Generation: GET /csrf-token issues a fresh token
- * 2. Token Storage: Server-side Map + Cookie (readable by JS)
- * 3. Token Validation: Check header X-CSRF-Token against stored token
- * 4. No Single-Use: Tokens are reusable within TTL to prevent UX issues
- * 5. Origin/Referer Validation: Additional layer for state-changing requests
+ * 1. Token Generation: GET /csrf-token creates signed token with timestamp
+ * 2. Token Storage: Cookie only (readable by JS) - NO server-side storage
+ * 3. Token Validation: Header token == Cookie token AND signature valid AND not expired
+ * 4. Token Format: base64(payload).signature where payload = {nonce, timestamp}
+ * 5. Signature: HMAC SHA256 of payload using CSRF_SECRET
  * 
  * Security Features:
- * - Cryptographically secure random tokens (32 bytes)
- * - TTL-based expiration (configurable, default 1 hour)
- * - Origin/Referer header validation
- * - SameSite cookie attribute
+ * - Cryptographically signed tokens (HMAC SHA256)
+ * - Timestamp-based expiration (configurable, default 10 minutes)
+ * - Origin/Referer header validation for state-changing requests
+ * - SameSite cookie attribute (None for cross-origin, Lax for same-origin)
  * - Secure flag in production
+ * - Stateless - works across multiple instances
  */
 
 const crypto = require('crypto');
 const logger = require('../utils/logger');
 
 // Configuration
-const CSRF_TOKEN_TTL_MS = parseInt(process.env.CSRF_TOKEN_TTL_MS || '3600000', 10); // 1 hour default
+const CSRF_TOKEN_TTL_MS = parseInt(process.env.CSRF_TOKEN_TTL_MS || '600000', 10); // 10 minutes default (600000ms)
+const CSRF_SECRET = process.env.CSRF_SECRET || (() => {
+  // Generate a secret if not set (WARNING: This changes on restart - MUST set in production)
+  logger.warn('⚠️ CSRF_SECRET not set - generating random secret. Set CSRF_SECRET in .env for production!');
+  return crypto.randomBytes(32).toString('hex');
+})();
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const isProduction = NODE_ENV === 'production';
 
@@ -49,30 +55,82 @@ const getAllowedOrigins = () => {
   return origins;
 };
 
-// Store CSRF tokens in memory (in production, consider Redis for multi-instance deployments)
-// Token format: { createdAt: timestamp, ip: string, fingerprint: string }
-const csrfTokenStore = new Map();
-
-// Clean up expired tokens every 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  let cleaned = 0;
-  for (const [token, data] of csrfTokenStore.entries()) {
-    if (now - data.createdAt > CSRF_TOKEN_TTL_MS) {
-      csrfTokenStore.delete(token);
-      cleaned++;
-    }
-  }
-  if (cleaned > 0) {
-    logger.debug('CSRF token store cleaned', { cleaned, remaining: csrfTokenStore.size });
-  }
-}, 10 * 60 * 1000);
+/**
+ * Sign a token payload using HMAC SHA256
+ * @param {string} payload - The payload to sign (base64 encoded)
+ * @returns {string} - HMAC signature (hex)
+ */
+const signToken = (payload) => {
+  return crypto.createHmac('sha256', CSRF_SECRET).update(payload).digest('hex');
+};
 
 /**
  * Generate a cryptographically secure CSRF token
+ * Format: base64({nonce, timestamp}).signature
+ * @returns {string} - Signed token
  */
 const generateCSRFToken = () => {
-  return crypto.randomBytes(32).toString('hex');
+  // Generate random nonce
+  const nonce = crypto.randomBytes(16).toString('hex');
+  
+  // Create payload with timestamp
+  const payload = {
+    nonce,
+    timestamp: Date.now(),
+  };
+  
+  // Encode payload as base64
+  const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64');
+  
+  // Sign the payload
+  const signature = signToken(payloadBase64);
+  
+  // Return: payload.signature
+  return `${payloadBase64}.${signature}`;
+};
+
+/**
+ * Verify a CSRF token's signature and expiration
+ * @param {string} token - The token to verify
+ * @returns {{valid: boolean, expired: boolean, payload: object|null}}
+ */
+const verifyToken = (token) => {
+  if (!token || typeof token !== 'string') {
+    return { valid: false, expired: false, payload: null };
+  }
+  
+  // Split token into payload and signature
+  const parts = token.split('.');
+  if (parts.length !== 2) {
+    return { valid: false, expired: false, payload: null };
+  }
+  
+  const [payloadBase64, signature] = parts;
+  
+  // Verify signature
+  const expectedSignature = signToken(payloadBase64);
+  if (signature !== expectedSignature) {
+    return { valid: false, expired: false, payload: null };
+  }
+  
+  // Decode payload
+  let payload;
+  try {
+    const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf-8');
+    payload = JSON.parse(payloadJson);
+  } catch (error) {
+    return { valid: false, expired: false, payload: null };
+  }
+  
+  // Check expiration
+  const tokenAge = Date.now() - payload.timestamp;
+  const expired = tokenAge > CSRF_TOKEN_TTL_MS;
+  
+  return {
+    valid: !expired,
+    expired,
+    payload: expired ? null : payload,
+  };
 };
 
 /**
@@ -92,7 +150,7 @@ const getCookieOptions = () => {
       httpOnly: false, // Must be false - client JS needs to read this
       secure: true, // Required for SameSite=None
       sameSite: 'none', // Required for cross-origin cookies
-      maxAge: CSRF_TOKEN_TTL_MS,
+      maxAge: Math.floor(CSRF_TOKEN_TTL_MS / 1000), // Convert to seconds
       path: '/',
     };
   }
@@ -101,7 +159,7 @@ const getCookieOptions = () => {
     httpOnly: false, // Must be false - client JS needs to read this
     secure: isProduction, // HTTPS only in production
     sameSite: 'lax',
-    maxAge: CSRF_TOKEN_TTL_MS,
+    maxAge: Math.floor(CSRF_TOKEN_TTL_MS / 1000), // Convert to seconds
     path: '/',
   };
 };
@@ -114,7 +172,7 @@ const validateOrigin = (req) => {
   const allowedOrigins = getAllowedOrigins();
   
   // Get Origin header (preferred) or Referer as fallback
-  const origin = req.headers.origin || req.headers.referer;
+  const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null);
   
   // In development, be more lenient
   if (!isProduction) {
@@ -132,21 +190,23 @@ const validateOrigin = (req) => {
     return true;
   }
   
-  // In production, be strict
+  // In production, be strict for state-changing requests
   if (!origin) {
-    // Allow same-origin requests (no Origin header typically means same-origin)
-    // But be careful - some browsers/clients don't send Origin
+    // For POST/PUT/PATCH/DELETE, require origin or referer
     const referer = req.headers.referer;
     if (referer) {
-      const refererOrigin = new URL(referer).origin;
-      return allowedOrigins.some(allowed => 
-        refererOrigin === allowed.replace(/\/$/, '') || 
-        refererOrigin.endsWith('tf1one.com')
-      );
+      try {
+        const refererOrigin = new URL(referer).origin;
+        return allowedOrigins.some(allowed => 
+          refererOrigin === allowed.replace(/\/$/, '') || 
+          refererOrigin.endsWith('tf1one.com')
+        );
+      } catch (e) {
+        return false;
+      }
     }
-    // No origin or referer - potentially dangerous, but allow for API clients
-    // The CSRF token itself provides protection
-    return true;
+    // No origin or referer in production - reject
+    return false;
   }
   
   const originHost = origin.replace(/\/$/, '');
@@ -158,7 +218,7 @@ const validateOrigin = (req) => {
 
 /**
  * Extract CSRF token from request
- * Priority: Header > Body > Cookie
+ * Priority: Header > Cookie
  */
 const extractToken = (req) => {
   return (
@@ -166,27 +226,22 @@ const extractToken = (req) => {
     req.headers['x-xsrf-token'] ||
     req.headers['X-CSRF-Token'] ||
     req.headers['X-XSRF-TOKEN'] ||
-    req.body?._csrf ||
-    req.body?.csrfToken ||
-    req.cookies?.['XSRF-TOKEN']
+    req.cookies?.['XSRF-TOKEN'] ||
+    req.cookies?.['xsrf-token']
   );
 };
 
 /**
- * Legacy csrf middleware - now only adds token to response (doesn't verify)
- * This is for backward compatibility with routes that use csrf() before verifyCsrf()
- * The actual verification happens in verifyCsrf()
+ * Legacy csrf middleware - passthrough for backward compatibility
  */
 const csrf = (req, res, next) => {
-  // This middleware is now a no-op passthrough
-  // Token generation happens ONLY in getCSRFToken
-  // Token verification happens ONLY in verifyCsrf
   next();
 };
 
 /**
  * Verify CSRF token on state-changing requests
  * This is the main CSRF protection middleware
+ * Implements Signed Double Submit Cookie pattern
  */
 const verifyCsrf = (req, res, next) => {
   // Skip CSRF check for safe HTTP methods
@@ -205,7 +260,7 @@ const verifyCsrf = (req, res, next) => {
     return next();
   }
 
-  // Step 1: Validate Origin/Referer header
+  // Step 1: Validate Origin/Referer header (for state-changing requests)
   if (!validateOrigin(req)) {
     logger.warn('CSRF: Origin validation failed', {
       method: req.method,
@@ -223,16 +278,24 @@ const verifyCsrf = (req, res, next) => {
     });
   }
 
-  // Step 2: Extract CSRF token from request
-  const token = extractToken(req);
+  // Step 2: Extract CSRF token from header
+  const headerToken = req.headers['x-csrf-token'] || 
+                     req.headers['x-xsrf-token'] || 
+                     req.headers['X-CSRF-Token'] || 
+                     req.headers['X-XSRF-TOKEN'];
 
-  if (!token) {
+  // Step 3: Extract CSRF token from cookie
+  const cookieToken = req.cookies?.['XSRF-TOKEN'] || req.cookies?.['xsrf-token'];
+
+  // Both must be present
+  if (!headerToken || !cookieToken) {
     logger.warn('CSRF: Token missing', {
       method: req.method,
       path: req.path,
       ip: req.ip,
-      hasOrigin: !!req.headers.origin,
-      hasCookie: !!req.cookies?.['XSRF-TOKEN']
+      hasHeaderToken: !!headerToken,
+      hasCookieToken: !!cookieToken,
+      origin: req.headers.origin
     });
     
     return res.status(403).json({
@@ -243,61 +306,58 @@ const verifyCsrf = (req, res, next) => {
     });
   }
 
-  // Step 3: Verify token exists in store
-  const tokenData = csrfTokenStore.get(token);
-
-  if (!tokenData) {
-    logger.warn('CSRF: Token not found in store (expired or invalid)', {
+  // Step 4: Verify tokens match (Double Submit Cookie pattern)
+  if (headerToken !== cookieToken) {
+    logger.warn('CSRF: Token mismatch', {
       method: req.method,
       path: req.path,
       ip: req.ip,
-      tokenPrefix: token.substring(0, 8) + '...'
+      headerTokenPrefix: headerToken.substring(0, 10) + '...',
+      cookieTokenPrefix: cookieToken.substring(0, 10) + '...'
     });
-
-    return res.status(403).json({
-      success: false,
-      message: 'CSRF token expired or invalid. Please refresh the page and try again.',
-      messageAr: 'رمز CSRF منتهي الصلاحية أو غير صالح. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
-      code: 'CSRF_TOKEN_INVALID'
-    });
-  }
-
-  // Step 4: Check token expiration
-  const tokenAge = Date.now() - tokenData.createdAt;
-  if (tokenAge > CSRF_TOKEN_TTL_MS) {
-    csrfTokenStore.delete(token);
     
-    logger.warn('CSRF: Token expired', {
-      method: req.method,
-      path: req.path,
-      ip: req.ip,
-      tokenAge: Math.round(tokenAge / 1000) + 's'
-    });
-
     return res.status(403).json({
       success: false,
-      message: 'CSRF token expired. Please refresh the page and try again.',
-      messageAr: 'انتهت صلاحية رمز CSRF. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
-      code: 'CSRF_TOKEN_EXPIRED'
+      message: 'CSRF token mismatch. Please refresh the page and try again.',
+      messageAr: 'عدم تطابق رمز CSRF. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
+      code: 'CSRF_TOKEN_MISMATCH'
     });
   }
 
-  // Token is valid - DO NOT mark as used (allow reuse within TTL)
-  // This prevents the "token reuse" error that breaks user experience
+  // Step 5: Verify token signature and expiration
+  const verification = verifyToken(headerToken);
+  
+  if (!verification.valid) {
+    if (verification.expired) {
+      logger.warn('CSRF: Token expired', {
+        method: req.method,
+        path: req.path,
+        ip: req.ip
+      });
+      
+      return res.status(403).json({
+        success: false,
+        message: 'CSRF token expired. Please refresh the page and try again.',
+        messageAr: 'انتهت صلاحية رمز CSRF. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
+        code: 'CSRF_TOKEN_EXPIRED'
+      });
+    } else {
+      logger.warn('CSRF: Invalid token signature', {
+        method: req.method,
+        path: req.path,
+        ip: req.ip
+      });
+      
+      return res.status(403).json({
+        success: false,
+        message: 'CSRF token invalid. Please refresh the page and try again.',
+        messageAr: 'رمز CSRF غير صالح. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
+        code: 'CSRF_TOKEN_INVALID'
+      });
+    }
+  }
 
-  // Step 5: Generate a fresh token for the response (token rotation)
-  const newToken = generateCSRFToken();
-  csrfTokenStore.set(newToken, {
-    createdAt: Date.now(),
-    ip: req.ip,
-    fingerprint: req.headers['user-agent'] || 'unknown'
-  });
-
-  // Set new token in response cookie and header
-  const cookieOptions = getCookieOptions();
-  res.cookie('XSRF-TOKEN', newToken, cookieOptions);
-  res.set('X-CSRF-Token', newToken);
-
+  // Token is valid - allow request to proceed
   logger.debug('CSRF: Token verified successfully', {
     method: req.method,
     path: req.path
@@ -321,13 +381,6 @@ const verifyCsrf = (req, res, next) => {
 const getCSRFToken = (req, res) => {
   const token = generateCSRFToken();
   
-  // Store token with metadata
-  csrfTokenStore.set(token, {
-    createdAt: Date.now(),
-    ip: req.ip,
-    fingerprint: req.headers['user-agent'] || 'unknown'
-  });
-
   // Set cookie
   const cookieOptions = getCookieOptions();
   res.cookie('XSRF-TOKEN', token, cookieOptions);
@@ -350,12 +403,13 @@ const getCSRFToken = (req, res) => {
 
 /**
  * Clear all CSRF tokens for a user (call on logout)
+ * Note: With stateless tokens, we can't revoke them server-side
+ * This is a no-op for backward compatibility
  */
 const clearUserCSRFTokens = (userId) => {
-  // Since we don't track userId in tokens anymore (for simplicity),
-  // this is now a no-op. Tokens expire naturally via TTL.
-  // If needed, we can add userId tracking back.
-  logger.debug('clearUserCSRFTokens called (no-op)', { userId });
+  // Stateless tokens can't be revoked server-side
+  // They expire naturally via timestamp
+  logger.debug('clearUserCSRFTokens called (no-op for stateless tokens)', { userId });
 };
 
 /**
@@ -373,11 +427,6 @@ const csrfTokenRefresh = (req, res, next) => {
     
     // Generate fresh token for next request
     const token = generateCSRFToken();
-    csrfTokenStore.set(token, {
-      createdAt: Date.now(),
-      ip: req.ip,
-      fingerprint: req.headers['user-agent'] || 'unknown'
-    });
     
     res.cookie('XSRF-TOKEN', token, getCookieOptions());
     res.set('X-CSRF-Token', token);

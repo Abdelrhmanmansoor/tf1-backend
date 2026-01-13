@@ -22,14 +22,22 @@ DB_NAME=sportsplatform
 # JWT SECRETS & EXPIRATION
 # ==============================================
 # Main Platform JWT
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-JWT_EXPIRES_IN=7d
+JWT_ACCESS_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_ACCESS_EXPIRES_IN=1h
 JWT_REFRESH_SECRET=your-super-secret-refresh-jwt-key-change-this
-JWT_REFRESH_EXPIRES_IN=30d
+JWT_REFRESH_EXPIRES_IN=7d
 
 # Matches System JWT (isolated)
 MATCHES_JWT_SECRET=your-matches-system-secret-key-change-this
 MATCHES_JWT_EXPIRES_IN=7d
+
+# ==============================================
+# CSRF PROTECTION
+# ==============================================
+# CRITICAL: Must be the same across all instances in production
+# Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+CSRF_SECRET=your-very-long-random-secret-key-minimum-64-characters-change-this
+CSRF_TOKEN_TTL_MS=600000
 
 # ==============================================
 # EMAIL CONFIGURATION (SMTP)
