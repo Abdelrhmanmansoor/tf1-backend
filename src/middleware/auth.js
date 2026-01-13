@@ -26,9 +26,15 @@ const authenticate = async (req, res, next) => {
     const token = resolveToken(req);
 
     if (!token) {
+      // Enhanced logging for debugging
       logger.warn('Authentication failed: No token provided', {
         ip: req.ip,
         path: req.path,
+        hasAuthHeader: !!req.headers.authorization,
+        authHeaderValue: req.headers.authorization ? 'Bearer ***' : 'none',
+        hasCookies: !!req.cookies,
+        cookieNames: req.cookies ? Object.keys(req.cookies).join(', ') : 'none',
+        hasAccessTokenCookie: !!(req.cookies && req.cookies.accessToken),
       });
       return res.status(401).json({
         success: false,
@@ -52,6 +58,14 @@ const authenticate = async (req, res, next) => {
         code: 'USER_NOT_FOUND',
       });
     }
+
+    // Log successful authentication
+    logger.info('Authentication successful', {
+      userId: user._id,
+      role: user.role,
+      path: req.path,
+      method: req.method,
+    });
 
     req.user = user;
     req.token = token;
