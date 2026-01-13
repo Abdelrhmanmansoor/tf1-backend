@@ -64,6 +64,20 @@ const resolveToken = req => {
 
 const authenticate = async (req, res, next) => {
   try {
+    // SAFEGUARD: Check JWT_ACCESS_SECRET before processing
+    if (!process.env.JWT_ACCESS_SECRET) {
+      console.error('❌ [AUTH MIDDLEWARE] CRITICAL: JWT_ACCESS_SECRET environment variable is missing!');
+      logger.error('JWT_ACCESS_SECRET environment variable is not set', {
+        path: req.path,
+        ip: req.ip
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Server configuration error. Please contact support.',
+        code: 'MISSING_JWT_SECRET'
+      });
+    }
+    
     const token = resolveToken(req);
 
     if (!token) {

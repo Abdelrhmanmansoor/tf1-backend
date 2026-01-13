@@ -399,6 +399,23 @@ class AuthController {
       res.cookie('access_token', accessToken, cookieOptions);
       res.cookie('refresh_token', refreshToken, refreshCookieOptions);
       
+      // PRODUCTION DEBUG: Log Set-Cookie headers being written (without token values)
+      console.log('🍪 [LOGIN] Set-Cookie headers written:', {
+        email: user.email,
+        access_token_set: true,
+        refresh_token_set: true,
+        cookieOptions: {
+          httpOnly: cookieOptions.httpOnly,
+          secure: cookieOptions.secure,
+          sameSite: cookieOptions.sameSite,
+          path: cookieOptions.path,
+          maxAge: cookieOptions.maxAge,
+          domain: cookieOptions.domain || 'not-set'
+        },
+        isProduction,
+        NODE_ENV: process.env.NODE_ENV
+      });
+      
       // Enhanced logging for debugging
       logger.info('Login successful - cookies set', {
         email: user.email,

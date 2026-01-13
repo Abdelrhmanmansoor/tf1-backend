@@ -141,6 +141,9 @@ app.use(
 app.use(
   cors({
     origin: (origin, callback) => {
+      // PRODUCTION DEBUG: Log all CORS requests
+      console.log('🌐 [CORS] Request from origin:', origin || 'NO-ORIGIN');
+      
       // In production, require exact origin match - NEVER allow '*' with credentials
       if (!origin) {
         if (NODE_ENV === 'development') {
@@ -159,6 +162,7 @@ app.use(
                        (NODE_ENV === 'development');
       
       if (isAllowed) {
+        console.log('✅ [CORS] Allowing origin:', origin);
         logger.debug(`CORS: Allowing origin: ${origin}`);
         callback(null, true);
       } else {
@@ -168,6 +172,7 @@ app.use(
           return callback(null, true);
         }
         // Strictly reject in production
+        console.error('❌ [CORS] Blocking origin:', origin);
         logger.warn(`CORS blocked request from origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));
       }
