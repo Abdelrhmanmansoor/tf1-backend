@@ -3,21 +3,10 @@ const User = require('../modules/shared/models/User');
 const logger = require('../utils/logger');
 
 const resolveToken = req => {
-  // #region agent log
-  const fs = require('fs');
-  try { fs.appendFileSync('c:\\Users\\abdel\\Desktop\\SportsPlatform-BE\\.cursor\\debug.log', JSON.stringify({location:'auth.js:5',message:'Resolve token called',data:{path:req.path,hasAuthHeader:!!req.headers.authorization,authHeaderValue:req.headers.authorization?'Bearer ...':null,hasCookies:!!req.cookies,cookieNames:req.cookies?Object.keys(req.cookies).join(','):'none',hasAccessToken:!!(req.cookies&&req.cookies.accessToken),hasAccessTokenNew:!!(req.cookies&&req.cookies.access_token),hasSportxAccessToken:!!(req.cookies&&req.cookies.sportx_access_token)},timestamp:Date.now(),sessionId:'debug-session',runId:'auth-debug',hypothesisId:'D'})+'\n'); } catch(e){}
-  // #endregion
-  
   // Try Authorization header first
   if (req.headers.authorization) {
     try {
-      const token = jwtService.extractTokenFromHeader(req.headers.authorization);
-      
-      // #region agent log
-      try { fs.appendFileSync('c:\\Users\\abdel\\Desktop\\SportsPlatform-BE\\.cursor\\debug.log', JSON.stringify({location:'auth.js:9',message:'Token from Authorization header',data:{found:true,tokenPreview:token?token.substring(0,20)+'...':null},timestamp:Date.now(),sessionId:'debug-session',runId:'auth-debug',hypothesisId:'D'})+'\n'); } catch(e){}
-      // #endregion
-      
-      return token;
+      return jwtService.extractTokenFromHeader(req.headers.authorization);
     } catch (error) {
       logger.warn('Failed to parse authorization header', {
         message: error.message,
@@ -30,34 +19,17 @@ const resolveToken = req => {
   if (req.cookies) {
     if (req.cookies.access_token) {
       logger.debug('Token found in access_token cookie', { path: req.path });
-      
-      // #region agent log
-      try { fs.appendFileSync('c:\\Users\\abdel\\Desktop\\SportsPlatform-BE\\.cursor\\debug.log', JSON.stringify({location:'auth.js:20',message:'Token from access_token cookie',data:{found:true},timestamp:Date.now(),sessionId:'debug-session',runId:'auth-debug',hypothesisId:'D'})+'\n'); } catch(e){}
-      // #endregion
-      
       return req.cookies.access_token;
     }
     if (req.cookies.accessToken) {
       logger.debug('Token found in accessToken cookie (legacy)', { path: req.path });
-      
-      // #region agent log
-      try { fs.appendFileSync('c:\\Users\\abdel\\Desktop\\SportsPlatform-BE\\.cursor\\debug.log', JSON.stringify({location:'auth.js:25',message:'Token from accessToken cookie',data:{found:true},timestamp:Date.now(),sessionId:'debug-session',runId:'auth-debug',hypothesisId:'D'})+'\n'); } catch(e){}
-      // #endregion
-      
       return req.cookies.accessToken;
     }
     if (req.cookies.sportx_access_token) {
-      // #region agent log
-      try { fs.appendFileSync('c:\\Users\\abdel\\Desktop\\SportsPlatform-BE\\.cursor\\debug.log', JSON.stringify({location:'auth.js:28',message:'Token from sportx_access_token cookie',data:{found:true},timestamp:Date.now(),sessionId:'debug-session',runId:'auth-debug',hypothesisId:'D'})+'\n'); } catch(e){}
-      // #endregion
-      
+      logger.debug('Token found in sportx_access_token cookie', { path: req.path });
       return req.cookies.sportx_access_token;
     }
   }
-
-  // #region agent log
-  try { fs.appendFileSync('c:\\Users\\abdel\\Desktop\\SportsPlatform-BE\\.cursor\\debug.log', JSON.stringify({location:'auth.js:31',message:'No token found anywhere',data:{path:req.path},timestamp:Date.now(),sessionId:'debug-session',runId:'auth-debug',hypothesisId:'D'})+'\n'); } catch(e){}
-  // #endregion
 
   return null;
 };
