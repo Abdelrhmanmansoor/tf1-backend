@@ -90,6 +90,9 @@ router.post('/logout', authenticate, verifyCsrf, authController.logout);
 // Profile endpoints
 router.get('/profile', authenticate, authController.getProfile);
 
+// Get current user (alias for /profile - used by frontend)
+router.get('/me', authenticate, authController.getProfile);
+
 router.get('/role-info', optionalAuth, authController.getRoleInfo);
 
 router.get('/test-account', authController.testAccount);
