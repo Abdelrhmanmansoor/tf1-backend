@@ -286,6 +286,14 @@ const verifyCsrf = (req, res, next) => {
 
   // Step 3: Extract CSRF token from cookie
   const cookieToken = req.cookies?.['XSRF-TOKEN'] || req.cookies?.['xsrf-token'];
+  
+  // Debug: Log all cookies for troubleshooting
+  if (!cookieToken) {
+    logger.debug('CSRF: All cookies received', {
+      cookies: req.cookies ? Object.keys(req.cookies) : [],
+      cookieCount: req.cookies ? Object.keys(req.cookies).length : 0
+    });
+  }
 
   // Both must be present
   if (!headerToken || !cookieToken) {
@@ -295,7 +303,9 @@ const verifyCsrf = (req, res, next) => {
       ip: req.ip,
       hasHeaderToken: !!headerToken,
       hasCookieToken: !!cookieToken,
-      origin: req.headers.origin
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      cookiesReceived: req.cookies ? Object.keys(req.cookies) : []
     });
     
     return res.status(403).json({
@@ -384,6 +394,18 @@ const getCSRFToken = (req, res) => {
   // Set cookie
   const cookieOptions = getCookieOptions();
   res.cookie('XSRF-TOKEN', token, cookieOptions);
+
+  // Log cookie settings for debugging
+  logger.debug('CSRF token generated and cookie set', {
+    path: req.path,
+    origin: req.headers.origin,
+    cookieOptions: {
+      httpOnly: cookieOptions.httpOnly,
+      secure: cookieOptions.secure,
+      sameSite: cookieOptions.sameSite,
+      maxAge: cookieOptions.maxAge
+    }
+  });
 
   // Set response header
   res.set('X-CSRF-Token', token);
