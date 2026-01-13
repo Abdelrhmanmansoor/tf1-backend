@@ -53,11 +53,23 @@ const authenticate = async (req, res, next) => {
     const token = resolveToken(req);
 
     if (!token) {
-      // Enhanced debugging for missing tokens
+      // CRITICAL DEBUG: Detailed cookie analysis for cross-site issues
       const cookieHeader = req.headers.cookie || '';
       const hasAuthHeader = !!req.headers.authorization;
       const cookieNames = req.cookies ? Object.keys(req.cookies).join(', ') : '';
       const hasAccessTokenCookie = !!(req.cookies && (req.cookies.access_token || req.cookies.accessToken));
+      
+      // Log raw cookie header
+      console.error('❌ [AUTH] No token found:', {
+        path: req.path,
+        origin: req.headers.origin || 'NO-ORIGIN',
+        referer: req.headers.referer || 'NO-REFERER',
+        rawCookieHeader: cookieHeader.substring(0, 100) + (cookieHeader.length > 100 ? '...' : ''),
+        cookieHeaderLength: cookieHeader.length,
+        parsedCookieNames: cookieNames || 'NONE',
+        hasAccessToken: hasAccessTokenCookie,
+        hasAuthHeader: hasAuthHeader
+      });
       
       logger.warn('Authentication failed: No token provided', {
         ip: req.ip,
@@ -74,6 +86,9 @@ const authenticate = async (req, res, next) => {
         code: 'NO_TOKEN',
       });
     }
+    
+    // Success case: log that token was found
+    console.log('✅ [AUTH] Token found and validated for:', req.path);
 
     const decoded = jwtService.verifyAccessToken(token);
 
