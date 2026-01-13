@@ -26,13 +26,27 @@ const logger = require('../utils/logger');
 
 // Configuration
 const CSRF_TOKEN_TTL_MS = parseInt(process.env.CSRF_TOKEN_TTL_MS || '3600000', 10); // 1 hour default
+const CSRF_DEV_BYPASS = process.env.CSRF_DEV_BYPASS === 'true'; // للتطوير فقط!
 const CSRF_SECRET = process.env.CSRF_SECRET || (() => {
   // Generate a secret if not set (WARNING: This changes on restart - MUST set in production)
   logger.warn('⚠️ CSRF_SECRET not set - generating random secret. Set CSRF_SECRET in .env for production!');
+  logger.warn('⚠️ Run: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
   return crypto.randomBytes(32).toString('hex');
 })();
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const isProduction = NODE_ENV === 'production';
+
+// Log CSRF configuration on startup (once)
+let configLogged = false;
+if (!configLogged) {
+  logger.info('🔐 CSRF Protection Configuration:', {
+    secretConfigured: !!process.env.CSRF_SECRET,
+    tokenTTL: `${CSRF_TOKEN_TTL_MS / 1000 / 60} minutes`,
+    devBypass: CSRF_DEV_BYPASS,
+    environment: NODE_ENV
+  });
+  configLogged = true;
+}
 
 // Allowed origins for CSRF validation (must match CORS allowedOrigins)
 const getAllowedOrigins = () => {
@@ -264,6 +278,15 @@ const verifyCsrf = (req, res, next) => {
     return next();
   }
 
+  // 🚀 INNOVATION 1: Development bypass (set CSRF_DEV_BYPASS=true in .env for testing)
+  if (CSRF_DEV_BYPASS && !isProduction) {
+    logger.debug('CSRF: Bypassed in dev mode (CSRF_DEV_BYPASS=true)', {
+      method: req.method,
+      path: req.path
+    });
+    return next();
+  }
+
   // Step 1: Validate Origin/Referer header (for state-changing requests)
   if (!validateOrigin(req)) {
     logger.warn('CSRF: Origin validation failed', {
@@ -294,14 +317,25 @@ const verifyCsrf = (req, res, next) => {
       method: req.method,
       path: req.path,
       ip: req.ip,
-      origin: req.headers.origin
+      origin: req.headers.origin,
+      headers: Object.keys(req.headers) // للمساعدة في التشخيص
     });
     
+    // 🚀 INNOVATION 2: Enhanced error response with helpful hints
     return res.status(403).json({
       success: false,
       message: 'CSRF token missing. Please refresh the page and try again.',
       messageAr: 'رمز CSRF مفقود. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
-      code: 'CSRF_TOKEN_MISSING'
+      code: 'CSRF_TOKEN_MISSING',
+      help: {
+        en: 'Add X-CSRF-Token header to your request. Get token from: GET /api/v1/auth/csrf-token',
+        ar: 'أضف X-CSRF-Token header إلى طلبك. احصل على الـ token من: GET /api/v1/auth/csrf-token',
+        diagnostic: `${req.protocol}://${req.get('host')}/api/v1/auth/csrf-diagnostic`,
+        example: {
+          step1: 'GET /api/v1/auth/csrf-token',
+          step2: 'POST /api/v1/auth/login with header "X-CSRF-Token: <token>"'
+        }
+      }
     });
   }
 
@@ -320,7 +354,13 @@ const verifyCsrf = (req, res, next) => {
         success: false,
         message: 'CSRF token expired. Please refresh the page and try again.',
         messageAr: 'انتهت صلاحية رمز CSRF. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
-        code: 'CSRF_TOKEN_EXPIRED'
+        code: 'CSRF_TOKEN_EXPIRED',
+        help: {
+          en: 'Token expired. Fetch a new token from: GET /api/v1/auth/csrf-token',
+          ar: 'انتهت صلاحية الـ token. احصل على token جديد من: GET /api/v1/auth/csrf-token',
+          ttl: `${CSRF_TOKEN_TTL_MS / 1000 / 60} minutes`,
+          action: 'REFRESH_TOKEN'
+        }
       });
     } else {
       logger.warn('CSRF: Invalid token signature', {
@@ -333,7 +373,17 @@ const verifyCsrf = (req, res, next) => {
         success: false,
         message: 'CSRF token invalid. Please refresh the page and try again.',
         messageAr: 'رمز CSRF غير صالح. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
-        code: 'CSRF_TOKEN_INVALID'
+        code: 'CSRF_TOKEN_INVALID',
+        help: {
+          en: 'Token signature invalid. Fetch a new token from: GET /api/v1/auth/csrf-token',
+          ar: 'توقيع الـ token غير صالح. احصل على token جديد من: GET /api/v1/auth/csrf-token',
+          possible_causes: [
+            'CSRF_SECRET changed on server',
+            'Token was tampered with',
+            'Token format is incorrect'
+          ],
+          action: 'REFRESH_TOKEN'
+        }
       });
     }
   }

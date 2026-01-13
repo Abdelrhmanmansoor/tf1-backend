@@ -40,6 +40,7 @@ const configureSocket = require('./src/config/socket');
 const logger = require('./src/utils/logger');
 const { sanitizeRequest } = require('./src/middleware/sanitize');
 const { getCSRFToken } = require('./src/middleware/csrf');
+const { csrfDiagnostic, csrfTest, csrfGenerateTest } = require('./src/middleware/csrf-diagnostic');
 const User = require('./src/modules/shared/models/User');
 const bcrypt = require('bcryptjs');
 
@@ -280,6 +281,12 @@ app.use(sanitizeRequest); // Prevent NoSQL injection
 // ==================== ROOT & HEALTH CHECK ====================
 // Explicitly handle CSRF token route to avoid 404
 app.get('/api/v1/auth/csrf-token', getCSRFToken);
+
+// ==================== CSRF DIAGNOSTIC ROUTES (Development & Testing) ====================
+// These routes help diagnose CSRF issues quickly
+app.get('/api/v1/auth/csrf-diagnostic', csrfDiagnostic);
+app.post('/api/v1/auth/csrf-test', csrfTest);
+app.get('/api/v1/auth/csrf-generate-test', csrfGenerateTest);
 
 app.get('/', (req, res) => {
   res.status(200).json({
