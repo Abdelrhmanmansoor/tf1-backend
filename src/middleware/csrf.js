@@ -1,20 +1,23 @@
 /**
- * CSRF Protection Middleware - Signed Double Submit Cookie Implementation
- * Stateless CSRF protection that works across multiple instances without Redis
+ * CSRF Protection Middleware - Signed Token (Header Only)
+ * Works reliably with cross-origin requests (Vercel frontend + Render backend)
  * 
  * Design:
  * 1. Token Generation: GET /csrf-token creates signed token with timestamp
- * 2. Token Storage: Cookie only (readable by JS) - NO server-side storage
- * 3. Token Validation: Header token == Cookie token AND signature valid AND not expired
+ * 2. Token Storage: Client stores in memory (via JSON response)
+ * 3. Token Validation: Verify signature + check expiration (NO cookie required)
  * 4. Token Format: base64(payload).signature where payload = {nonce, timestamp}
  * 5. Signature: HMAC SHA256 of payload using CSRF_SECRET
  * 
+ * Why Header-Only (not Double Submit Cookie)?
+ * - Cross-origin cookies are blocked by modern browsers (SameSite, third-party cookie restrictions)
+ * - Header-only with signed tokens is equally secure when combined with Origin validation
+ * - Works reliably across all deployment scenarios
+ * 
  * Security Features:
  * - Cryptographically signed tokens (HMAC SHA256)
- * - Timestamp-based expiration (configurable, default 10 minutes)
+ * - Timestamp-based expiration (configurable, default 1 hour)
  * - Origin/Referer header validation for state-changing requests
- * - SameSite cookie attribute (None for cross-origin, Lax for same-origin)
- * - Secure flag in production
  * - Stateless - works across multiple instances
  */
 
@@ -22,7 +25,7 @@ const crypto = require('crypto');
 const logger = require('../utils/logger');
 
 // Configuration
-const CSRF_TOKEN_TTL_MS = parseInt(process.env.CSRF_TOKEN_TTL_MS || '600000', 10); // 10 minutes default (600000ms)
+const CSRF_TOKEN_TTL_MS = parseInt(process.env.CSRF_TOKEN_TTL_MS || '3600000', 10); // 1 hour default
 const CSRF_SECRET = process.env.CSRF_SECRET || (() => {
   // Generate a secret if not set (WARNING: This changes on restart - MUST set in production)
   logger.warn('⚠️ CSRF_SECRET not set - generating random secret. Set CSRF_SECRET in .env for production!');
@@ -241,7 +244,8 @@ const csrf = (req, res, next) => {
 /**
  * Verify CSRF token on state-changing requests
  * This is the main CSRF protection middleware
- * Implements Signed Double Submit Cookie pattern
+ * Uses Signed Token pattern (Header only - no cookie required)
+ * This works reliably with cross-origin requests
  */
 const verifyCsrf = (req, res, next) => {
   // Skip CSRF check for safe HTTP methods
@@ -278,34 +282,19 @@ const verifyCsrf = (req, res, next) => {
     });
   }
 
-  // Step 2: Extract CSRF token from header
+  // Step 2: Extract CSRF token from header ONLY (no cookie required)
+  // This is the key change - we only need the header token
   const headerToken = req.headers['x-csrf-token'] || 
                      req.headers['x-xsrf-token'] || 
                      req.headers['X-CSRF-Token'] || 
                      req.headers['X-XSRF-TOKEN'];
 
-  // Step 3: Extract CSRF token from cookie
-  const cookieToken = req.cookies?.['XSRF-TOKEN'] || req.cookies?.['xsrf-token'];
-  
-  // Debug: Log all cookies for troubleshooting
-  if (!cookieToken) {
-    logger.debug('CSRF: All cookies received', {
-      cookies: req.cookies ? Object.keys(req.cookies) : [],
-      cookieCount: req.cookies ? Object.keys(req.cookies).length : 0
-    });
-  }
-
-  // Both must be present
-  if (!headerToken || !cookieToken) {
-    logger.warn('CSRF: Token missing', {
+  if (!headerToken) {
+    logger.warn('CSRF: Token missing in header', {
       method: req.method,
       path: req.path,
       ip: req.ip,
-      hasHeaderToken: !!headerToken,
-      hasCookieToken: !!cookieToken,
-      origin: req.headers.origin,
-      referer: req.headers.referer,
-      cookiesReceived: req.cookies ? Object.keys(req.cookies) : []
+      origin: req.headers.origin
     });
     
     return res.status(403).json({
@@ -316,25 +305,7 @@ const verifyCsrf = (req, res, next) => {
     });
   }
 
-  // Step 4: Verify tokens match (Double Submit Cookie pattern)
-  if (headerToken !== cookieToken) {
-    logger.warn('CSRF: Token mismatch', {
-      method: req.method,
-      path: req.path,
-      ip: req.ip,
-      headerTokenPrefix: headerToken.substring(0, 10) + '...',
-      cookieTokenPrefix: cookieToken.substring(0, 10) + '...'
-    });
-    
-    return res.status(403).json({
-      success: false,
-      message: 'CSRF token mismatch. Please refresh the page and try again.',
-      messageAr: 'عدم تطابق رمز CSRF. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
-      code: 'CSRF_TOKEN_MISMATCH'
-    });
-  }
-
-  // Step 5: Verify token signature and expiration
+  // Step 3: Verify token signature and expiration (the token is self-contained)
   const verification = verifyToken(headerToken);
   
   if (!verification.valid) {
