@@ -80,19 +80,29 @@ const generateCSRFToken = () => {
  * Supports cross-origin scenarios (frontend/backend on different domains)
  */
 const getCookieOptions = () => {
-  // Check if cross-origin (frontend and backend on different domains)
-  const frontendUrl = process.env.FRONTEND_URL || '';
-  const backendUrl = process.env.BACKEND_URL || '';
-  const isCrossOrigin = frontendUrl && backendUrl && 
-    new URL(frontendUrl).origin !== new URL(backendUrl).origin;
+  // For Render.com, Vercel, or any cloud deployment - always assume cross-origin
+  // When frontend (e.g., Vercel) and backend (e.g., Render) are on different domains
+  const isCloudDeployment = !!(process.env.RENDER || process.env.VERCEL || process.env.REPL_ID);
+  const isCrossOrigin = isCloudDeployment || !!process.env.FRONTEND_URL;
+  
+  // In production with cross-origin: must use SameSite=None + Secure
+  // In development: use SameSite=Lax (more permissive)
+  if (isProduction && isCrossOrigin) {
+    return {
+      httpOnly: false, // Must be false - client JS needs to read this
+      secure: true, // Required for SameSite=None
+      sameSite: 'none', // Required for cross-origin cookies
+      maxAge: CSRF_TOKEN_TTL_MS,
+      path: '/',
+    };
+  }
   
   return {
     httpOnly: false, // Must be false - client JS needs to read this
     secure: isProduction, // HTTPS only in production
-    sameSite: isProduction ? (isCrossOrigin ? 'none' : 'lax') : 'lax',
+    sameSite: 'lax',
     maxAge: CSRF_TOKEN_TTL_MS,
     path: '/',
-    // Domain is intentionally not set - browser will use request domain
   };
 };
 
