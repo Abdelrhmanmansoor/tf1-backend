@@ -89,10 +89,9 @@ const subscriptionSchema = new mongoose.Schema(
       type: Boolean,
       default: true, // Subscriptions can be managed from admin dashboard
     },
-        type: Boolean,
-        default: false,
-      },
 
+    // Features & Limits
+    features: {
       // Notifications
       emailNotifications: {
         type: Boolean,
