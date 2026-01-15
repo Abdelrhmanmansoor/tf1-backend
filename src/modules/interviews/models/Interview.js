@@ -13,7 +13,6 @@ const interviewSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'JobApplication',
       required: true,
-      index: true,
     },
     applicantId: {
       type: mongoose.Schema.Types.ObjectId,

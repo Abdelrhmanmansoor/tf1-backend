@@ -248,4 +248,5 @@ module.exports = {
   validateResendVerification,
   validateResendVerificationByToken,
   handleValidationErrors,
+  validateRequest: handleValidationErrors, // Alias for compatibility
 };

@@ -87,8 +87,13 @@ const authenticatedRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    // Key by user ID if authenticated, otherwise fall back to IP
-    return req.user?._id?.toString() || req.ip;
+    // Key by user ID if authenticated (preferred), otherwise use default IP handling
+    // Using user ID avoids IPv6 issues entirely for authenticated users
+    if (req.user?._id) {
+      return req.user._id.toString();
+    }
+    // For unauthenticated requests, return undefined to use default keyGenerator (handles IPv6 correctly)
+    return undefined;
   },
   skip: (req) => {
     // Skip for admin users

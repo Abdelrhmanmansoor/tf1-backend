@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const messagingController = require('../controllers/messagingController');
 const { authenticate } = require('../../../middleware/auth');
-const { validateRequest } = require('../../../middleware/validation');
+const { handleValidationErrors } = require('../../../middleware/validation');
 const { body, param } = require('express-validator');
 
 // All routes require authentication
@@ -22,7 +22,7 @@ router.post(
     body('jobId').isMongoId().withMessage('Valid job ID is required'),
     body('applicantId').isMongoId().withMessage('Valid applicant ID is required'),
   ],
-  validateRequest,
+  handleValidationErrors,
   messagingController.createThread
 );
 
@@ -30,7 +30,7 @@ router.post(
 router.get(
   '/threads/:id',
   param('id').isMongoId(),
-  validateRequest,
+  handleValidationErrors,
   messagingController.getThread
 );
 
@@ -42,7 +42,7 @@ router.post(
     body('content').notEmpty().withMessage('Message content is required'),
     body('messageType').optional().isIn(['text', 'system', 'template', 'file']),
   ],
-  validateRequest,
+  handleValidationErrors,
   messagingController.sendMessage
 );
 
@@ -54,7 +54,7 @@ router.patch(
     param('messageId').isMongoId(),
     body('content').notEmpty().withMessage('Message content is required'),
   ],
-  validateRequest,
+  handleValidationErrors,
   messagingController.editMessage
 );
 
@@ -62,7 +62,7 @@ router.patch(
 router.delete(
   '/threads/:id/messages/:messageId',
   [param('id').isMongoId(), param('messageId').isMongoId()],
-  validateRequest,
+  handleValidationErrors,
   messagingController.deleteMessage
 );
 
@@ -70,7 +70,7 @@ router.delete(
 router.patch(
   '/threads/:id/close',
   [param('id').isMongoId(), body('reason').optional().isString()],
-  validateRequest,
+  handleValidationErrors,
   messagingController.closeThread
 );
 
@@ -78,7 +78,7 @@ router.patch(
 router.patch(
   '/messages/:messageId/read',
   param('messageId').isMongoId(),
-  validateRequest,
+  handleValidationErrors,
   messagingController.markAsRead
 );
 
@@ -93,7 +93,7 @@ router.post(
     body('threadId').isMongoId().withMessage('Valid thread ID is required'),
     body('variables').optional().isObject(),
   ],
-  validateRequest,
+  handleValidationErrors,
   messagingController.sendTemplateMessage
 );
 
