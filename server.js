@@ -33,6 +33,9 @@ const adminDashboardRoutes = require('./src/modules/admin-dashboard/routes');
 const notificationRoutes = require('./src/modules/notifications/routes/notificationRoutes');
 const messagingRoutes = require('./src/modules/messaging/routes/messagingRoutes');
 const jobPublisherRoutes = require('./src/modules/job-publisher/routes/jobPublisherRoutes');
+const interviewRoutes = require('./src/modules/interviews/routes/interviewRoutes');
+const automationRoutes = require('./src/modules/automation/routes/automationRoutes');
+const { adminRouter: adminFeatureRoutes, publisherRouter: publisherFeatureRoutes } = require('./src/modules/admin-features/routes/featureRoutes');
 const securityHeadersMiddleware = require('./src/middleware/securityHeaders');
 const { seedRegions } = require('./src/utils/seedLocations');
 const { createSearchIndexes } = require('./src/config/searchIndexes');
@@ -389,6 +392,16 @@ app.use(`/api/${API_VERSION}/notifications`, notificationRoutes);
 
 // Messaging Routes
 app.use(`/api/${API_VERSION}/messages`, messagingRoutes);
+
+// Interview Routes (Publisher)
+app.use(`/api/${API_VERSION}/publisher/interviews`, interviewRoutes);
+
+// Automation Routes (Publisher)
+app.use(`/api/${API_VERSION}/publisher/automations`, automationRoutes);
+
+// Feature Management Routes
+app.use(`/api/${API_VERSION}/admin/features`, adminFeatureRoutes);
+app.use(`/api/${API_VERSION}/publisher/features`, publisherFeatureRoutes);
 
 // Leader & Team Dashboard Routes
 app.use(`/api/${API_VERSION}/sports-admin`, sportsAdminRoutes);

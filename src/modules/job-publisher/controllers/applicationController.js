@@ -7,6 +7,7 @@ const Notification = require('../../notifications/models/Notification');
 const User = require('../../shared/models/User');
 const catchAsync = require('../../../utils/catchAsync');
 const logger = require('../../../utils/logger');
+const { afterApplicationUpdate } = require('../integrations/automationIntegration');
 
 /**
  * @route   PUT /api/v1/job-publisher/applications/:applicationId/status
@@ -48,6 +49,15 @@ exports.updateApplicationStatus = catchAsync(async (req, res) => {
   const oldStatus = application.status;
   application.status = status;
   await application.save();
+
+  // Trigger automation after status update
+  try {
+    await afterApplicationUpdate(application, oldStatus);
+    logger.info(`✅ Automation triggered for application ${applicationId} status change`);
+  } catch (automationError) {
+    logger.error('Error triggering automation:', automationError);
+    // Don't block the response if automation fails
+  }
 
   // If status is 'interviewed', automatically create/get conversation
   let conversation = null;
