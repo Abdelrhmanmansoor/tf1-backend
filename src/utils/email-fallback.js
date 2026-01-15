@@ -10,7 +10,7 @@ class FallbackEmailService {
   initializeTransporter() {
     try {
       // Using Ethereal for testing (creates test accounts)
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',
         port: 587,
         auth: {
@@ -28,7 +28,7 @@ class FallbackEmailService {
     try {
       const testAccount = await nodemailer.createTestAccount();
 
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',
         port: 587,
         secure: false,

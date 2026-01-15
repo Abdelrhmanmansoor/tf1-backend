@@ -23,7 +23,7 @@ exports.getRules = catchAsync(async (req, res) => {
   }
 
   if (category) {
-    query.'trigger.event': new RegExp(category, 'i');
+    query['trigger.event'] = new RegExp(category, 'i');
   }
 
   const rules = await AutomationRule.find(query)
