@@ -68,9 +68,7 @@ const interviewSchema = new mongoose.Schema(
     },
     meetingToken: {
       type: String,
-      unique: true,
-      sparse: true, // Only for internal meetings
-      index: true,
+      // Indexed with unique and sparse options via schema.index() below
     },
     meetingId: {
       type: String, // External meeting ID (Zoom, Meet, etc.)

@@ -45,9 +45,6 @@ const messageThreadSchema = new mongoose.Schema(
     applicationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'JobApplication',
-      index: true,
-      unique: true,
-      sparse: true,
     },
     interviewId: {
       type: mongoose.Schema.Types.ObjectId,
