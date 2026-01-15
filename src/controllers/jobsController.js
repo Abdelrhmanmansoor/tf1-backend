@@ -1487,3 +1487,84 @@ exports.downloadResumeEnhanced = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error downloading file' });
   }
 };
+
+/**
+ * @route   GET /api/v1/jobs/my-jobs
+ * @desc    Get jobs created by authenticated user (job-publisher or club)
+ * @access  Private
+ */
+exports.getMyJobs = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { status, page = 1, limit = 20, sort = '-createdAt' } = req.query;
+
+    // Build query - check both publishedBy and postedBy
+    const query = { 
+      isDeleted: false,
+      $or: [
+        { publishedBy: userId },
+        { postedBy: userId },
+        { clubId: userId }
+      ]
+    };
+
+    if (status) {
+      query.status = status;
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [jobs, total] = await Promise.all([
+      Job.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      Job.countDocuments(query)
+    ]);
+
+    // Get application counts for each job
+    const jobsWithStats = await Promise.all(
+      jobs.map(async (job) => {
+        const applicationCount = await JobApplication.countDocuments({
+          jobId: job._id,
+          isDeleted: false
+        });
+        
+        const newApplicationCount = await JobApplication.countDocuments({
+          jobId: job._id,
+          status: 'new',
+          isDeleted: false
+        });
+
+        return {
+          ...job,
+          applicationCount,
+          newApplicationCount
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        jobs: jobsWithStats,
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get my jobs error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching your jobs',
+      messageAr: 'خطأ في جلب وظائفك',
+      error: error.message
+    });
+  }
+};
+

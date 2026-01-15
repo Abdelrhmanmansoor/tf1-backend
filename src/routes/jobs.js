@@ -44,6 +44,13 @@ router.get('/applications/me', authenticate, jobsController.getMyApplications);
 router.get('/my-applications', authenticate, jobsController.getMyApplications);
 
 /**
+ * @route   GET /api/v1/jobs/my-jobs
+ * @desc    Get jobs created by authenticated user (job-publisher or club)
+ * @access  Private
+ */
+router.get('/my-jobs', authenticate, jobsController.getMyJobs);
+
+/**
  * @route   PUT /api/v1/jobs/applications/:applicationId/withdraw
  * @desc    Withdraw application
  * @access  Private

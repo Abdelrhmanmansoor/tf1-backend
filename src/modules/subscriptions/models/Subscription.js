@@ -78,22 +78,17 @@ const subscriptionSchema = new mongoose.Schema(
       default: 0,
     },
 
-    // Features & Limits
-    features: {
-      // Interviews
-      interviewAutomation: {
-        type: Boolean,
-        default: false,
-      },
-      maxInterviewsPerMonth: {
-        type: Number,
-        default: 10,
-      },
-      onlineMeetings: {
-        type: Boolean,
-        default: true,
-      },
-      onsiteMeetings: {
+    // Make subscription free by default and manageable by admin
+    isFree: {
+      type: Boolean,
+      default: true, // All subscriptions start as free
+    },
+    
+    // Admin override - allows admin to control subscription from dashboard
+    adminManaged: {
+      type: Boolean,
+      default: true, // Subscriptions can be managed from admin dashboard
+    },
         type: Boolean,
         default: false,
       },
