@@ -36,6 +36,7 @@ const jobPublisherRoutes = require('./src/modules/job-publisher/routes/jobPublis
 const interviewRoutes = require('./src/modules/interviews/routes/interviewRoutes');
 const automationRoutes = require('./src/modules/automation/routes/automationRoutes');
 const { adminRouter: adminFeatureRoutes, publisherRouter: publisherFeatureRoutes } = require('./src/modules/admin-features/routes/featureRoutes');
+const { router: subscriptionRoutes, adminRouter: adminSubscriptionRoutes } = require('./src/modules/subscriptions/routes/subscriptionRoutes');
 const securityHeadersMiddleware = require('./src/middleware/securityHeaders');
 const { seedRegions } = require('./src/utils/seedLocations');
 const { createSearchIndexes } = require('./src/config/searchIndexes');
@@ -402,6 +403,10 @@ app.use(`/api/${API_VERSION}/publisher/automations`, automationRoutes);
 // Feature Management Routes
 app.use(`/api/${API_VERSION}/admin/features`, adminFeatureRoutes);
 app.use(`/api/${API_VERSION}/publisher/features`, publisherFeatureRoutes);
+
+// Subscription Management Routes
+app.use(`/api/${API_VERSION}/publisher/subscription`, subscriptionRoutes);
+app.use(`/api/${API_VERSION}/admin/subscriptions`, adminSubscriptionRoutes);
 
 // Leader & Team Dashboard Routes
 app.use(`/api/${API_VERSION}/sports-admin`, sportsAdminRoutes);

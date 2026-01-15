@@ -1,0 +1,539 @@
+{
+  "info": {
+    "name": "Job Publisher Automation System",
+    "description": "Complete API collection for Job Publisher Automation System with Subscriptions, Interviews, Messaging, and Automation",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{publisherToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000",
+      "type": "string"
+    },
+    {
+      "key": "apiVersion",
+      "value": "v1",
+      "type": "string"
+    },
+    {
+      "key": "publisherToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "interviewId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "threadId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ruleId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Health & Setup",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Login Publisher",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.token).to.exist;",
+                  "    pm.collectionVariables.set('publisherToken', jsonData.data.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"publisher@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Subscriptions",
+      "item": [
+        {
+          "name": "Get Available Tiers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/subscription/tiers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "subscription", "tiers"]
+            }
+          }
+        },
+        {
+          "name": "Get My Subscription",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "subscription"]
+            }
+          }
+        },
+        {
+          "name": "Upgrade to Basic",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tier\": \"basic\",\n  \"billingCycle\": \"monthly\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/subscription/upgrade",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "subscription", "upgrade"]
+            }
+          }
+        },
+        {
+          "name": "Upgrade to Pro",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tier\": \"pro\",\n  \"billingCycle\": \"monthly\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/subscription/upgrade",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "subscription", "upgrade"]
+            }
+          }
+        },
+        {
+          "name": "Get Usage",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/subscription/usage",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "subscription", "usage"]
+            }
+          }
+        },
+        {
+          "name": "Downgrade to Basic",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tier\": \"basic\",\n  \"reason\": \"Testing downgrade\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/subscription/downgrade",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "subscription", "downgrade"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Testing cancellation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/subscription/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "subscription", "cancel"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Interviews",
+      "item": [
+        {
+          "name": "Schedule Interview (Online)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('interviewId', jsonData.data.interview._id);",
+                  "    pm.collectionVariables.set('threadId', jsonData.data.thread._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicationId\": \"507f1f77bcf86cd799439011\",\n  \"type\": \"online\",\n  \"scheduledAt\": \"2026-01-25T14:00:00Z\",\n  \"duration\": 60,\n  \"timezone\": \"Asia/Riyadh\",\n  \"meetingPlatform\": \"internal\",\n  \"instructionsForApplicant\": \"Please join 5 minutes early\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/interviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "interviews"]
+            }
+          }
+        },
+        {
+          "name": "List Interviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/interviews?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "interviews"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Interview Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/interviews/{{interviewId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "interviews", "{{interviewId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Interview Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/interviews/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "interviews", "statistics"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Messaging",
+      "item": [
+        {
+          "name": "List Threads",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/messages/threads",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "messages", "threads"]
+            }
+          }
+        },
+        {
+          "name": "Get Thread Messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/messages/threads/{{threadId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "messages", "threads", "{{threadId}}"]
+            }
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello! Your interview is scheduled.\",\n  \"contentAr\": \"مرحباً! تم جدولة مقابلتك.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/messages/threads/{{threadId}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "messages", "threads", "{{threadId}}", "messages"]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/messages/unread-count",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "messages", "unread-count"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Automation",
+      "item": [
+        {
+          "name": "List Rules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/automations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "automations"]
+            }
+          }
+        },
+        {
+          "name": "Create Rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('ruleId', jsonData.data.rule._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Auto-notify on shortlist\",\n  \"nameAr\": \"إشعار تلقائي عند الاختصار\",\n  \"trigger\": {\n    \"event\": \"APPLICATION_STAGE_CHANGED\",\n    \"conditions\": [\n      {\n        \"field\": \"newStatus\",\n        \"operator\": \"equals\",\n        \"value\": \"shortlisted\"\n      }\n    ]\n  },\n  \"actions\": [\n    {\n      \"type\": \"SEND_NOTIFICATION\",\n      \"order\": 0,\n      \"enabled\": true,\n      \"config\": {\n        \"templateKey\": \"application_stage_changed\",\n        \"priority\": \"high\"\n      }\n    }\n  ],\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/automations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "automations"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Rule",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/automations/{{ruleId}}/toggle",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "automations", "{{ruleId}}", "toggle"]
+            }
+          }
+        },
+        {
+          "name": "Test Rule",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ruleId\": \"{{ruleId}}\",\n  \"testData\": {\n    \"applicationId\": \"507f1f77bcf86cd799439011\",\n    \"newStatus\": \"shortlisted\",\n    \"applicantName\": \"Ahmed\",\n    \"jobTitle\": \"Developer\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/automations/test",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "automations", "test"]
+            }
+          }
+        },
+        {
+          "name": "Get Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/automations/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "automations", "statistics"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Features (Publisher)",
+      "item": [
+        {
+          "name": "Get My Features",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/publisher/features",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "publisher", "features"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Admin - Features",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminToken}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "List All Features",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/features",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "admin", "features"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Feature",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/features/FEATURE_ID/toggle",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "admin", "features", "FEATURE_ID", "toggle"]
+            }
+          }
+        },
+        {
+          "name": "Get Usage Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/features/usage-stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "admin", "features", "usage-stats"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Admin - Subscriptions",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminToken}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "List All Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/subscriptions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "admin", "subscriptions"]
+            }
+          }
+        },
+        {
+          "name": "Change Publisher Tier",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tier\": \"pro\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/subscriptions/PUBLISHER_ID/tier",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "admin", "subscriptions", "PUBLISHER_ID", "tier"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -3,6 +3,7 @@ const router = express.Router();
 const interviewController = require('../controllers/interviewController');
 const { authenticate, authorize } = require('../../../middleware/auth');
 const { validateRequest } = require('../../../middleware/validation');
+const { requireFeature, checkUsageLimit, incrementUsage } = require('../../../middleware/subscriptionCheck');
 const { body, param, query } = require('express-validator');
 
 // Validation rules
@@ -40,9 +41,12 @@ router.use(authenticate);
 router.post(
   '/',
   authorize('job-publisher', 'club'),
+  requireFeature('interviewAutomation'), // Check subscription
+  checkUsageLimit('interviewsPerMonth'), // Check usage limit
   scheduleInterviewValidation,
   validateRequest,
-  interviewController.scheduleInterview
+  interviewController.scheduleInterview,
+  incrementUsage('interviews') // Increment usage counter
 );
 
 // Get interviews (Publisher only)

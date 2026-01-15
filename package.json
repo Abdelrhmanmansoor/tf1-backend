@@ -20,6 +20,9 @@
     "seed:notifications": "node src/utils/seedData/notificationTemplates.js",
     "seed:features": "node src/utils/seedData/featureToggles.js",
     "seed:all": "npm run seed:locations && npm run seed:notifications && npm run seed:features",
+    "test:automation": "node test-automation-system.js",
+    "test:subscription": "node test-subscription-flow.js",
+    "test:endpoints": "npm run test:automation && npm run test:subscription",
     "setup:local": "setup-local-mongodb.bat",
     "test:all": "node test-and-fix-all.js",
     "fix:all": "node test-and-fix-all.js"
