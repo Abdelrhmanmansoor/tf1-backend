@@ -33,6 +33,7 @@ const adminDashboardRoutes = require('./src/modules/admin-dashboard/routes');
 const notificationRoutes = require('./src/modules/notifications/routes/notificationRoutes');
 const messagingRoutes = require('./src/modules/messaging/routes/messagingRoutes');
 const jobPublisherRoutes = require('./src/modules/job-publisher/routes/jobPublisherRoutes');
+const clubRoutes = require('./src/modules/club/routes/club.routes');
 const interviewRoutes = require('./src/modules/interviews/routes/interviewRoutes');
 const automationRoutes = require('./src/modules/automation/routes/automationRoutes');
 const { adminRouter: adminFeatureRoutes, publisherRouter: publisherFeatureRoutes } = require('./src/modules/admin-features/routes/featureRoutes');
@@ -384,6 +385,9 @@ app.use(`/api/${API_VERSION}/matches`, matchesSystemRoutes); // Support /api/v1/
 app.use(`/api/${API_VERSION}/profile`, profileRoutes);
 app.use(`/api/${API_VERSION}/jobs`, jobsRoutes);
 app.use(`/api/${API_VERSION}/locations`, locationsRoutes);
+
+// Club Routes
+app.use(`/api/${API_VERSION}/clubs`, clubRoutes);
 
 // Job Publisher Routes
 app.use(`/api/${API_VERSION}/job-publisher`, jobPublisherRoutes);
