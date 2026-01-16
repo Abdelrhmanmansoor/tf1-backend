@@ -71,9 +71,11 @@ const Home = () => (
       <p>منصة الرياضة الأولى في الشرق الأوسط</p>
       <p>ابحث عن مباريات، وظائف، ومدربين</p>
       <div className="hero-buttons">
+        {/* زر المباريات مخفي مؤقتاً
         <a href="/matches" className="hero-btn primary">
           🎯 انضم لمباراة
         </a>
+        */}
         <a href="/jobs" className="hero-btn secondary">
           💼 تصفح الوظائف
         </a>
@@ -81,11 +83,13 @@ const Home = () => (
     </div>
 
     <div className="features">
+      {/* كارت المباريات مخفي مؤقتاً
       <div className="feature-card">
         <span className="feature-icon">🎯</span>
         <h3>مباريات حية</h3>
         <p>ابحث عن مباريات في منطقتك وانضم فوراً</p>
       </div>
+      */}
       <div className="feature-card">
         <span className="feature-icon">💼</span>
         <h3>فرص عمل</h3>

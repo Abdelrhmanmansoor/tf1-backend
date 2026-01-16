@@ -11,11 +11,12 @@ router.use(authenticate);
 router.use(authenticatedRateLimiter);
 
 // Middleware to ensure user is job-publisher
+// Middleware to ensure user is job-publisher OR club
 const requireJobPublisher = (req, res, next) => {
-  if (req.user.role !== 'job-publisher') {
+  if (req.user.role !== 'job-publisher' && req.user.role !== 'club') {
     return res.status(403).json({
       success: false,
-      message: 'Access denied. Job publisher role required.',
+      message: 'Access denied. Job publisher or Club role required.',
       code: 'INSUFFICIENT_ROLE'
     });
   }

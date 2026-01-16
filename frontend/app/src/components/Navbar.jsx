@@ -22,9 +22,11 @@ const Navbar = () => {
         </Link>
 
         <div className={`nav-links ${menuOpen ? 'active' : ''}`}>
+          {/* رابط المباريات مخفي مؤقتاً
           <Link to="/matches" className="nav-link match-btn">
             🎯 انضم لمباراة
           </Link>
+          */}
           <Link to="/jobs" className="nav-link jobs-btn">
             💼 ابحث عن وظيفة
           </Link>

@@ -36,7 +36,7 @@ const upload = multer({
 
 // Protected routes (require authentication and job-publisher role)
 router.use(authenticate);
-router.use(authorize('job-publisher'));
+router.use(authorize('job-publisher', 'club'));
 
 // Create profile
 router.post('/create', profileController.createProfile);
