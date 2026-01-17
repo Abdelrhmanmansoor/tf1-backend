@@ -1,38 +1,31 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../../../middleware/auth');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const rateLimit = require('express-rate-limit');
 const profileController = require('../controllers/jobPublisherProfileController');
+const {
+  companyLogoUploadService,
+  profileImageUploadService,
+  documentUploadService
+} = require('../../../services/secureFileUpload');
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
+// Rate limiter for file uploads (5 uploads per hour per user)
+const uploadRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: {
+    success: false,
+    message: 'Too many upload attempts. Please try again later.',
+    messageAr: 'محاولات تحميل كثيرة جداً. يرجى المحاولة لاحقاً.'
   },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
+  standardHeaders: true,
+  legacyHeaders: false
 });
 
-const upload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-  fileFilter: (req, file, cb) => {
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
-    if (allowedMimes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type. Only JPEG, PNG, GIF, and PDF are allowed.'));
-    }
-  }
-});
+// Create secure upload middlewares
+const logoUpload = companyLogoUploadService.createImageUploadMiddleware();
+const photoUpload = profileImageUploadService.createImageUploadMiddleware({ maxFiles: 5 });
+const documentUpload = documentUploadService.createDocumentUploadMiddleware();
 
 // Protected routes (require authentication and job-publisher role)
 router.use(authenticate);
@@ -47,14 +40,26 @@ router.get('/', profileController.getProfile);
 // Update profile
 router.put('/', profileController.updateProfile);
 
-// Upload company logo
-router.post('/upload-logo', upload.single('logo'), profileController.uploadLogo);
+// Upload company logo (secure, rate-limited)
+router.post('/upload-logo',
+  uploadRateLimiter,
+  logoUpload.single('logo'),
+  profileController.uploadLogo
+);
 
-// Upload work environment photos
-router.post('/upload-work-photo', upload.single('photo'), profileController.uploadWorkPhoto);
+// Upload work environment photos (secure, rate-limited)
+router.post('/upload-work-photo',
+  uploadRateLimiter,
+  photoUpload.array('photos', 5),
+  profileController.uploadWorkPhoto
+);
 
-// Upload documents
-router.post('/upload-document', upload.single('document'), profileController.uploadDocument);
+// Upload documents (secure, rate-limited)
+router.post('/upload-document',
+  uploadRateLimiter,
+  documentUpload.single('document'),
+  profileController.uploadDocument
+);
 
 // Add award/certification
 router.post('/add-award', profileController.addAward);

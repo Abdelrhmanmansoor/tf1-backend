@@ -133,9 +133,8 @@ exports.createJob = catchAsync(async (req, res) => {
   if (job.status === 'active') {
     try {
       const { saveNotification } = require('../../../middleware/notificationHandler');
-      const User = require('../../shared/models/User');
-      
-      // Get all applicants who might be interested
+
+      // Get all applicants who might be interested (User already imported at top)
       const applicants = await User.find({ role: 'applicant' }).select('_id').limit(100); // Limit to avoid overwhelming
       
       // Create notifications for applicants (in batches)

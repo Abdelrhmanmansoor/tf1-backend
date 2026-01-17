@@ -5,6 +5,14 @@ const applicationController = require('../controllers/applicationController');
 const profileRoutes = require('./profileRoutes');
 const { authenticate } = require('../../../middleware/auth');
 const { authenticatedRateLimiter } = require('../../../middleware/rateLimiter');
+const subscriptionCheck = require('../../../middleware/subscriptionCheck');
+const {
+  validateJob,
+  validateJobUpdate,
+  validateApplicationStatus,
+  validateJobFilters,
+  validateApplicationFilters
+} = require('../../../validators/jobPublisherValidation');
 
 // All routes require authentication and job-publisher role
 router.use(authenticate);
@@ -47,21 +55,34 @@ router.get('/dashboard/stats', applicationController.getDashboardStats);
  * @desc    Get all jobs published by user
  * @access  Private (job-publisher)
  */
-router.get('/jobs', jobPublisherController.getMyJobs);
+router.get('/jobs',
+  validateJobFilters,
+  jobPublisherController.getMyJobs
+);
 
 /**
  * @route   POST /api/v1/job-publisher/jobs
  * @desc    Create a new job posting
  * @access  Private (job-publisher)
+ * @subscription Required - Enforces tier limits on job count
  */
-router.post('/jobs', jobPublisherController.createJob);
+router.post('/jobs',
+  validateJob,
+  subscriptionCheck.requireFeature('job_posting'),
+  subscriptionCheck.checkUsageLimit('Jobs'),
+  subscriptionCheck.incrementUsage('Jobs'),
+  jobPublisherController.createJob
+);
 
 /**
  * @route   PUT /api/v1/job-publisher/jobs/:jobId
  * @desc    Update a job posting
  * @access  Private (job-publisher)
  */
-router.put('/jobs/:jobId', jobPublisherController.updateJob);
+router.put('/jobs/:jobId',
+  validateJobUpdate,
+  jobPublisherController.updateJob
+);
 
 /**
  * @route   DELETE /api/v1/job-publisher/jobs/:jobId
@@ -82,7 +103,10 @@ router.get('/jobs/:jobId/applications', applicationController.getJobApplications
  * @desc    Get all applications for all publisher's jobs
  * @access  Private (job-publisher)
  */
-router.get('/applications', applicationController.getApplications);
+router.get('/applications',
+  validateApplicationFilters,
+  applicationController.getApplications
+);
 
 /**
  * @route   GET /api/v1/job-publisher/applications/:applicationId
@@ -95,8 +119,14 @@ router.get('/applications/:applicationId', applicationController.getApplicationD
  * @route   PUT /api/v1/job-publisher/applications/:applicationId/status
  * @desc    Update application status with optional message
  * @access  Private (job-publisher)
+ * @subscription Required - Enforces tier limits on application actions
  */
-router.put('/applications/:applicationId/status', applicationController.updateApplicationStatus);
+router.put('/applications/:applicationId/status',
+  validateApplicationStatus,
+  subscriptionCheck.checkUsageLimit('Applications'),
+  subscriptionCheck.incrementUsage('Applications'),
+  applicationController.updateApplicationStatus
+);
 
 module.exports = router;
 

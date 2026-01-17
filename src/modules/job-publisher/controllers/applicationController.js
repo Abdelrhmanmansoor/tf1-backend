@@ -1,8 +1,8 @@
 const Job = require('../../club/models/Job');
 const JobApplication = require('../../club/models/JobApplication');
 const JobPublisherProfile = require('../models/JobPublisherProfile');
-const Conversation = require('../../messaging/models/Conversation');
-const Message = require('../../messaging/models/Message');
+const ApplicationApplicationConversation = require('../../messaging/models/ApplicationConversation');
+const ApplicationApplicationMessage = require('../../messaging/models/ApplicationMessage');
 const Notification = require('../../notifications/models/Notification');
 const User = require('../../shared/models/User');
 const catchAsync = require('../../../utils/catchAsync');
@@ -62,9 +62,9 @@ exports.updateApplicationStatus = catchAsync(async (req, res) => {
   // If status is 'interviewed', automatically create/get conversation
   let conversation = null;
   if (status === 'interviewed') {
-    conversation = await Conversation.findOne({ applicationId });
+    conversation = await ApplicationConversation.findOne({ applicationId });
     if (!conversation) {
-      conversation = await Conversation.createConversation(
+      conversation = await ApplicationConversation.createApplicationConversation(
         applicationId,
         application.jobId,
         publisherId,
@@ -115,9 +115,9 @@ exports.updateApplicationStatus = catchAsync(async (req, res) => {
     try {
       let conv = conversation;
       if (!conv) {
-        conv = await Conversation.findOne({ applicationId });
+        conv = await ApplicationConversation.findOne({ applicationId });
         if (!conv) {
-          conv = await Conversation.createConversation(
+          conv = await ApplicationConversation.createApplicationConversation(
             applicationId,
             application.jobId,
             publisherId,
@@ -127,17 +127,17 @@ exports.updateApplicationStatus = catchAsync(async (req, res) => {
         }
       }
 
-      const msg = new Message({
+      const msg = new ApplicationMessage({
         conversationId: conv._id,
         senderId: publisherId,
         content: message.trim()
       });
 
       await msg.save();
-      await conv.updateLastMessage(message.trim(), publisherId);
+      await conv.updateLastApplicationMessage(message.trim(), publisherId);
       await conv.incrementUnread(application.applicantId);
 
-      logger.info(`✅ Message sent in conversation ${conv._id}`);
+      logger.info(`✅ ApplicationMessage sent in conversation ${conv._id}`);
     } catch (msgError) {
       logger.error('Error sending message:', msgError);
     }
@@ -360,7 +360,7 @@ exports.getApplicationDetails = catchAsync(async (req, res) => {
   }
 
   // Get conversation if exists
-  const conversation = await Conversation.findOne({ applicationId });
+  const conversation = await ApplicationConversation.findOne({ applicationId });
 
   res.status(200).json({
     success: true,
@@ -368,7 +368,7 @@ exports.getApplicationDetails = catchAsync(async (req, res) => {
     conversation: conversation ? {
       id: conversation._id,
       status: conversation.status,
-      lastMessageAt: conversation.lastMessageAt
+      lastApplicationMessageAt: conversation.lastApplicationMessageAt
     } : null
   });
 });
