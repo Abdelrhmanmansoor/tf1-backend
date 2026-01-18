@@ -5,11 +5,11 @@ const { authenticate, authorize } = require('../../../middleware/auth');
 const { body, param } = require('express-validator');
 const { validateRequest } = require('../../../middleware/validation');
 
-// Publisher routes
-router.use(authenticate);
-
 // Get available tiers (public info)
 router.get('/tiers', subscriptionController.getTiers);
+
+// Publisher routes
+router.use(authenticate);
 
 // Publisher-specific routes
 router.use(authorize('job-publisher', 'club'));

@@ -69,7 +69,6 @@ router.get('/jobs',
 router.post('/jobs',
   validateJob,
   subscriptionCheck.checkUsageLimit('ActiveJobs'), // Check max active jobs limit
-  subscriptionCheck.incrementUsage('interviews'), // Track usage
   jobPublisherController.createJob
 );
 
@@ -123,7 +122,7 @@ router.get('/applications/:applicationId', applicationController.getApplicationD
 router.put('/applications/:applicationId/status',
   validateApplicationStatus,
   subscriptionCheck.checkUsageLimit('Applications'),
-  subscriptionCheck.incrementUsage('Applications'),
+  subscriptionCheck.incrementUsage('applications'),
   applicationController.updateApplicationStatus
 );
 

@@ -159,12 +159,36 @@ exports.checkUsageLimit = (limitType) => {
         subscription = await createFreeSubscription(publisherId);
       }
 
-      // Map limitType to schema field names
-      const limitKey = `max${limitType}`; // e.g. 'maxActiveJobs'
-      const usageKey = `${limitType.toLowerCase().replace(/perm onth$/, '')}ThisMonth`; // e.g. 'interviewsThisMonth'
+      const normalizedLimitType = String(limitType || '').trim();
+      const normalizedKey = normalizedLimitType.toLowerCase();
+
+      let limitKey;
+      let current = 0;
+
+      if (normalizedKey === 'activejobs') {
+        limitKey = 'maxActiveJobs';
+        const Job = require('../modules/club/models/Job');
+        current = await Job.countDocuments({
+          publishedBy: publisherId,
+          status: 'active',
+          isDeleted: false,
+        });
+      } else if (normalizedKey === 'applications' || normalizedKey === 'applicationspermonth') {
+        limitKey = 'maxApplicationsPerMonth';
+        current = subscription.usage.applicationsThisMonth || 0;
+      } else if (normalizedKey === 'interviewspermonth') {
+        limitKey = 'maxInterviewsPerMonth';
+        current = subscription.usage.interviewsThisMonth || 0;
+      } else {
+        const pascalLimitType =
+          normalizedLimitType.length > 0
+            ? normalizedLimitType[0].toUpperCase() + normalizedLimitType.slice(1)
+            : normalizedLimitType;
+        limitKey = `max${pascalLimitType}`;
+        current = 0;
+      }
 
       const limit = subscription.features[limitKey];
-      const current = subscription.usage[usageKey] || 0;
 
       // -1 means unlimited
       if (limit !== -1 && current >= limit) {
@@ -192,7 +216,15 @@ exports.incrementUsage = (usageType) => {
   return async (req, res, next) => {
     try {
       if (req.subscription) {
-        req.subscription.incrementUsage(usageType);
+        const normalizedType = String(usageType || '').toLowerCase();
+        const mappedType =
+          normalizedType === 'applications' ? 'applications' :
+          normalizedType === 'interviews' ? 'interviews' :
+          normalizedType === 'sms' ? 'sms' :
+          normalizedType === 'api' ? 'api' :
+          usageType;
+
+        req.subscription.incrementUsage(mappedType);
         await req.subscription.save();
       }
       next();

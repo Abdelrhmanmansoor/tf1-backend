@@ -176,9 +176,18 @@ class AutomationEngine {
       const variables = this.prepareVariables(customData || {}, data);
       const rendered = template.render('inApp', variables);
 
+      const resolvedRecipientId =
+        recipientId || data.applicantId || data.userId || rule.publisherId;
+
+      const resolvedUserRole =
+        data.userRole ||
+        (String(resolvedRecipientId) === String(rule.publisherId)
+          ? 'job-publisher'
+          : 'applicant');
+
       await Notification.createNotification({
-        userId: recipientId || data.applicantId || data.userId,
-        userRole: data.userRole || 'applicant',
+        userId: resolvedRecipientId,
+        userRole: resolvedUserRole,
         type: template.key,
         title: rendered.title,
         message: rendered.body,

@@ -224,7 +224,7 @@ automationRuleSchema.statics.getTemplates = async function () {
 // Get statistics
 automationRuleSchema.statics.getStatistics = async function (publisherId) {
   const stats = await this.aggregate([
-    { $match: { publisherId: mongoose.Types.ObjectId(publisherId) } },
+    { $match: { publisherId: new mongoose.Types.ObjectId(publisherId) } },
     {
       $group: {
         _id: null,

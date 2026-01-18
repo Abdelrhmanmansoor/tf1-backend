@@ -78,8 +78,8 @@
                   "    pm.response.to.have.status(200);",
                   "    var jsonData = pm.response.json();",
                   "    pm.expect(jsonData.success).to.be.true;",
-                  "    pm.expect(jsonData.data.token).to.exist;",
-                  "    pm.collectionVariables.set('publisherToken', jsonData.data.token);",
+                  "    pm.expect(jsonData.accessToken).to.exist;",
+                  "    pm.collectionVariables.set('publisherToken', jsonData.accessToken);",
                   "});"
                 ]
               }

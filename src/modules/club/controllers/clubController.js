@@ -8,6 +8,22 @@ const FacilityBooking = require('../models/FacilityBooking');
 const User = require('../../shared/models/User');
 const Notification = require('../../../models/Notification');
 
+exports.verifyNationalAddress = async (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'National address verification is not configured',
+    code: 'ADDRESS_VERIFICATION_NOT_CONFIGURED',
+  });
+};
+
+exports.retryVerification = async (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'National address verification retry is not configured',
+    code: 'ADDRESS_VERIFICATION_RETRY_NOT_CONFIGURED',
+  });
+};
+
 // ============================================
 // PROFILE MANAGEMENT
 // ============================================

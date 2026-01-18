@@ -148,40 +148,65 @@ exports.updateProfile = catchAsync(async (req, res) => {
  * @route   POST /api/v1/job-publisher/profile/upload-logo
  * @desc    Upload company logo
  * @access  Private (job-publisher)
+ *
+ * IMPORTANT: This endpoint expects the upload middleware to run first.
+ * Route should be: router.post('/upload-logo', uploadLogo, processLogo, uploadLogoController);
+ *
+ * The processLogo middleware will attach req.processedFile with:
+ *  - filename: processed filename
+ *  - url: full URL to access the logo
+ *  - filepath: local path
  */
 exports.uploadLogo = catchAsync(async (req, res) => {
   const userId = req.user._id;
 
-  if (!req.file) {
+  // Check if middleware processed the file
+  if (!req.processedFile) {
     return res.status(400).json({
       success: false,
-      message: 'No file uploaded',
-      messageAr: 'لم يتم تحميل ملف'
+      message: 'No file uploaded or processing failed',
+      messageAr: 'لم يتم تحميل ملف أو فشلت المعالجة',
+      code: 'NO_PROCESSED_FILE'
     });
   }
 
-  // For now, store file path (in production, use cloud storage)
-  const logoPath = `/uploads/logos/${req.file.filename}`;
+  const { url, filename } = req.processedFile;
 
+  // Find existing profile and get old logo for cleanup
+  const existingProfile = await JobPublisherProfile.findOne({ userId });
+
+  // Update profile with new logo URL
   const profile = await JobPublisherProfile.findOneAndUpdate(
     { userId },
-    { companyLogo: logoPath },
-    { new: true }
+    { companyLogo: url, updatedAt: new Date() },
+    { new: true, runValidators: true }
   );
 
   if (!profile) {
     return res.status(404).json({
       success: false,
       message: 'Profile not found',
-      messageAr: 'البروفايل غير موجود'
+      messageAr: 'البروفايل غير موجود',
+      code: 'PROFILE_NOT_FOUND'
     });
   }
+
+  // Cleanup old logo if exists
+  if (existingProfile?.companyLogo && existingProfile.companyLogo !== url) {
+    const { cleanupOldLogo } = require('../../../middleware/uploadLogo');
+    await cleanupOldLogo(existingProfile.companyLogo);
+  }
+
+  logger.info(`✅ Logo uploaded successfully for user ${userId}: ${filename}`);
 
   res.status(200).json({
     success: true,
     message: 'Logo uploaded successfully',
     messageAr: 'تم تحميل الشعار بنجاح',
-    logoUrl: logoPath
+    data: {
+      logoUrl: url,
+      filename: filename
+    }
   });
 });
 

@@ -302,7 +302,7 @@ if (NODE_ENV === 'development') {
 }
 
 // ==================== BODY PARSING ====================
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '10mb', type: ['application/json', 'application/*+json', 'text/plain'] }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(compression());
@@ -402,6 +402,7 @@ app.use(`/api/${API_VERSION}/notifications`, notificationRoutes);
 
 // Messaging Routes
 app.use(`/api/${API_VERSION}/messages`, messagingRoutes);
+app.use(`/api/${API_VERSION}/publisher/messages`, messagingRoutes);
 
 // Interview Routes (Publisher)
 app.use(`/api/${API_VERSION}/publisher/interviews`, interviewRoutes);
