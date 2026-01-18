@@ -63,8 +63,17 @@ const jobSchema = Joi.object({
       'any.only': 'Invalid job category'
     }),
 
+  // Job Type (matches Mongoose schema)
+  jobType: Joi.string()
+    .valid('permanent', 'seasonal', 'temporary', 'trial', 'internship', 'volunteer')
+    .required()
+    .messages({
+      'any.required': 'Job type is required',
+      'any.only': 'Invalid job type'
+    }),
+
   employmentType: Joi.string()
-    .valid('full-time', 'part-time', 'contract', 'temporary', 'internship')
+    .valid('full_time', 'part_time', 'contract', 'freelance')
     .required()
     .messages({
       'any.required': 'Employment type is required',
@@ -110,36 +119,57 @@ const jobSchema = Joi.object({
     .valid('SAR', 'USD', 'EUR', 'GBP', 'AED')
     .default('SAR'),
 
-  location: Joi.object({
-    city: Joi.string().trim().required(),
-    cityAr: Joi.string().trim().optional(),
-    country: Joi.string().trim().default('Saudi Arabia'),
-    countryAr: Joi.string().trim().default('المملكة العربية السعودية'),
-    isRemote: Joi.boolean().default(false)
-  }).required(),
-
-  requirements: Joi.array()
-    .items(Joi.string().trim().min(3).max(500))
-    .min(1)
-    .max(20)
+  // City (direct string, matches frontend)
+  city: Joi.string()
+    .trim()
     .required()
     .messages({
-      'array.min': 'At least one requirement is required',
-      'array.max': 'Cannot exceed 20 requirements'
+      'string.empty': 'City is required'
     }),
 
+  country: Joi.string()
+    .trim()
+    .default('Saudi Arabia'),
+
+  // Requirements object (matches Mongoose schema)
+  requirements: Joi.object({
+    description: Joi.string().trim().optional(),
+    descriptionAr: Joi.string().trim().optional(),
+    minimumExperience: Joi.number().integer().min(0).optional(),
+    educationLevel: Joi.string()
+      .valid('high_school', 'diploma', 'bachelor', 'master', 'phd', 'not_required')
+      .optional(),
+    certifications: Joi.array().items(Joi.string()).optional(),
+    skills: Joi.array().items(Joi.string()).optional(),
+    ageRange: Joi.object({
+      min: Joi.number().integer().min(0).optional(),
+      max: Joi.number().integer().min(Joi.ref('min')).optional()
+    }).optional(),
+    gender: Joi.string().valid('male', 'female', 'any').optional(),
+    languages: Joi.array()
+      .items(Joi.string().valid('arabic', 'english', 'french', 'german', 'spanish', 'other'))
+      .optional()
+  }).optional(),
+
+  // Responsibilities array of objects (matches Mongoose schema)
   responsibilities: Joi.array()
-    .items(Joi.string().trim().min(3).max(500))
-    .min(1)
+    .items(
+      Joi.object({
+        responsibility: Joi.string().trim().min(3).max(500).required(),
+        responsibilityAr: Joi.string().trim().min(3).max(500).optional()
+      })
+    )
     .max(20)
-    .required()
-    .messages({
-      'array.min': 'At least one responsibility is required',
-      'array.max': 'Cannot exceed 20 responsibilities'
-    }),
+    .optional(),
 
+  // Benefits array of objects (matches Mongoose schema)
   benefits: Joi.array()
-    .items(Joi.string().trim().min(3).max(200))
+    .items(
+      Joi.object({
+        benefit: Joi.string().trim().min(3).max(200).required(),
+        benefitAr: Joi.string().trim().min(3).max(200).optional()
+      })
+    )
     .max(15)
     .optional(),
 
