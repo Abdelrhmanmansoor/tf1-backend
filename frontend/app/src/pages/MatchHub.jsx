@@ -54,7 +54,7 @@ const MatchHub = () => {
     try {
       setLoading(true);
       const activeFilters = Object.fromEntries(
-        Object.entries(filters).filter(([_, v]) => v)
+        Object.entries(filters).filter(([, v]) => v)
       );
       const response = await matchService.getMatches(activeFilters);
       setMatches(response.data.data.matches || []);

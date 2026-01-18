@@ -207,7 +207,7 @@ const AgeGroupSupervisor = () => {
           setSuccess('');
           fetchGroups();
         }, 1500);
-      } catch (err) {
+      } catch {
         setError('خطأ في حذف الفئة العمرية');
       }
     }

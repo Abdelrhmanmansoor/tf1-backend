@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import AuthProvider from './context/AuthProvider';
+import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import MatchHub from './pages/MatchHub';
 import Jobs from './pages/Jobs';

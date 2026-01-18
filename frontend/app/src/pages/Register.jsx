@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { profileService } from '../config/api';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -17,7 +16,6 @@ const Register = () => {
     businessRegistrationNumber: '',
     organizationType: 'club'
   });
-  const [options, setOptions] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
@@ -49,19 +47,8 @@ const Register = () => {
       }
     };
     
-    // First fetch options, then initialize CSRF token
-    fetchOptions();
     initCSRFToken();
   }, []);
-
-  const fetchOptions = async () => {
-    try {
-      const response = await profileService.getOptions();
-      setOptions(response.data.data);
-    } catch (error) {
-      console.error('Error fetching options:', error);
-    }
-  };
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));

@@ -93,7 +93,7 @@ const ApplicantDashboard = () => {
       setRecommendationsLoading(true);
       const res = await applicantService.getRecommendations({ limit: 6 });
       setRecommendedJobs(res.data.data?.recommendedJobs || []);
-    } catch (err) {
+    } catch {
       setRecommendedJobs([]);
     } finally {
       setRecommendationsLoading(false);

@@ -39,7 +39,7 @@ const CoachProfile = () => {
       await profileService.updateCoachProfile(profile);
       setMessage('✅ تم حفظ التغييرات بنجاح');
       setTimeout(() => setMessage(''), 3000);
-    } catch (error) {
+    } catch {
       setMessage('❌ حدث خطأ في الحفظ');
     } finally {
       setSaving(false);

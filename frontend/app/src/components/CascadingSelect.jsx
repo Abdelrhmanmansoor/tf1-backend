@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 
 const CascadingSelect = ({ 
   regions, 
@@ -11,24 +11,15 @@ const CascadingSelect = ({
   onNeighborhoodChange,
   disabled = false 
 }) => {
-  const [cities, setCities] = useState([]);
-  const [availableNeighborhoods, setAvailableNeighborhoods] = useState([]);
-
-  useEffect(() => {
-    if (selectedRegion && regions) {
-      const region = regions.find(r => r.name === selectedRegion);
-      setCities(region?.cities || []);
-    } else {
-      setCities([]);
-    }
+  const cities = useMemo(() => {
+    if (!selectedRegion || !regions) return [];
+    const region = regions.find(r => r.name === selectedRegion);
+    return region?.cities || [];
   }, [selectedRegion, regions]);
 
-  useEffect(() => {
-    if (selectedCity && neighborhoods) {
-      setAvailableNeighborhoods(neighborhoods[selectedCity] || []);
-    } else {
-      setAvailableNeighborhoods([]);
-    }
+  const availableNeighborhoods = useMemo(() => {
+    if (!selectedCity || !neighborhoods) return [];
+    return neighborhoods[selectedCity] || [];
   }, [selectedCity, neighborhoods]);
 
   return (

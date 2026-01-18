@@ -1,11 +1,18 @@
-const matchService = require('../services/matchService');
-const matchController = require('../controllers/matchController');
-
 // Mock Mongoose model Location
 const mockLocationFindById = jest.fn();
 jest.mock('../../../models/Location', () => ({
   findById: mockLocationFindById
 }));
+
+const mockValidateCity = jest.fn();
+const mockValidateArea = jest.fn();
+jest.mock('../services/locationService', () => ({
+  validateCity: (...args) => mockValidateCity(...args),
+  validateArea: (...args) => mockValidateArea(...args),
+}));
+
+const matchService = require('../services/matchService');
+const matchController = require('../controllers/matchController');
 
 describe('MatchController.createMatch', () => {
   let req, res;
@@ -40,8 +47,6 @@ describe('MatchController.createMatch', () => {
         title: 'Test Match',
         venue: 'Field 1'
     }));
-
-    jest.clearAllMocks();
   });
 
   afterEach(() => {
@@ -88,6 +93,17 @@ describe('MatchController.createMatch', () => {
 
   it('should create match without location_id (using default values)', async () => {
     req.body.location_id = undefined;
+
+    mockValidateCity.mockResolvedValueOnce({
+      _id: '507f1f77bcf86cd799439013',
+      name_en: 'Riyadh',
+      name_ar: 'الرياض',
+    });
+    mockValidateArea.mockResolvedValueOnce({
+      _id: '507f1f77bcf86cd799439012',
+      name_en: 'Al Malqa',
+      name_ar: 'الملقا',
+    });
     
     await matchController.createMatch(req, res);
 

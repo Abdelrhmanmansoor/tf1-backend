@@ -5,7 +5,7 @@
 
 const request = require('supertest');
 const mongoose = require('mongoose');
-const app = require('../../server');
+const { app } = require('../../../../server');
 const AdminKey = require('../models/AdminKey');
 const AdminLog = require('../models/AdminLog');
 const User = require('../../shared/models/User');
@@ -43,9 +43,10 @@ describe('Admin Dashboard API', () => {
 
     // Create test user
     const user = new User({
-      name: 'Test Admin',
+      firstName: 'Test',
+      lastName: 'Admin',
       email: 'admin@test.com',
-      password: 'hashed-password',
+      password: '$2a$12$7Ex6A9I7gD0O0hQ9rFQk1eV7b9xBqg9nQ2dZ0jY8w7mQ5Qx2cEo4e',
       role: 'admin',
       isActive: true,
     });

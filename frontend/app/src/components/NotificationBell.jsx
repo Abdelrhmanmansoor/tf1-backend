@@ -6,7 +6,6 @@ const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [socket, setSocket] = useState(null);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -22,7 +21,7 @@ const NotificationBell = () => {
   }, []);
 
   useEffect(() => {
-    fetchNotifications();
+    const initialTimeout = setTimeout(fetchNotifications, 0);
     const interval = setInterval(fetchNotifications, 10000);
 
     const token = localStorage.getItem('token');
@@ -36,15 +35,17 @@ const NotificationBell = () => {
         setUnreadCount(prev => prev + 1);
       });
 
-      setSocket(newSocket);
-
       return () => {
+        clearTimeout(initialTimeout);
         clearInterval(interval);
         newSocket.close();
       };
     }
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
   }, [fetchNotifications]);
 
   const handleMarkAsRead = async (id) => {

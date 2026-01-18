@@ -77,7 +77,7 @@ api.interceptors.request.use(
       const csrfToken = await getCSRFToken();
       if (csrfToken) {
         config.headers['X-CSRF-Token'] = csrfToken;
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           console.log(`✅ CSRF Token added for ${config.method.toUpperCase()} ${config.url}`);
         }
       } else {
@@ -112,44 +112,46 @@ api.interceptors.response.use(
       
       // Only refresh token once, queue other requests
       if (!refreshPromise) {
-        refreshPromise = new Promise(async (resolve, reject) => {
-          try {
-            const response = await axios.post(`${API_URL}/auth/refresh-token`, {}, {
-              withCredentials: true // Include cookies for refresh
-            });
+        refreshPromise = axios
+          .post(
+            `${API_URL}/auth/refresh-token`,
+            {},
+            {
+              withCredentials: true,
+            }
+          )
+          .then(response => {
+            const { accessToken, refreshToken: newRefreshToken } =
+              response.data.data || response.data;
 
-            const { accessToken, refreshToken: newRefreshToken } = response.data.data || response.data;
-            
-            // Store new access token in sessionStorage (memory-based, cleared on tab close)
             if (accessToken) {
               sessionStorage.setItem('accessToken', accessToken);
               api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
             }
-            
-            // Refresh token is in httpOnly cookie, handled automatically by browser
+
             if (newRefreshToken) {
               sessionStorage.setItem('refreshToken', newRefreshToken);
             }
 
             processQueue(null, accessToken);
-            resolve(accessToken);
-          } catch (err) {
-            // Token refresh failed - لا تسجل خروج إلا إذا كان الخطأ من authentication نفسه
+            return accessToken;
+          })
+          .catch(err => {
             console.warn('Token refresh failed:', err);
-            
-            // فقط سجل خروج إذا كان الخطأ 401/403 من الـ refresh endpoint
+
             if (err.response?.status === 401 || err.response?.status === 403) {
               sessionStorage.removeItem('accessToken');
               sessionStorage.removeItem('refreshToken');
               sessionStorage.removeItem('user');
               window.location.href = '/login';
             }
+
             processQueue(err, null);
-            reject(err);
-          } finally {
-            refreshPromise = null; // Release lock for next refresh
-          }
-        });
+            throw err;
+          })
+          .finally(() => {
+            refreshPromise = null;
+          });
       }
 
       // Wait for refresh to complete

@@ -252,6 +252,10 @@ const extractToken = (req) => {
  * Legacy csrf middleware - passthrough for backward compatibility
  */
 const csrf = (req, res, next) => {
+  const token = generateCSRFToken();
+  req.csrfToken = token;
+  res.cookie('XSRF-TOKEN', token, getCookieOptions());
+  res.set('X-CSRF-Token', token);
   next();
 };
 
@@ -278,17 +282,6 @@ const verifyCsrf = (req, res, next) => {
     return next();
   }
 
-  // 🚀 INNOVATION 1: Development bypass (set CSRF_DEV_BYPASS=true in .env for testing)
-  // 🔥 TEMPORARY FIX: Auto-bypass in development for easier testing
-  if (!isProduction) {
-    logger.debug('CSRF: Bypassed in dev mode (auto-enabled for development)', {
-      method: req.method,
-      path: req.path
-    });
-    return next();
-  }
-  
-  // Legacy bypass check
   if (CSRF_DEV_BYPASS && !isProduction) {
     logger.debug('CSRF: Bypassed in dev mode (CSRF_DEV_BYPASS=true)', {
       method: req.method,
@@ -403,6 +396,11 @@ const verifyCsrf = (req, res, next) => {
     method: req.method,
     path: req.path
   });
+
+  const rotatedToken = generateCSRFToken();
+  req.csrfToken = rotatedToken;
+  res.cookie('XSRF-TOKEN', rotatedToken, getCookieOptions());
+  res.set('X-CSRF-Token', rotatedToken);
 
   next();
 };
