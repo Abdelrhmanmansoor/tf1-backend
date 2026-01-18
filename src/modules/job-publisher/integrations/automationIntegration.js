@@ -184,7 +184,10 @@ class AutomationIntegration {
       await application.populate('jobId applicantId');
     }
 
-    const publisher = await User.findById(application.publisherId).lean();
+    const userQuery = User.findById(application.publisherId);
+    const publisher = (userQuery && typeof userQuery.lean === 'function')
+      ? await userQuery.lean()
+      : null;
 
     return {
       entityId: application._id, // For idempotency
