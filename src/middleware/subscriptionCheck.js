@@ -8,6 +8,64 @@ const AppError = require('../utils/appError');
 const logger = require('../utils/logger');
 
 /**
+ * Helper function to create a free subscription for new users
+ */
+async function createFreeSubscription(publisherId) {
+  try {
+    const now = new Date();
+    const endDate = new Date();
+    endDate.setFullYear(endDate.getFullYear() + 100); // 100 years for free tier
+
+    const subscription = await Subscription.create({
+      publisherId,
+      tier: 'free',
+      status: 'active',
+      billingCycle: 'lifetime',
+      startDate: now,
+      endDate: endDate,
+      isFree: true,
+      adminManaged: true,
+      autoRenew: false,
+      price: {
+        amount: 0,
+        currency: 'SAR'
+      },
+      features: {
+        // Free tier features
+        job_posting: true,
+        maxJobs: 3,
+        emailNotifications: true,
+        messaging: true,
+        maxThreads: 100,
+        fileAttachments: true,
+        basicAnalytics: true,
+        customBranding: false,
+        prioritySupport: false,
+        apiAccess: false,
+        automationRules: false,
+        advancedAnalytics: false,
+        bulkActions: false,
+        teamMembers: false,
+        maxTeamMembers: 1,
+      },
+      usage: {
+        jobsThisMonth: 0,
+        applicationsThisMonth: 0,
+        messagesThisMonth: 0,
+        emailsSentThisMonth: 0,
+        lastResetDate: now
+      }
+    });
+
+    logger.info(`✅ Created free subscription for publisher ${publisherId}`);
+    return subscription;
+  } catch (error) {
+    logger.error('Error creating free subscription:', error);
+    throw error;
+  }
+}
+
+/**
  * Check if publisher has required tier
  */
 exports.requireTier = (...requiredTiers) => {
@@ -58,13 +116,15 @@ exports.requireFeature = (featureName) => {
     try {
       const publisherId = req.user._id;
 
-      const subscription = await Subscription.findOne({
+      let subscription = await Subscription.findOne({
         publisherId,
         status: 'active',
       });
 
+      // Auto-create free subscription if none exists
       if (!subscription) {
-        return next(new AppError('No active subscription found', 403));
+        logger.warn(`⚠️  No subscription found for publisher ${publisherId}, creating free tier...`);
+        subscription = await createFreeSubscription(publisherId);
       }
 
       if (!subscription.features[featureName]) {
@@ -88,13 +148,15 @@ exports.checkUsageLimit = (limitType) => {
     try {
       const publisherId = req.user._id;
 
-      const subscription = await Subscription.findOne({
+      let subscription = await Subscription.findOne({
         publisherId,
         status: 'active',
       });
 
+      // Auto-create free subscription if none exists
       if (!subscription) {
-        return next(new AppError('No active subscription found', 403));
+        logger.warn(`⚠️  No subscription found for publisher ${publisherId}, creating free tier...`);
+        subscription = await createFreeSubscription(publisherId);
       }
 
       const limitKey = `max${limitType.charAt(0).toUpperCase() + limitType.slice(1)}`;
