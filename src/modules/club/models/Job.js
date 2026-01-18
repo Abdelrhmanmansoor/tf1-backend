@@ -130,7 +130,7 @@ const jobSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
-  
+
   // === MEETING DETAILS ===
   meetingDate: {
     type: String
@@ -277,6 +277,12 @@ const jobSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  automationFlags: {
+    deadlineTriggered: {
+      type: Boolean,
+      default: false
+    }
+  },
 
   // === SEARCH OPTIMIZATION ===
   searchKeywords: [{
@@ -298,18 +304,18 @@ jobSchema.index({ applicationDeadline: 1 });
 jobSchema.index({ createdAt: -1 });
 
 // === VIRTUALS ===
-jobSchema.virtual('isExpired').get(function() {
+jobSchema.virtual('isExpired').get(function () {
   return new Date() > this.applicationDeadline;
 });
 
-jobSchema.virtual('daysUntilDeadline').get(function() {
+jobSchema.virtual('daysUntilDeadline').get(function () {
   const now = new Date();
   const deadline = this.applicationDeadline;
   const diff = deadline - now;
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 });
 
-jobSchema.virtual('isFull').get(function() {
+jobSchema.virtual('isFull').get(function () {
   return this.positionsFilled >= this.numberOfPositions;
 });
 
@@ -322,7 +328,7 @@ jobSchema.virtual('applications', {
 // === METHODS ===
 
 // Generate search keywords
-jobSchema.methods.generateSearchKeywords = function() {
+jobSchema.methods.generateSearchKeywords = function () {
   const keywords = new Set();
 
   if (this.title) keywords.add(this.title.toLowerCase());
@@ -338,7 +344,7 @@ jobSchema.methods.generateSearchKeywords = function() {
 };
 
 // Add posting history entry
-jobSchema.methods.addHistory = function(action, performedBy, reason) {
+jobSchema.methods.addHistory = function (action, performedBy, reason) {
   this.postingHistory.push({
     action,
     date: new Date(),
@@ -348,7 +354,7 @@ jobSchema.methods.addHistory = function(action, performedBy, reason) {
 };
 
 // Activate job posting
-jobSchema.methods.activate = function(performedBy) {
+jobSchema.methods.activate = function (performedBy) {
   this.status = 'active';
   this.isActive = true;
   this.addHistory('activated', performedBy, 'Job posting activated');
@@ -356,14 +362,14 @@ jobSchema.methods.activate = function(performedBy) {
 };
 
 // Pause job posting
-jobSchema.methods.pause = function(performedBy, reason) {
+jobSchema.methods.pause = function (performedBy, reason) {
   this.status = 'paused';
   this.addHistory('paused', performedBy, reason);
   return this;
 };
 
 // Extend deadline
-jobSchema.methods.extendDeadline = function(newDeadline, performedBy) {
+jobSchema.methods.extendDeadline = function (newDeadline, performedBy) {
   const oldDeadline = this.applicationDeadline;
   this.applicationDeadline = newDeadline;
   this.addHistory('extended', performedBy, `Deadline extended from ${oldDeadline.toDateString()} to ${newDeadline.toDateString()}`);
@@ -371,7 +377,7 @@ jobSchema.methods.extendDeadline = function(newDeadline, performedBy) {
 };
 
 // Close job posting
-jobSchema.methods.close = function(performedBy, reason) {
+jobSchema.methods.close = function (performedBy, reason) {
   this.status = 'closed';
   this.isActive = false;
   this.addHistory('closed', performedBy, reason || 'Position filled');
@@ -379,7 +385,7 @@ jobSchema.methods.close = function(performedBy, reason) {
 };
 
 // Repost job
-jobSchema.methods.repost = function(newDeadline, performedBy) {
+jobSchema.methods.repost = function (newDeadline, performedBy) {
   this.status = 'active';
   this.isActive = true;
   this.applicationDeadline = newDeadline;
@@ -389,7 +395,7 @@ jobSchema.methods.repost = function(newDeadline, performedBy) {
 };
 
 // Increment view count
-jobSchema.methods.incrementViews = async function(userId) {
+jobSchema.methods.incrementViews = async function (userId) {
   this.views += 1;
 
   // Track unique views
@@ -407,15 +413,17 @@ jobSchema.methods.incrementViews = async function(userId) {
 };
 
 // Update application statistics
-jobSchema.methods.updateApplicationStats = async function() {
+jobSchema.methods.updateApplicationStats = async function () {
   const JobApplication = mongoose.model('JobApplication');
 
   const stats = await JobApplication.aggregate([
     { $match: { jobId: this._id, isDeleted: false } },
-    { $group: {
-      _id: '$status',
-      count: { $sum: 1 }
-    }}
+    {
+      $group: {
+        _id: '$status',
+        count: { $sum: 1 }
+      }
+    }
   ]);
 
   this.applicationStats.totalApplications = 0;
@@ -446,19 +454,19 @@ jobSchema.methods.updateApplicationStats = async function() {
 // === STATIC METHODS ===
 
 // Get active jobs for a club
-jobSchema.statics.getActiveJobs = async function(clubId) {
+jobSchema.statics.getActiveJobs = async function (clubId) {
   return this.find({
     clubId,
     status: 'active',
     isDeleted: false,
     applicationDeadline: { $gte: new Date() }
   })
-  .populate('postedBy', 'fullName')
-  .sort({ createdAt: -1 });
+    .populate('postedBy', 'fullName')
+    .sort({ createdAt: -1 });
 };
 
 // Search jobs with filters
-jobSchema.statics.searchJobs = async function(filters = {}) {
+jobSchema.statics.searchJobs = async function (filters = {}) {
   const query = { isDeleted: false, status: 'active', applicationDeadline: { $gte: new Date() } };
 
   if (filters.clubId) query.clubId = filters.clubId;
@@ -502,7 +510,7 @@ jobSchema.statics.searchJobs = async function(filters = {}) {
 };
 
 // Get expired jobs that need to be closed
-jobSchema.statics.getExpiredJobs = async function() {
+jobSchema.statics.getExpiredJobs = async function () {
   return this.find({
     status: 'active',
     applicationDeadline: { $lt: new Date() },
@@ -513,7 +521,7 @@ jobSchema.statics.getExpiredJobs = async function() {
 // === HOOKS ===
 
 // Before save - generate keywords and check expiry
-jobSchema.pre('save', function(next) {
+jobSchema.pre('save', function (next) {
   if (this.isModified()) {
     this.generateSearchKeywords();
   }
@@ -528,7 +536,7 @@ jobSchema.pre('save', function(next) {
 });
 
 // After save - update club statistics
-jobSchema.post('save', async function(doc) {
+jobSchema.post('save', async function (doc) {
   const ClubProfile = mongoose.model('ClubProfile');
   const club = await ClubProfile.findOne({ userId: doc.clubId });
 

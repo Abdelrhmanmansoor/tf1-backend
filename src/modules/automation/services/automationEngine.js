@@ -148,6 +148,9 @@ class AutomationEngine {
       case 'SEND_EMAIL':
         return await this.actionSendEmail(action.config, data, rule);
 
+      case 'SEND_SMS':
+        return await this.actionSendSms(action.config, data, rule);
+
       case 'SCHEDULE_INTERVIEW':
         return await this.actionScheduleInterview(action.config, data, rule);
 
@@ -333,6 +336,35 @@ class AutomationEngine {
       return { success: true };
     } catch (error) {
       logger.error('Action SEND_EMAIL failed:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Action: Send SMS (Placeholder)
+   */
+  async actionSendSms(config, data, rule) {
+    try {
+      const { phoneNumber, messageTemplate } = config;
+      const targetPhone = phoneNumber || data.applicantPhone || data.phone;
+
+      if (!targetPhone) {
+        throw new Error('No phone number available for SMS');
+      }
+
+      const variables = this.prepareVariables({}, data);
+      const content = this.replaceVariables(messageTemplate, variables);
+
+      logger.warn(`📱 SMS Action Triggered but not implemented: [To: ${targetPhone}] Content: ${content}`);
+
+      // Future: Integration with Twilio/Nexmo
+      return {
+        success: false,
+        error: 'SMS service not configured',
+        details: { targetPhone, content }
+      };
+    } catch (error) {
+      logger.error('Action SEND_SMS failed:', error);
       return { success: false, error: error.message };
     }
   }

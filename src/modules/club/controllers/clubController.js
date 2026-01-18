@@ -959,8 +959,13 @@ exports.reviewApplication = async (req, res) => {
       }
     } catch (notificationError) {
       console.error('Error sending notification:', notificationError);
-      // Don't fail the request if notification fails
     }
+
+    // TRIGGER AUTOMATION
+    const automationIntegration = require('../../job-publisher/integrations/automationIntegration');
+    automationIntegration.onApplicationStatusChanged(application, 'new', 'under_review').catch(err => {
+      logger.error('Automation error (moveToReview):', err);
+    });
 
     res.json({
       success: true,
@@ -1091,6 +1096,16 @@ exports.scheduleInterview = async (req, res) => {
       }
     }
 
+    // TRIGGER AUTOMATION
+    const automationIntegration = require('../../job-publisher/integrations/automationIntegration');
+    automationIntegration.onInterviewScheduled(application).catch(err => {
+      logger.error('Automation error (onInterviewScheduled):', err);
+    });
+    // Also trigger stage changed
+    automationIntegration.onApplicationStatusChanged(application, 'under_review', 'interviewed').catch(err => {
+      logger.error('Automation error (onApplicationStatusChanged):', err);
+    });
+
     res.json({
       success: true,
       message: 'Interview scheduled successfully',
@@ -1202,6 +1217,12 @@ exports.makeOffer = async (req, res) => {
       }
     }
 
+    // TRIGGER AUTOMATION
+    const automationIntegration = require('../../job-publisher/integrations/automationIntegration');
+    automationIntegration.onApplicationStatusChanged(application, 'interviewed', 'offered').catch(err => {
+      logger.error('Automation error (makeOffer):', err);
+    });
+
     res.json({
       success: true,
       message: 'Offer made successfully',
@@ -1310,6 +1331,12 @@ exports.hireApplicant = async (req, res) => {
       }
     }
 
+    // TRIGGER AUTOMATION
+    const automationIntegration = require('../../job-publisher/integrations/automationIntegration');
+    automationIntegration.onApplicationStatusChanged(application, application.status, 'hired').catch(err => {
+      logger.error('Automation error (hireApplicant):', err);
+    });
+
     res.json({
       success: true,
       message: 'Applicant hired successfully',
@@ -1415,6 +1442,12 @@ exports.rejectApplication = async (req, res) => {
         console.error('⚠️ Rejection email error (non-critical):', emailError.message);
       }
     }
+
+    // TRIGGER AUTOMATION
+    const automationIntegration = require('../../job-publisher/integrations/automationIntegration');
+    automationIntegration.onApplicationStatusChanged(application, application.status, 'rejected').catch(err => {
+      logger.error('Automation error (rejectApplication):', err);
+    });
 
     res.json({
       success: true,

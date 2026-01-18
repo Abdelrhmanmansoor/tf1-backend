@@ -71,7 +71,7 @@ if (NODE_ENV === 'development') {
   if (!allowedOrigins.includes('http://localhost:5173')) allowedOrigins.push('http://localhost:5173');
   if (!allowedOrigins.includes('http://127.0.0.1:3000')) allowedOrigins.push('http://127.0.0.1:3000');
   if (!allowedOrigins.includes('http://127.0.0.1:5000')) allowedOrigins.push('http://127.0.0.1:5000');
-  
+
   // Add Replit domain if specified
   if (process.env.REPLIT_DEV_DOMAIN) {
     allowedOrigins.push(`https://${process.env.REPLIT_DEV_DOMAIN}`);
@@ -153,7 +153,7 @@ app.use(
     origin: (origin, callback) => {
       // PRODUCTION DEBUG: Log all CORS requests
       console.log('🌐 [CORS] Request from origin:', origin || 'NO-ORIGIN');
-      
+
       // In production, require exact origin match - NEVER allow '*' with credentials
       if (!origin) {
         if (NODE_ENV === 'development') {
@@ -164,13 +164,13 @@ app.use(
         logger.info('CORS: Request with no origin (same-origin or Postman)');
         return callback(null, true);
       }
-      
+
       // Check if origin is in allowed list (exact match or domain suffix)
-      const isAllowed = allowedOrigins.includes(origin) || 
-                       origin.endsWith('tf1one.com') || 
-                       origin.endsWith('.vercel.app') || // Allow Vercel preview deployments
-                       (NODE_ENV === 'development');
-      
+      const isAllowed = allowedOrigins.includes(origin) ||
+        origin.endsWith('tf1one.com') ||
+        origin.endsWith('.vercel.app') || // Allow Vercel preview deployments
+        (NODE_ENV === 'development');
+
       if (isAllowed) {
         console.log('✅ [CORS] Allowing origin:', origin);
         logger.debug(`CORS: Allowing origin: ${origin}`);
@@ -191,15 +191,15 @@ app.use(
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     // CRITICAL FIX: Add Cache-Control and Pragma to allowed headers
     allowedHeaders: [
-      'Content-Type', 
-      'Authorization', 
-      'X-Requested-With', 
-      'x-admin-key', 
-      'X-Admin-Key', 
-      'Accept', 
-      'X-CSRF-Token', 
-      'X-XSRF-TOKEN', 
-      'x-csrf-token', 
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'x-admin-key',
+      'X-Admin-Key',
+      'Accept',
+      'X-CSRF-Token',
+      'X-XSRF-TOKEN',
+      'x-csrf-token',
       'x-xsrf-token',
       'Cache-Control',  // Required for CSRF token fetching
       'Pragma'          // Required for CSRF token fetching
@@ -533,6 +533,13 @@ const startServer = async () => {
         logger.info(chalk.green('✅ Search indexes initialized'));
       } else {
         logger.warn(chalk.yellow('⚠️  Search indexes initialization failed'));
+      }
+
+      // Initialize Automation Scheduler
+      try {
+        require('./src/modules/automation/services/automationScheduler');
+      } catch (schedError) {
+        logger.error('Failed to start Automation Scheduler:', schedError);
       }
     }
 

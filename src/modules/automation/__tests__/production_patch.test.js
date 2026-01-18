@@ -22,9 +22,14 @@ jest.mock('../models/AutomationRule', () => ({
     findOne: jest.fn().mockResolvedValue(null),
 }));
 
+jest.mock('../../club/models/Job', () => ({
+    find: jest.fn(),
+    save: jest.fn(),
+}));
+
 describe('Automation System Production Patch', () => {
     beforeAll(async () => {
-        // Basic Mongoose mock if needed, but we focus on unit logic
+        // Basic Mongoose mock if needed
     });
 
     afterEach(() => {
@@ -40,50 +45,97 @@ describe('Automation System Production Patch', () => {
             expect(result.error).toBe('Recursion limit');
             expect(result.executed).toBe(0);
         });
-
-        it('should allow execution if depth <= 3', async () => {
-            // Mock finding no rules to avoid complex setup
-            automationEngine.executeRule = jest.fn();
-
-            // We need to mock AutomationRule search
-            // This is integration level, so might be hard to test fully without DB.
-            // Checking logic path:
-
-            const meta = { depth: 2 };
-            if (meta.depth > 3) throw new Error('FAIL');
-            expect(true).toBe(true);
-        });
     });
 
     describe('2. Idempotency', () => {
         it('should generate unique eventId if missing', async () => {
             const spy = jest.spyOn(AutomationQueue, 'add');
             await automationIntegration.trigger('TEST', {}, 'pubId');
-
-            // Check that meta with eventId was passed
             const callArgs = spy.mock.calls[0];
-            // add(event, data, pubId, meta)
-            expect(callArgs[3]).toBeDefined();
+            expect(callArgs[3].eventId).toBeDefined();
         });
     });
 
     describe('3. Queue Service', () => {
         it('should run inline (setImmediate) if Redis is missing', async () => {
-            // Mock AutomationQueue.queue as null
             AutomationQueue.queue = null;
             AutomationQueue.isRedisAvailable = false;
-
             const spyEngine = jest.spyOn(automationEngine, 'trigger').mockResolvedValue({});
 
-            // We need to wait for setImmediate
             await new Promise(resolve => {
                 AutomationQueue.add('TEST', {}, 'pub').then(() => {
                     setTimeout(() => {
                         expect(spyEngine).toHaveBeenCalled();
                         resolve();
-                    }, 10);
+                    }, 50);
                 });
             });
+        });
+    });
+
+    describe('4. Automation Scheduler', () => {
+        it('should correctly filter jobs closing within 24 hours', async () => {
+            const Job = require('../../club/models/Job');
+            const AutomationScheduler = require('../services/automationScheduler');
+
+            const mockJob = {
+                _id: 'job123',
+                title: 'Test Job',
+                automationFlags: { deadlineTriggered: false },
+                save: jest.fn().mockResolvedValue(true)
+            };
+
+            Job.find.mockResolvedValue([mockJob]);
+
+            jest.spyOn(automationIntegration, 'onJobApproachingDeadline').mockResolvedValue(true);
+
+            const result = await AutomationScheduler.checkUpcomingDeadlines();
+
+            expect(result.count).toBe(1);
+            expect(mockJob.automationFlags.deadlineTriggered).toBe(true);
+            expect(mockJob.save).toHaveBeenCalled();
+        });
+    });
+
+    describe('5. Integration Hooks', () => {
+        it('should trigger INTERVIEW_CANCELLED', async () => {
+            const spyQueue = jest.spyOn(AutomationQueue, 'add').mockResolvedValue(true);
+
+            await automationIntegration.onInterviewCancelled({
+                _id: 'i1',
+                publisherId: 'p1',
+                jobId: { title: 'J' },
+                applicantId: { firstName: 'A', lastName: 'B' }
+            }, 'No longer available');
+
+            expect(spyQueue).toHaveBeenCalledWith(
+                'INTERVIEW_CANCELLED',
+                expect.objectContaining({ cancellationReason: 'No longer available' }),
+                'p1',
+                expect.any(Object)
+            );
+        });
+
+        it('should trigger APPLICATION_UPDATED via afterApplicationUpdate', async () => {
+            const spyQueue = jest.spyOn(AutomationQueue, 'add').mockResolvedValue(true);
+
+            const mockApp = {
+                _id: 'a1',
+                status: 'new',
+                publisherId: 'p1',
+                jobId: { title: 'J' },
+                applicantId: { firstName: 'A', lastName: 'B' },
+                populate: jest.fn().mockResolvedValue(true)
+            };
+
+            await automationIntegration.afterApplicationUpdate(mockApp, 'new');
+
+            expect(spyQueue).toHaveBeenCalledWith(
+                'APPLICATION_UPDATED',
+                expect.any(Object),
+                'p1',
+                expect.any(Object)
+            );
         });
     });
 });

@@ -107,14 +107,59 @@ class AutomationIntegration {
     }
   }
 
-  async onApplicationUpdated(application, changes) {
+  async onJobApproachingDeadline(job) {
+    try {
+      const data = await this.prepareJobData(job);
+      data.daysLeft = 1; // Current logic is 24h
+      await this.trigger('JOB_DEADLINE_APPROACHING', data, job.publishedBy);
+    } catch (error) {
+      logger.error('Error in onJobApproachingDeadline automation hook:', error);
+    }
+  }
+
+  async onApplicationUpdated(application, changes, meta = {}) {
     try {
       const data = await this.prepareApplicationData(application);
       data.changes = changes;
-      await this.trigger('APPLICATION_UPDATED', data, application.publisherId);
+      await this.trigger('APPLICATION_UPDATED', data, application.publisherId, meta);
     } catch (error) {
       logger.error('Error in onApplicationUpdated automation hook:', error);
     }
+  }
+
+  /**
+   * Post-update hook: Trigger automation after application update
+   * This is a bridge for existing controllers
+   */
+  async afterApplicationUpdate(application, oldStatus, meta = {}) {
+    if (oldStatus && oldStatus !== application.status) {
+      await this.onApplicationStatusChanged(application, oldStatus, application.status, meta);
+    } else {
+      // If status didn't change, trigger a general update event
+      await this.onApplicationUpdated(application, {}, meta);
+    }
+  }
+
+  /**
+   * Middleware: Add automation hooks to application update
+   */
+  withAutomationHooks(handler) {
+    return async (req, res, next) => {
+      try {
+        const JobApplication = require('../../club/models/JobApplication');
+        const application = await JobApplication.findById(
+          req.params.id || req.body.applicationId
+        );
+
+        if (application) {
+          req.oldApplicationStatus = application.status;
+        }
+
+        await handler(req, res, next);
+      } catch (error) {
+        next(error);
+      }
+    };
   }
 
   async onFeedbackSubmitted(interview, feedback) {

@@ -52,7 +52,8 @@ exports.updateApplicationStatus = catchAsync(async (req, res) => {
 
   // Trigger automation after status update
   try {
-    await afterApplicationUpdate(application, oldStatus);
+    const automationIntegration = require('../integrations/automationIntegration');
+    await automationIntegration.afterApplicationUpdate(application, oldStatus);
     logger.info(`✅ Automation triggered for application ${applicationId} status change`);
   } catch (automationError) {
     logger.error('Error triggering automation:', automationError);
@@ -166,11 +167,11 @@ exports.getApplications = catchAsync(async (req, res) => {
   const jobIds = jobs.map(j => j._id);
 
   const query = { jobId: { $in: jobIds }, isDeleted: false };
-  
+
   if (status) {
     query.status = status;
   }
-  
+
   if (jobId) {
     query.jobId = jobId;
   }
@@ -229,7 +230,7 @@ exports.getJobApplications = catchAsync(async (req, res) => {
   const { status, page = 1, limit = 20 } = req.query;
 
   const job = await Job.findById(jobId);
-  
+
   if (!job || job.publishedBy.toString() !== publisherId.toString()) {
     return res.status(403).json({
       success: false,
