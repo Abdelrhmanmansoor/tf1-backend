@@ -16,8 +16,8 @@ const fs = require('fs');
  */
 exports.getJobs = async (req, res) => {
   try {
-    const { 
-      page = 1, 
+    const {
+      page = 1,
       limit = 20,
       region,
       city,
@@ -26,7 +26,7 @@ exports.getJobs = async (req, res) => {
       category
     } = req.query;
 
-    const query = { 
+    const query = {
       isDeleted: false,
       status: 'active'
     };
@@ -230,16 +230,16 @@ exports.applyToJob = async (req, res) => {
 
     const { id: jobId } = req.params;
     const applicantId = req.user._id;
-    const { 
-      coverLetter, 
-      phone, 
-      whatsapp, 
-      age, 
-      city, 
-      qualification, 
-      experienceYears, 
-      portfolio, 
-      linkedin 
+    const {
+      coverLetter,
+      phone,
+      whatsapp,
+      age,
+      city,
+      qualification,
+      experienceYears,
+      portfolio,
+      linkedin
     } = req.body;
 
     // 1. Find the job
@@ -407,7 +407,7 @@ exports.applyToJob = async (req, res) => {
     try {
       const emailService = require('../utils/email');
       const applicant = await User.findById(applicantId).select('firstName lastName fullName email');
-      
+
       if (applicant?.email) {
         const ClubProfile = require('../modules/club/models/ClubProfile');
         const clubProfile = await ClubProfile.findOne({ userId: job.clubId._id });
@@ -837,24 +837,24 @@ exports.downloadAttachment = async (req, res) => {
 
     // Check if file is stored locally (by path or relative URL)
     let localFilePath = attachment.localPath;
-    
+
     // If no localPath but URL is relative (/uploads/...), convert to local path
     if (!localFilePath && attachment.url && attachment.url.startsWith('/uploads/')) {
       localFilePath = path.join(process.cwd(), attachment.url);
     }
-    
+
     if (localFilePath && fs.existsSync(localFilePath)) {
       // LOCAL FILE - Direct file download
       console.log(`📥 Downloading local file: ${filename} from ${localFilePath}`);
-      
+
       res.setHeader('Content-Type', mimeType);
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
-      
+
       const fileStream = fs.createReadStream(localFilePath);
       fileStream.pipe(res);
-      
+
       fileStream.on('error', (error) => {
         console.error('Error streaming local file:', error);
         if (!res.headersSent) {
@@ -868,17 +868,17 @@ exports.downloadAttachment = async (req, res) => {
     } else if (attachment.url && (attachment.url.startsWith('http://') || attachment.url.startsWith('https://'))) {
       // CLOUDINARY/REMOTE FILE - Download from URL (only if it's a full URL)
       console.log(`📥 Downloading remote file: ${filename} from ${attachment.url}`);
-      
+
       const protocolModule = attachment.url.startsWith('https') ? https : http;
-      
+
       protocolModule.get(attachment.url, (fileStream) => {
         res.setHeader('Content-Type', mimeType);
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
-        
+
         fileStream.pipe(res);
-        
+
         fileStream.on('error', (error) => {
           console.error('Error streaming remote file:', error);
           if (!res.headersSent) {
@@ -972,8 +972,8 @@ exports.getJobsTicker = async (req, res) => {
  */
 exports.getJobEvents = async (req, res) => {
   try {
-    const { 
-      page = 1, 
+    const {
+      page = 1,
       limit = 50,
       eventType,
       category,
@@ -1153,7 +1153,7 @@ exports.updateApplicationStatus = async (req, res) => {
 
     // Update application status
     application.status = status;
-    
+
     // Add to status history
     if (!application.statusHistory) {
       application.statusHistory = [];
@@ -1435,7 +1435,7 @@ exports.downloadResumeEnhanced = async (req, res) => {
 
     const resume = application.attachments[0];
     const filePath = resume.localPath;
-    
+
     const fs = require('fs');
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ success: false, message: 'File not found' });
@@ -1466,7 +1466,7 @@ exports.getMyJobs = async (req, res) => {
     const { status, page = 1, limit = 20, sort = '-createdAt' } = req.query;
 
     // Build query - check both publishedBy and postedBy
-    const query = { 
+    const query = {
       isDeleted: false,
       $or: [
         { publishedBy: userId },
@@ -1497,7 +1497,7 @@ exports.getMyJobs = async (req, res) => {
           jobId: job._id,
           isDeleted: false
         });
-        
+
         const newApplicationCount = await JobApplication.countDocuments({
           jobId: job._id,
           status: 'new',
