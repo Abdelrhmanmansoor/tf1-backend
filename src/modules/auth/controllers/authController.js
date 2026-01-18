@@ -1169,7 +1169,9 @@ class AuthController {
         let decodedToken = token;
         try {
           decodedToken = decodeURIComponent(token);
-        } catch (e) {}
+        } catch (e) {
+          void e;
+        }
         user = await User.findOne({ emailVerificationToken: decodedToken });
       }
       if (!user) {

@@ -343,7 +343,9 @@ class AuthController {
           platformUser.avatar = result.url;
           await platformUser.save();
         }
-      } catch (e) {}
+      } catch (e) {
+        void e;
+      }
 
       res.status(200).json({
         success: true,

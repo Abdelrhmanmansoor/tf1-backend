@@ -922,7 +922,9 @@ exports.reviewApplication = async (req, res) => {
             messageAr: `طلبك لوظيفة ${application.jobId.titleAr || application.jobId.title} في ${application.clubId.clubName} قيد المراجعة الآن.`,
           });
         }
-      } catch (emailError) {}
+      } catch (emailError) {
+        void emailError;
+      }
 
       // Send real-time notification via Socket.io
       const io = req.app.get('io');
@@ -1016,7 +1018,9 @@ exports.scheduleInterview = async (req, res) => {
             messageAr: `تم جدولة مقابلة لوظيفة ${application.jobId.titleAr || application.jobId.title} في ${application.clubId.clubName} بتاريخ ${new Date(req.body.date).toLocaleDateString()}.`,
           });
         }
-      } catch (emailError) {}
+      } catch (emailError) {
+        void emailError;
+      }
 
       // Send real-time notification via Socket.io
       const io = req.app.get('io');

@@ -244,13 +244,13 @@ ageCategoryAnnouncementSchema.statics.getPlayerAnnouncements = async function(
     ageGroupId,
     status: 'published',
     publishAt: { $lte: now },
-    $or: [
-      { expiresAt: { $exists: false } },
-      { expiresAt: { $gt: now } }
-    ],
-    $or: [
-      { targetPlayers: { $size: 0 } },
-      { targetPlayers: playerId }
+    $and: [
+      {
+        $or: [{ expiresAt: { $exists: false } }, { expiresAt: { $gt: now } }],
+      },
+      {
+        $or: [{ targetPlayers: { $size: 0 } }, { targetPlayers: playerId }],
+      },
     ],
     isDeleted: false
   };
@@ -288,13 +288,13 @@ ageCategoryAnnouncementSchema.statics.getUnreadCount = async function(playerId, 
     ageGroupId,
     status: 'published',
     publishAt: { $lte: now },
-    $or: [
-      { expiresAt: { $exists: false } },
-      { expiresAt: { $gt: now } }
-    ],
-    $or: [
-      { targetPlayers: { $size: 0 } },
-      { targetPlayers: playerId }
+    $and: [
+      {
+        $or: [{ expiresAt: { $exists: false } }, { expiresAt: { $gt: now } }],
+      },
+      {
+        $or: [{ targetPlayers: { $size: 0 } }, { targetPlayers: playerId }],
+      },
     ],
     isDeleted: false
   });

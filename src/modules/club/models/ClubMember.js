@@ -349,7 +349,7 @@ clubMemberSchema.methods.removeFromTeam = function(teamId, performedBy) {
 // Update permissions
 clubMemberSchema.methods.updatePermissions = function(newPermissions, performedBy) {
   Object.keys(newPermissions).forEach(key => {
-    if (this.permissions.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(this.permissions, key)) {
       this.permissions[key] = newPermissions[key];
     }
   });
