@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../config/api';
 import '../styles/AdminDashboard.css';
+import InterviewsTab from '../components/interviews/InterviewsTab';
+import SiteTour from '../components/tour/SiteTour';
 
 const ClubDashboard = () => {
   const { user } = useAuth();
@@ -299,24 +301,35 @@ const ClubDashboard = () => {
 
       <div className="admin-tabs">
         <button
+          data-tour="jobs"
           className={`tab-button ${activeTab === 'jobs' ? 'active' : ''}`}
           onClick={() => { setActiveTab('jobs'); setSelectedJob(null); setApplications([]); }}
         >
           💼 الوظائف
         </button>
         <button
+          data-tour="interviews"
+          className={`tab-button ${activeTab === 'interviews' ? 'active' : ''}`}
+          onClick={() => setActiveTab('interviews')}
+        >
+          📅 المقابلات
+        </button>
+        <button
+          data-tour="teams"
           className={`tab-button ${activeTab === 'teams' ? 'active' : ''}`}
           onClick={() => { setActiveTab('teams'); fetchTeams(); }}
         >
           ⚽ الفرق
         </button>
         <button
+          data-tour="ageGroups"
           className={`tab-button ${activeTab === 'ageGroups' ? 'active' : ''}`}
           onClick={() => { setActiveTab('ageGroups'); fetchAgeGroups(); }}
         >
           👶 الفئات العمرية
         </button>
         <button
+          data-tour="notifications"
           className={`tab-button ${activeTab === 'notifications' ? 'active' : ''}`}
           onClick={() => setActiveTab('notifications')}
         >
@@ -508,6 +521,11 @@ const ClubDashboard = () => {
               </div>
             )}
           </div>
+        )}
+
+        {/* Interviews Tab */}
+        {activeTab === 'interviews' && (
+          <InterviewsTab />
         )}
 
         {activeTab === 'notifications' && (
@@ -885,6 +903,40 @@ const ClubDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Site Tour */}
+      <SiteTour
+        tourKey="club-dashboard"
+        steps={[
+          {
+            selector: '[data-tour="jobs"]',
+            title: 'الوظائف',
+            content: 'هنا يمكنك إدارة جميع الوظائف المنشورة وعرض المتقدمين لكل وظيفة وتحديث حالات الطلبات.'
+          },
+          {
+            selector: '[data-tour="interviews"]',
+            title: 'المقابلات',
+            content: 'عرض جميع المقابلات المجدولة وإرسال إشعارات للمتقدمين عبر البريد الإلكتروني أو الرسائل النصية أو الواتساب.'
+          },
+          {
+            selector: '[data-tour="teams"]',
+            title: 'الفرق',
+            content: 'إدارة فرق النادي وتعيين اللاعبين والمدربين لكل فريق.'
+          },
+          {
+            selector: '[data-tour="ageGroups"]',
+            title: 'الفئات العمرية',
+            content: 'تنظيم اللاعبين حسب الفئات العمرية وتعيين المشرفين لكل فئة.'
+          },
+          {
+            selector: '[data-tour="notifications"]',
+            title: 'الإشعارات',
+            content: 'متابعة جميع الإشعارات الواردة والتنبيهات المهمة.'
+          }
+        ]}
+        onComplete={() => console.log('Tour completed!')}
+        onSkip={() => console.log('Tour skipped')}
+      />
 
       {/* Assign Supervisor Modal */}
       {showAssignSupervisorModal && selectedGroup && (

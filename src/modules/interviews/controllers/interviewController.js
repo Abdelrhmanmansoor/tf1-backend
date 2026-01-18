@@ -590,4 +590,215 @@ exports.getStatistics = catchAsync(async (req, res) => {
   });
 });
 
+/**
+ * @route   POST /api/v1/publisher/interviews/:id/notify
+ * @desc    Send notification to applicant (email, SMS, WhatsApp)
+ * @access  Private (Publisher)
+ */
+exports.sendNotificationToApplicant = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const publisherId = req.user._id;
+  const { notificationType, channels, customMessage, customMessageAr, language = 'ar' } = req.body;
+
+  // Validate request
+  if (!notificationType) {
+    throw new AppError('Notification type is required', 400);
+  }
+  if (!channels || !Array.isArray(channels) || channels.length === 0) {
+    throw new AppError('At least one delivery channel is required', 400);
+  }
+
+  // Validate channels
+  const validChannels = ['email', 'sms', 'whatsapp'];
+  const invalidChannels = channels.filter(c => !validChannels.includes(c));
+  if (invalidChannels.length > 0) {
+    throw new AppError(`Invalid channels: ${invalidChannels.join(', ')}`, 400);
+  }
+
+  // Find interview
+  const interview = await Interview.findOne({
+    _id: id,
+    publisherId,
+  }).populate('applicantId', 'firstName lastName email phone')
+    .populate('jobId', 'title titleAr');
+
+  if (!interview) {
+    throw new AppError('Interview not found or you do not have permission', 404);
+  }
+
+  // Get applicant data
+  const applicant = interview.applicantId;
+  const job = interview.jobId;
+
+  if (!applicant) {
+    throw new AppError('Applicant not found', 404);
+  }
+
+  // Prepare notification content based on type
+  const notificationTemplates = {
+    acceptance: {
+      title: 'Congratulations! You have been accepted',
+      titleAr: 'تهانينا! تم قبولك',
+      message: `We are pleased to inform you that you have been accepted for the position of ${job.title}.`,
+      messageAr: `يسعدنا إبلاغك بأنه تم قبولك لوظيفة ${job.titleAr || job.title}.`
+    },
+    rejection: {
+      title: 'Application Status Update',
+      titleAr: 'تحديث حالة الطلب',
+      message: `Thank you for your interest in the ${job.title} position. Unfortunately, we have decided to move forward with other candidates.`,
+      messageAr: `شكراً لاهتمامك بوظيفة ${job.titleAr || job.title}. للأسف، قررنا المضي قدماً مع مرشحين آخرين.`
+    },
+    shortlist: {
+      title: 'You have been shortlisted!',
+      titleAr: 'تم إضافتك للقائمة المختصرة!',
+      message: `Great news! You have been shortlisted for the ${job.title} position. We will contact you soon with next steps.`,
+      messageAr: `أخبار سارة! تمت إضافتك للقائمة المختصرة لوظيفة ${job.titleAr || job.title}. سنتواصل معك قريباً بالخطوات التالية.`
+    },
+    interview_reminder: {
+      title: 'Interview Reminder',
+      titleAr: 'تذكير بالمقابلة',
+      message: `This is a reminder for your upcoming interview for the ${job.title} position on ${new Date(interview.scheduledAt).toLocaleDateString('en-US')}.`,
+      messageAr: `هذا تذكير بمقابلتك القادمة لوظيفة ${job.titleAr || job.title} في ${new Date(interview.scheduledAt).toLocaleDateString('ar-SA')}.`
+    },
+    custom: {
+      title: 'Message from ' + (req.user.companyName || 'Employer'),
+      titleAr: 'رسالة من ' + (req.user.companyName || 'صاحب العمل'),
+      message: customMessage || '',
+      messageAr: customMessageAr || customMessage || ''
+    }
+  };
+
+  const template = notificationTemplates[notificationType];
+  if (!template) {
+    throw new AppError('Invalid notification type', 400);
+  }
+
+  // If custom type but no message provided
+  if (notificationType === 'custom' && !customMessage) {
+    throw new AppError('Custom message is required for custom notification type', 400);
+  }
+
+  // Delivery results
+  const deliveryResults = {};
+
+  // Get services
+  const emailService = require('../../../utils/email');
+  const authenticaService = require('../../../services/authenticaService');
+
+  // Send via Email
+  if (channels.includes('email')) {
+    try {
+      if (!applicant.email) {
+        deliveryResults.email = { success: false, error: 'No email address available' };
+      } else {
+        const emailResult = await emailService.sendNotificationEmail({
+          toEmail: applicant.email,
+          toName: `${applicant.firstName} ${applicant.lastName}`,
+          title: template.title,
+          titleAr: template.titleAr,
+          message: template.message,
+          messageAr: template.messageAr
+        });
+        deliveryResults.email = { success: emailResult, messageId: Date.now().toString() };
+      }
+    } catch (emailError) {
+      logger.error('Email notification failed:', emailError);
+      deliveryResults.email = { success: false, error: emailError.message };
+    }
+  }
+
+  // Send via SMS
+  if (channels.includes('sms')) {
+    try {
+      if (!applicant.phone) {
+        deliveryResults.sms = { success: false, error: 'No phone number available' };
+      } else if (!authenticaService.isConfigured()) {
+        deliveryResults.sms = { success: false, error: 'SMS service not configured' };
+      } else {
+        // Format phone for international
+        let phone = applicant.phone;
+        if (!phone.startsWith('+')) {
+          phone = '+966' + phone.replace(/^0/, '');
+        }
+
+        // Use short message for SMS (max 160 chars)
+        const smsMessage = language === 'ar' ? template.titleAr : template.title;
+        const smsResult = await authenticaService.sendOTP(phone, 'sms', {
+          templateId: 1
+        });
+        deliveryResults.sms = { success: smsResult.success, data: smsResult.data };
+      }
+    } catch (smsError) {
+      logger.error('SMS notification failed:', smsError);
+      deliveryResults.sms = { success: false, error: smsError.message };
+    }
+  }
+
+  // Send via WhatsApp
+  if (channels.includes('whatsapp')) {
+    try {
+      if (!applicant.phone) {
+        deliveryResults.whatsapp = { success: false, error: 'No phone number available' };
+      } else if (!authenticaService.isConfigured()) {
+        deliveryResults.whatsapp = { success: false, error: 'WhatsApp service not configured' };
+      } else {
+        // Format phone for international
+        let phone = applicant.phone;
+        if (!phone.startsWith('+')) {
+          phone = '+966' + phone.replace(/^0/, '');
+        }
+
+        const whatsappResult = await authenticaService.sendOTP(phone, 'whatsapp', {
+          templateId: 8
+        });
+        deliveryResults.whatsapp = { success: whatsappResult.success, data: whatsappResult.data };
+      }
+    } catch (whatsappError) {
+      logger.error('WhatsApp notification failed:', whatsappError);
+      deliveryResults.whatsapp = { success: false, error: whatsappError.message };
+    }
+  }
+
+  // Create in-app notification
+  try {
+    const Notification = require('../../notifications/models/Notification');
+    await Notification.createNotification(
+      applicant._id,
+      'application_status_change',
+      template.titleAr,
+      template.messageAr,
+      { entityType: 'interview', entityId: interview._id },
+      { jobTitle: job.titleAr || job.title },
+      'high'
+    );
+    deliveryResults.inApp = { success: true };
+  } catch (notifError) {
+    logger.error('In-app notification failed:', notifError);
+    deliveryResults.inApp = { success: false, error: notifError.message };
+  }
+
+  // Check if any channel succeeded
+  const anySuccess = Object.values(deliveryResults).some(r => r.success);
+
+  logger.info(`Notification sent to applicant ${applicant._id} for interview ${id}`, {
+    notificationType,
+    channels,
+    results: deliveryResults
+  });
+
+  res.status(anySuccess ? 200 : 500).json({
+    success: anySuccess,
+    message: anySuccess ? 'Notification sent successfully' : 'Failed to send notification',
+    messageAr: anySuccess ? 'تم إرسال الإشعار بنجاح' : 'فشل في إرسال الإشعار',
+    data: {
+      deliveryResults,
+      applicant: {
+        name: `${applicant.firstName} ${applicant.lastName}`,
+        email: applicant.email,
+        phone: applicant.phone
+      }
+    }
+  });
+});
+
 module.exports = exports;

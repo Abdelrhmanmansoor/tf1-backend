@@ -133,6 +133,20 @@ router.post(
   interviewController.sendReminder
 );
 
+// Send notification to applicant (Publisher only)
+router.post(
+  '/:id/notify',
+  authorize('job-publisher', 'club'),
+  param('id').isMongoId(),
+  body('notificationType').isIn(['acceptance', 'rejection', 'shortlist', 'interview_reminder', 'custom']).withMessage('Valid notification type is required'),
+  body('channels').isArray({ min: 1 }).withMessage('At least one channel is required'),
+  body('customMessage').optional().isString(),
+  body('customMessageAr').optional().isString(),
+  body('language').optional().isIn(['en', 'ar']),
+  validateRequest,
+  interviewController.sendNotificationToApplicant
+);
+
 // Public route: Join interview by token
 router.get(
   '/token/:token',

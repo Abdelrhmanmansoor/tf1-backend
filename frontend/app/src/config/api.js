@@ -275,11 +275,53 @@ export const applicantService = {
   getRecommendations: (params = {}) => api.get('/applicant/recommendations', { params }),
   getMyApplications: (params = {}) => api.get('/applicant/applications', { params }),
   getApplicationDetails: (applicationId) => api.get(`/applicant/applications/${applicationId}`),
-  withdrawApplication: (applicationId, reason = '') => 
+  withdrawApplication: (applicationId, reason = '') =>
     api.put(`/applicant/applications/${applicationId}/withdraw`, { reason }),
   getAvailableJobs: (params = {}) => api.get('/applicant/jobs', { params }),
   getProfile: () => api.get('/applicant/profile'),
   updateProfile: (data) => api.put('/applicant/profile', data),
+};
+
+export const interviewService = {
+  // Get all interviews for publisher/club
+  getInterviews: (params = {}) => api.get('/publisher/interviews', { params }),
+
+  // Get single interview details
+  getInterview: (id) => api.get(`/publisher/interviews/${id}`),
+
+  // Schedule a new interview
+  scheduleInterview: (data) => api.post('/publisher/interviews', data),
+
+  // Update interview details
+  updateInterview: (id, data) => api.patch(`/publisher/interviews/${id}`, data),
+
+  // Reschedule interview
+  rescheduleInterview: (id, newDate, reason = '') =>
+    api.post(`/publisher/interviews/${id}/reschedule`, { newDate, reason }),
+
+  // Cancel interview
+  cancelInterview: (id, reason = '') =>
+    api.delete(`/publisher/interviews/${id}/cancel`, { data: { reason } }),
+
+  // Mark interview as completed
+  completeInterview: (id) => api.post(`/publisher/interviews/${id}/complete`),
+
+  // Submit feedback for interview
+  submitFeedback: (id, feedbackData) =>
+    api.post(`/publisher/interviews/${id}/feedback`, feedbackData),
+
+  // Send notification to applicant
+  sendNotification: (id, data) =>
+    api.post(`/publisher/interviews/${id}/notify`, data),
+
+  // Get interview reminders
+  getReminders: (id) => api.get(`/publisher/interviews/${id}/reminders`),
+
+  // Send reminder manually
+  sendReminder: (id) => api.post(`/publisher/interviews/${id}/reminders/send`),
+
+  // Get interview statistics
+  getStatistics: (params = {}) => api.get('/publisher/interviews/statistics', { params }),
 };
 
 export default api;

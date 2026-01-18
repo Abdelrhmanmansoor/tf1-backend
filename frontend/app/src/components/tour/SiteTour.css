@@ -1,0 +1,346 @@
+/* Site Tour - Glassmorphism Styles */
+/* RTL Support for Arabic */
+
+.site-tour {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99999;
+  direction: rtl;
+}
+
+/* Overlay */
+.tour-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Spotlight highlight */
+.tour-spotlight {
+  position: fixed;
+  border-radius: 8px;
+  box-shadow:
+    0 0 0 4px rgba(99, 102, 241, 0.5),
+    0 0 20px rgba(99, 102, 241, 0.3),
+    0 0 40px rgba(99, 102, 241, 0.2);
+  pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: spotlight-pulse 2s infinite;
+}
+
+@keyframes spotlight-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 4px rgba(99, 102, 241, 0.5),
+      0 0 20px rgba(99, 102, 241, 0.3),
+      0 0 40px rgba(99, 102, 241, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px rgba(99, 102, 241, 0.6),
+      0 0 30px rgba(99, 102, 241, 0.4),
+      0 0 60px rgba(99, 102, 241, 0.25);
+  }
+}
+
+/* Glassmorphism Tooltip */
+.tour-tooltip {
+  position: fixed;
+  max-width: 400px;
+  width: 90%;
+  padding: 24px;
+
+  /* Glassmorphism effect */
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+
+  color: white;
+  text-align: right;
+  pointer-events: auto;
+  z-index: 100000;
+
+  /* Animation */
+  animation: tooltip-fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Close button */
+.tour-close-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.tour-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  transform: rotate(90deg);
+}
+
+/* Content */
+.tour-content {
+  margin-bottom: 20px;
+}
+
+/* Step indicator */
+.tour-step-indicator {
+  display: inline-block;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3));
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 16px;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+/* Title */
+.tour-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+  color: white;
+  line-height: 1.4;
+}
+
+/* Description */
+.tour-description {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0 0 20px 0;
+}
+
+/* Progress dots */
+.tour-progress {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tour-progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  transition: all 0.3s ease;
+}
+
+.tour-progress-dot.active {
+  width: 24px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+.tour-progress-dot.completed {
+  background: rgba(99, 102, 241, 0.6);
+}
+
+/* Progress bar */
+.tour-progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.tour-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7);
+  border-radius: 2px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Controls */
+.tour-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tour-nav-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+/* Buttons */
+.tour-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tour-btn-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+.tour-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+}
+
+.tour-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.tour-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.tour-btn-skip {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 10px;
+}
+
+.tour-btn-skip:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tour-tooltip {
+    max-width: calc(100% - 32px);
+    padding: 20px;
+    margin: 16px;
+    bottom: auto !important;
+  }
+
+  .tour-title {
+    font-size: 1.2rem;
+  }
+
+  .tour-description {
+    font-size: 0.95rem;
+  }
+
+  .tour-controls {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .tour-btn-skip {
+    order: 2;
+  }
+
+  .tour-nav-buttons {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tour-btn {
+    flex: 1;
+    padding: 12px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tour-tooltip {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .tour-title {
+    font-size: 1.1rem;
+  }
+
+  .tour-description {
+    font-size: 0.9rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .tour-tooltip {
+    background: rgba(30, 30, 45, 0.9);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .tour-tooltip,
+  .tour-spotlight,
+  .tour-progress-dot,
+  .tour-progress-fill,
+  .tour-btn {
+    animation: none;
+    transition: none;
+  }
+
+  @keyframes spotlight-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.5);
+    }
+  }
+}
+
+/* RTL specific adjustments */
+[dir="rtl"] .tour-tooltip {
+  text-align: right;
+}
+
+[dir="rtl"] .tour-close-btn {
+  left: 12px;
+  right: auto;
+}
+
+[dir="rtl"] .tour-controls {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .tour-nav-buttons {
+  flex-direction: row-reverse;
+}
