@@ -365,12 +365,14 @@ exports.getApplicationDetails = catchAsync(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    application,
-    conversation: conversation ? {
-      id: conversation._id,
-      status: conversation.status,
-      lastApplicationMessageAt: conversation.lastApplicationMessageAt
-    } : null
+    data: {
+      application,
+      conversation: conversation ? {
+        id: conversation._id,
+        status: conversation.status,
+        lastApplicationMessageAt: conversation.lastApplicationMessageAt
+      } : null
+    }
   });
 });
 
