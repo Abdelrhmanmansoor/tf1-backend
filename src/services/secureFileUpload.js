@@ -1,11 +1,26 @@
 const multer = require('multer');
 const sharp = require('sharp');
-const { fromBuffer } = require('file-type');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs').promises;
 const logger = require('../utils/logger');
 const AppError = require('../utils/appError');
+
+let fileTypeFromBuffer;
+const detectFileTypeFromBuffer = async (buffer) => {
+  if (!fileTypeFromBuffer) {
+    try {
+      const mod = await import('file-type');
+      fileTypeFromBuffer = mod.fileTypeFromBuffer || mod.fromBuffer;
+    } catch (e) {
+      void e;
+      fileTypeFromBuffer = null;
+    }
+  }
+
+  if (!fileTypeFromBuffer) return null;
+  return fileTypeFromBuffer(buffer);
+};
 
 /**
  * SecureFileUploadService
@@ -41,7 +56,7 @@ class SecureFileUploadService {
    */
   async validateFileType(buffer, allowedTypes) {
     try {
-      const fileTypeResult = await fromBuffer(buffer);
+      const fileTypeResult = await detectFileTypeFromBuffer(buffer);
 
       if (!fileTypeResult) {
         throw new AppError('Unable to determine file type', 400);

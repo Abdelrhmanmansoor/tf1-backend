@@ -660,6 +660,8 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // ==================== START SERVER ====================
-startServer();
+if (require.main === module) {
+  startServer();
+}
 
 module.exports = { app, server };

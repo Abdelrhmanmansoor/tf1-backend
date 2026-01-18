@@ -3,7 +3,7 @@ const router = express.Router();
 const {
   authenticateAdminKey,
   checkPermission,
-} = require('../middleware/adminAuthDev');  // Use development middleware (no MongoDB required)
+} = require('../middleware/adminAuth');
 
 // Import controllers
 const dashboardController = require('../controllers/dashboardController');
@@ -65,38 +65,19 @@ router.get(
 router.get(
   '/admin-keys',
   checkPermission('manage_system_settings'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      data: [
-        { id: 'key1', keyName: 'Test Key', isActive: true, createdAt: new Date().toISOString() }
-      ]
-    });
-  }
+  dashboardController.getAdminKeys
 );
 
 router.post(
   '/admin-keys/create',
   checkPermission('manage_system_settings'),
-  (req, res) => {
-    res.status(201).json({
-      success: true,
-      message: 'Admin key created',
-      data: { id: 'key_' + Date.now(), rawKey: 'sk_admin_...' }
-    });
-  }
+  dashboardController.createAdminKey
 );
 
 router.post(
   '/admin-keys/:keyId/revoke',
   checkPermission('manage_system_settings'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      message: 'Admin key revoked',
-      data: { revokedId: req.params.keyId }
-    });
-  }
+  dashboardController.revokeAdminKey
 );
 
 // ==================== POSTS MANAGEMENT ROUTES ====================

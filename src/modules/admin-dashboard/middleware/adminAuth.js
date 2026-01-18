@@ -192,6 +192,11 @@ const authenticateAdminKey = async (req, res, next) => {
       usageCount: keyRecord.usageCount,
     };
 
+    req.admin = {
+      id: keyRecord.createdBy || keyRecord._id,
+    };
+    req.adminId = req.admin.id;
+
     // Log successful login
     await logAdminAction(
       req,

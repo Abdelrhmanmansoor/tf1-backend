@@ -4,7 +4,7 @@
  */
 
 const rateLimit = require('express-rate-limit');
-const { getClientIP } = require('./adminAuthDev');
+const { getClientIP } = require('./adminAuth');
 const logger = require('../../../utils/logger');
 
 // ==================== RATE LIMITING ====================

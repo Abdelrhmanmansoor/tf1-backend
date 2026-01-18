@@ -11,12 +11,17 @@ jest.mock('../services/locationService', () => ({
   validateArea: (...args) => mockValidateArea(...args),
 }));
 
-const matchService = require('../services/matchService');
+const mockCreateMatch = jest.fn();
+jest.mock('../services/matchService', () => ({
+  createMatch: (...args) => mockCreateMatch(...args),
+}));
+
+jest.resetModules();
+
 const matchController = require('../controllers/matchController');
 
 describe('MatchController.createMatch', () => {
   let req, res;
-  let createMatchSpy;
 
   beforeEach(() => {
     req = {
@@ -41,16 +46,12 @@ describe('MatchController.createMatch', () => {
       json: jest.fn()
     };
     
-    // Spy on matchService.createMatch
-    createMatchSpy = jest.spyOn(matchService, 'createMatch').mockImplementation(async () => ({
-        _id: '507f1f77bcf86cd799439014',
-        title: 'Test Match',
-        venue: 'Field 1'
-    }));
-  });
+    mockCreateMatch.mockResolvedValue({
+      _id: '507f1f77bcf86cd799439014',
+      title: 'Test Match',
+      venue: 'Field 1',
+    });
 
-  afterEach(() => {
-    createMatchSpy.mockRestore();
   });
 
   it('should create a match with new format and include venue', async () => {
@@ -73,7 +74,7 @@ describe('MatchController.createMatch', () => {
     expect(mockLocationFindById).toHaveBeenCalledWith('507f1f77bcf86cd799439012');
 
     // Verify matchService.createMatch was called with correct data
-    expect(createMatchSpy).toHaveBeenCalledWith(
+    expect(mockCreateMatch).toHaveBeenCalledWith(
         '507f1f77bcf86cd799439011', // userId
         expect.objectContaining({
             venue: 'Field 1',
@@ -108,7 +109,7 @@ describe('MatchController.createMatch', () => {
     await matchController.createMatch(req, res);
 
     // Verify matchService.createMatch was called
-    expect(createMatchSpy).toHaveBeenCalledWith(
+    expect(mockCreateMatch).toHaveBeenCalledWith(
         '507f1f77bcf86cd799439011',
         expect.objectContaining({
             city: 'Riyadh',
