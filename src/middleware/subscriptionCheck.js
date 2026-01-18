@@ -8,56 +8,53 @@ const AppError = require('../utils/appError');
 const logger = require('../utils/logger');
 
 /**
- * Helper function to create a free subscription for new users
+ * Helper function to create a FREE subscription for new users
+ * ALL TIERS ARE FREE - No pricing shown to users
+ * Admin can upgrade users from dashboard to give more features
+ *
+ * @param {ObjectId} publisherId - Publisher ID
+ * @param {String} tier - Subscription tier (free/basic/pro/enterprise)
+ * @returns {Promise<Subscription>}
  */
-async function createFreeSubscription(publisherId) {
+async function createFreeSubscription(publisherId, tier = 'free') {
   try {
     const now = new Date();
     const endDate = new Date();
-    endDate.setFullYear(endDate.getFullYear() + 100); // 100 years for free tier
+    endDate.setFullYear(endDate.getFullYear() + 100); // 100 years = lifetime
+
+    // Get tier limits from Subscription model (uses schema defaults)
+    const tierLimits = Subscription.getTierLimits(tier);
 
     const subscription = await Subscription.create({
       publisherId,
-      tier: 'free',
+      tier,
       status: 'active',
       billingCycle: 'lifetime',
       startDate: now,
       endDate: endDate,
-      isFree: true,
-      adminManaged: true,
+      isFree: true, // ALL subscriptions are FREE
+      adminManaged: true, // Can be modified from admin dashboard
       autoRenew: false,
       price: {
-        amount: 0,
+        amount: 0, // ALWAYS FREE - no pricing shown
         currency: 'SAR'
       },
-      features: {
-        // Free tier features
-        job_posting: true,
-        maxJobs: 3,
-        emailNotifications: true,
-        messaging: true,
-        maxThreads: 100,
-        fileAttachments: true,
-        basicAnalytics: true,
-        customBranding: false,
-        prioritySupport: false,
-        apiAccess: false,
-        automationRules: false,
-        advancedAnalytics: false,
-        bulkActions: false,
-        teamMembers: false,
-        maxTeamMembers: 1,
+      features: tierLimits, // Use tier limits from model
+      paymentMethod: {
+        type: 'free'
       },
-      usage: {
-        jobsThisMonth: 0,
-        applicationsThisMonth: 0,
-        messagesThisMonth: 0,
-        emailsSentThisMonth: 0,
-        lastResetDate: now
-      }
+      history: [
+        {
+          action: 'created',
+          toTier: tier,
+          date: now,
+          reason: 'Auto-created on first use'
+        }
+      ]
     });
 
-    logger.info(`✅ Created free subscription for publisher ${publisherId}`);
+    logger.info(`✅ Created FREE ${tier.toUpperCase()} subscription for publisher ${publisherId}`);
+    logger.info(`   Features: ${tierLimits.maxActiveJobs} jobs, ${tierLimits.maxApplicationsPerMonth} applications/month`);
     return subscription;
   } catch (error) {
     logger.error('Error creating free subscription:', error);
@@ -142,6 +139,9 @@ exports.requireFeature = (featureName) => {
 
 /**
  * Check usage limit before allowing action
+ * Supports schema field names from Subscription model
+ *
+ * @param {String} limitType - Type of limit to check (ActiveJobs, ApplicationsPerMonth, etc)
  */
 exports.checkUsageLimit = (limitType) => {
   return async (req, res, next) => {
@@ -159,8 +159,9 @@ exports.checkUsageLimit = (limitType) => {
         subscription = await createFreeSubscription(publisherId);
       }
 
-      const limitKey = `max${limitType.charAt(0).toUpperCase() + limitType.slice(1)}`;
-      const usageKey = `${limitType}ThisMonth`;
+      // Map limitType to schema field names
+      const limitKey = `max${limitType}`; // e.g. 'maxActiveJobs'
+      const usageKey = `${limitType.toLowerCase().replace(/perm onth$/, '')}ThisMonth`; // e.g. 'interviewsThisMonth'
 
       const limit = subscription.features[limitKey];
       const current = subscription.usage[usageKey] || 0;
@@ -169,7 +170,7 @@ exports.checkUsageLimit = (limitType) => {
       if (limit !== -1 && current >= limit) {
         return next(
           new AppError(
-            `You have reached your ${limitType} limit (${limit}). Please upgrade your subscription.`,
+            `You have reached your ${limitType} limit (${limit}). Contact admin to upgrade.`,
             403
           )
         );

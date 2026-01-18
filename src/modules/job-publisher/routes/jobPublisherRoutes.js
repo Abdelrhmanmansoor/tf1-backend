@@ -68,9 +68,8 @@ router.get('/jobs',
  */
 router.post('/jobs',
   validateJob,
-  subscriptionCheck.requireFeature('job_posting'),
-  subscriptionCheck.checkUsageLimit('Jobs'),
-  subscriptionCheck.incrementUsage('Jobs'),
+  subscriptionCheck.checkUsageLimit('ActiveJobs'), // Check max active jobs limit
+  subscriptionCheck.incrementUsage('interviews'), // Track usage
   jobPublisherController.createJob
 );
 
