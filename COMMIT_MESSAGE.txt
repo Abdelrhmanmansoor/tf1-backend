@@ -1,0 +1,31 @@
+Fix: Correct module imports and method calls in applicationController
+
+- Fixed duplicate 'Application' prefix in import variable names (lines 4-5)
+- Corrected import paths to Conversation.js and Message.js
+- Fixed static method call from createApplicationConversation to createConversation (lines 67, 120)
+- Fixed instance method call from updateLastApplicationMessage to updateLastMessage (line 137)
+
+Root Cause:
+The deployment was failing with "Cannot find module ApplicationConversation" because:
+1. Import paths pointed to non-existent files (ApplicationConversation.js, ApplicationMessage.js)
+2. Actual files are Conversation.js and Message.js
+3. These files export as ApplicationConversation and ApplicationMessage models
+4. Method names were incorrect (createApplicationConversation vs createConversation)
+
+Impact:
+- Fixes backend deployment error (exit code 1 on Render)
+- Enables application status update functionality
+- Enables automatic conversation creation on 'interviewed' status
+- No breaking changes to API or frontend
+
+Files Changed:
+- src/modules/job-publisher/controllers/applicationController.js (6 lines)
+
+Testing:
+- Verified model exports in Conversation.js and Message.js
+- Verified static method name is createConversation
+- Verified instance method name is updateLastMessage
+- No migration required
+- Frontend remains compatible
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>

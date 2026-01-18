@@ -1,8 +1,8 @@
 const Job = require('../../club/models/Job');
 const JobApplication = require('../../club/models/JobApplication');
 const JobPublisherProfile = require('../models/JobPublisherProfile');
-const ApplicationApplicationConversation = require('../../messaging/models/ApplicationConversation');
-const ApplicationApplicationMessage = require('../../messaging/models/ApplicationMessage');
+const ApplicationConversation = require('../../messaging/models/Conversation');
+const ApplicationMessage = require('../../messaging/models/Message');
 const Notification = require('../../notifications/models/Notification');
 const User = require('../../shared/models/User');
 const catchAsync = require('../../../utils/catchAsync');
@@ -64,7 +64,7 @@ exports.updateApplicationStatus = catchAsync(async (req, res) => {
   if (status === 'interviewed') {
     conversation = await ApplicationConversation.findOne({ applicationId });
     if (!conversation) {
-      conversation = await ApplicationConversation.createApplicationConversation(
+      conversation = await ApplicationConversation.createConversation(
         applicationId,
         application.jobId,
         publisherId,
@@ -117,7 +117,7 @@ exports.updateApplicationStatus = catchAsync(async (req, res) => {
       if (!conv) {
         conv = await ApplicationConversation.findOne({ applicationId });
         if (!conv) {
-          conv = await ApplicationConversation.createApplicationConversation(
+          conv = await ApplicationConversation.createConversation(
             applicationId,
             application.jobId,
             publisherId,
@@ -134,10 +134,10 @@ exports.updateApplicationStatus = catchAsync(async (req, res) => {
       });
 
       await msg.save();
-      await conv.updateLastApplicationMessage(message.trim(), publisherId);
+      await conv.updateLastMessage(message.trim(), publisherId);
       await conv.incrementUnread(application.applicantId);
 
-      logger.info(`✅ ApplicationMessage sent in conversation ${conv._id}`);
+      logger.info(`✅ Message sent in conversation ${conv._id}`);
     } catch (msgError) {
       logger.error('Error sending message:', msgError);
     }
