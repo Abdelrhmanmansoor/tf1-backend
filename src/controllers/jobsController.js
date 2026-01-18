@@ -64,8 +64,7 @@ exports.getJobs = async (req, res) => {
         postedAt: job.createdAt,
         club: {
           name: clubProfile?.clubName || 'نادي',
-          logo: clubProfile?.logo,
-          nationalAddress: clubProfile?.location?.nationalAddress
+          logo: clubProfile?.logo
         }
       };
     }));
@@ -152,8 +151,7 @@ exports.getJobById = async (req, res) => {
       club: {
         _id: job.clubId?._id,
         name: clubProfile?.clubName || 'Club',
-        logo: clubProfile?.logo,
-        nationalAddress: clubProfile?.location?.nationalAddress,
+        logo: clubProfile?.logo
       },
       requirements: job.requirements?.skills || [],
       responsibilities: job.responsibilities?.map(r => r.responsibility) || [],
@@ -939,17 +937,6 @@ exports.getJobsTicker = async (req, res) => {
       .limit(parseInt(limit))
       .lean();
 
-    // Get unique user IDs (club IDs) from events to check verification status
-    const userIds = [...new Set(events.filter(e => e.clubId && e.clubId._id).map(e => e.clubId._id))];
-    const ClubProfile = require('../modules/club/models/ClubProfile');
-    const profiles = await ClubProfile.find({ userId: { $in: userIds } }).select('userId location.nationalAddress.isVerified').lean();
-    
-    // Create a map for quick lookup
-    const verifiedMap = {};
-    profiles.forEach(p => {
-        if (p.userId) verifiedMap[p.userId.toString()] = p.location?.nationalAddress?.isVerified || false;
-    });
-
     const formattedEvents = events.map(event => ({
       id: event._id,
       jobId: event.jobId?._id,
@@ -961,8 +948,7 @@ exports.getJobsTicker = async (req, res) => {
       category: event.category,
       sport: event.sport,
       timestamp: event.createdAt,
-      applicantsCount: event.applicantsCount,
-      nationalAddressVerified: event.clubId && event.clubId._id ? (verifiedMap[event.clubId._id.toString()] || false) : false
+      applicantsCount: event.applicantsCount
     }));
 
     res.json({
@@ -1020,42 +1006,24 @@ exports.getJobEvents = async (req, res) => {
       JobEvent.countDocuments(query)
     ]);
 
-    // Optimize: Batch fetch verification status to avoid N+1 queries
-    const clubIds = [...new Set(events.map(e => e.clubId?._id).filter(Boolean))];
-    const ClubProfile = require('../modules/club/models/ClubProfile');
-    const profiles = await ClubProfile.find({ userId: { $in: clubIds } })
-      .select('userId location.nationalAddress.isVerified')
-      .lean();
-    
-    const verifiedMap = {};
-    profiles.forEach(p => {
-      if (p.userId) verifiedMap[p.userId.toString()] = p.location?.nationalAddress?.isVerified || false;
-    });
-
-    const formattedEvents = events.map(event => {
-      const clubIdStr = event.clubId?._id?.toString();
-      const nationalAddressVerified = clubIdStr ? (verifiedMap[clubIdStr] || false) : false;
-
-      return {
-        id: event._id,
-        jobId: event.jobId?._id,
-        jobTitle: event.jobTitle || event.jobId?.title,
-        jobTitleAr: event.jobTitleAr || event.jobId?.titleAr,
-        organization: event.organization,
-        description: event.description,
-        descriptionAr: event.descriptionAr,
-        eventType: event.eventType,
-        isUrgent: event.isUrgent,
-        category: event.category,
-        sport: event.sport,
-        region: event.region,
-        city: event.city,
-        timestamp: event.createdAt,
-        applicantsCount: event.applicantsCount,
-        expiresAt: event.expiresAt,
-        nationalAddressVerified
-      };
-    });
+    const formattedEvents = events.map(event => ({
+      id: event._id,
+      jobId: event.jobId?._id,
+      jobTitle: event.jobTitle || event.jobId?.title,
+      jobTitleAr: event.jobTitleAr || event.jobId?.titleAr,
+      organization: event.organization,
+      description: event.description,
+      descriptionAr: event.descriptionAr,
+      eventType: event.eventType,
+      isUrgent: event.isUrgent,
+      category: event.category,
+      sport: event.sport,
+      region: event.region,
+      city: event.city,
+      timestamp: event.createdAt,
+      applicantsCount: event.applicantsCount,
+      expiresAt: event.expiresAt
+    }));
 
     res.json({
       success: true,
@@ -1104,7 +1072,6 @@ exports.createJobEvent = async (req, res) => {
       organization: clubProfile?.clubName || 'نادي',
       eventType,
       isUrgent,
-      nationalAddressVerified: clubProfile?.location?.nationalAddress?.isVerified || false,
       description: job.description?.substring(0, 100),
       descriptionAr: job.descriptionAr?.substring(0, 100),
       category: job.category,

@@ -37,12 +37,7 @@ const createProfileSchema = Joi.object({
     addressAr: Joi.string().max(500).trim(),
     city: Joi.string().required().max(100).trim(),
     cityAr: Joi.string().max(100).trim(),
-    country: Joi.string().required().max(100).trim(),
-    nationalAddress: Joi.object({
-      buildingNumber: Joi.string().required(),
-      additionalNumber: Joi.string().required(),
-      zipCode: Joi.string().required().length(5).pattern(/^[0-9]{5}$/)
-    })
+    country: Joi.string().required().max(100).trim()
   }).required(),
   
   contactInfo: Joi.object({

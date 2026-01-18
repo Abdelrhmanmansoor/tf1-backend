@@ -66,23 +66,7 @@ const jobPublisherProfileSchema = new mongoose.Schema({
     trim: true
   },
 
-  nationalAddress: {
-    buildingNumber: String,
-    additionalNumber: String,
-    zipCode: String,
-    district: String,
-    city: String,
-    verified: {
-      type: Boolean,
-      default: false
-    },
-    verificationDate: Date,
-    verificationAttempted: {
-      type: Boolean,
-      default: false
-    },
-    verificationError: String
-  },
+  // National Address fields removed - no longer required
 
   // Representative Information
   representativeName: {
