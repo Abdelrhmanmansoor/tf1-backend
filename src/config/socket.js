@@ -7,6 +7,7 @@ const onlineUsers = new Map(); // userId -> socketId
 
 module.exports = io => {
   // Authentication middleware for Socket.io
+  // IMPORTANT: This only affects WebSocket connections, NOT REST API
   io.use(async (socket, next) => {
     try {
       const token =
@@ -14,16 +15,21 @@ module.exports = io => {
         socket.handshake.headers.authorization?.split(' ')[1];
 
       if (!token) {
-        logger.warn('Socket.io authentication failed: Token not provided', {
+        logger.debug('Socket.io: No token provided, allowing anonymous connection', {
           ip: socket.handshake.address,
         });
-        return next(new Error('Authentication error: Token not provided'));
+        // Allow connection but mark as unauthenticated
+        socket.user = null;
+        socket.isAuthenticated = false;
+        return next();
       }
 
       // Validate JWT secret is set
       if (!process.env.JWT_ACCESS_SECRET) {
         logger.error('JWT_ACCESS_SECRET is not configured');
-        return next(new Error('Authentication error: Server configuration error'));
+        socket.user = null;
+        socket.isAuthenticated = false;
+        return next(); // Allow connection anyway
       }
 
       // Verify token
@@ -32,48 +38,59 @@ module.exports = io => {
         decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
       } catch (jwtError) {
         if (jwtError.name === 'TokenExpiredError') {
-          logger.warn('Socket.io authentication failed: Token expired', {
+          logger.debug('Socket.io: Token expired, allowing connection as unauthenticated', {
             ip: socket.handshake.address,
           });
-          return next(new Error('Authentication error: Token expired'));
+          socket.user = null;
+          socket.isAuthenticated = false;
+          return next(); // Allow connection but unauthenticated
         }
         if (jwtError.name === 'JsonWebTokenError') {
-          logger.warn('Socket.io authentication failed: Invalid token', {
+          logger.debug('Socket.io: Invalid token, allowing connection as unauthenticated', {
             ip: socket.handshake.address,
           });
-          return next(new Error('Authentication error: Invalid token'));
+          socket.user = null;
+          socket.isAuthenticated = false;
+          return next(); // Allow connection but unauthenticated
         }
         throw jwtError;
       }
 
       if (!decoded || !decoded.userId) {
-        logger.warn('Socket.io authentication failed: Invalid token payload', {
+        logger.debug('Socket.io: Invalid token payload, allowing as unauthenticated', {
           ip: socket.handshake.address,
         });
-        return next(new Error('Authentication error: Invalid token payload'));
+        socket.user = null;
+        socket.isAuthenticated = false;
+        return next();
       }
 
       // Get user - use userId from the JWT payload
       const user = await User.findById(decoded.userId).select('-password');
 
       if (!user) {
-        logger.warn('Socket.io authentication failed: User not found', {
+        logger.debug('Socket.io: User not found, allowing as unauthenticated', {
           userId: decoded.userId,
           ip: socket.handshake.address,
         });
-        return next(new Error('Authentication error: User not found'));
+        socket.user = null;
+        socket.isAuthenticated = false;
+        return next();
       }
 
       if (!user.isVerified) {
-        logger.warn('Socket.io authentication failed: Email not verified', {
+        logger.debug('Socket.io: Email not verified, allowing as unauthenticated', {
           userId: user._id,
           ip: socket.handshake.address,
         });
-        return next(new Error('Authentication error: Email not verified'));
+        socket.user = null;
+        socket.isAuthenticated = false;
+        return next();
       }
 
-      // Attach user to socket
+      // Attach user to socket as authenticated
       socket.user = user;
+      socket.isAuthenticated = true;
       next();
     } catch (error) {
       logger.error('Socket.io authentication error', {
@@ -81,11 +98,28 @@ module.exports = io => {
         stack: error.stack,
         ip: socket.handshake.address,
       });
-      next(new Error('Authentication error: Internal server error'));
+      // Allow connection anyway as unauthenticated
+      socket.user = null;
+      socket.isAuthenticated = false;
+      next();
     }
   });
 
   io.on('connection', socket => {
+    // Handle both authenticated and unauthenticated connections
+    if (!socket.isAuthenticated || !socket.user) {
+      logger.debug('Socket.io: Unauthenticated connection established', {
+        ip: socket.handshake.address,
+      });
+
+      // Allow limited functionality for unauthenticated users
+      socket.on('disconnect', () => {
+        logger.debug('Unauthenticated socket disconnected');
+      });
+
+      return; // Don't set up authenticated event handlers
+    }
+
     const userId = socket.user._id.toString();
 
     logger.info(`User connected via Socket.io`, {
