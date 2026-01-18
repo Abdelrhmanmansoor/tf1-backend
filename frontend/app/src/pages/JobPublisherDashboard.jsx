@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { jobPublisherService } from '../config/api';
 import '../styles/AdminDashboard.css';
+import InterviewsTab from '../components/interviews/InterviewsTab';
+import SiteTour from '../components/tour/SiteTour';
 
 const JobPublisherDashboard = () => {
   const { user } = useAuth();
@@ -528,23 +530,33 @@ const JobPublisherDashboard = () => {
       {success && <div className="success-message">{success}</div>}
 
       <div className="admin-tabs">
-        <button 
+        <button
+          data-tour="dashboard"
           className={`tab-button ${activeTab === 'dashboard' ? 'active' : ''}`}
           onClick={() => setActiveTab('dashboard')}
         >
           📊 الرئيسية
         </button>
-        <button 
+        <button
+          data-tour="jobs"
           className={`tab-button ${activeTab === 'jobs' ? 'active' : ''}`}
           onClick={() => setActiveTab('jobs')}
         >
           📋 الوظائف
         </button>
-        <button 
+        <button
+          data-tour="applications"
           className={`tab-button ${activeTab === 'applications' ? 'active' : ''}`}
           onClick={() => setActiveTab('applications')}
         >
           📝 الطلبات
+        </button>
+        <button
+          data-tour="interviews"
+          className={`tab-button ${activeTab === 'interviews' ? 'active' : ''}`}
+          onClick={() => setActiveTab('interviews')}
+        >
+          📅 المقابلات
         </button>
       </div>
 
@@ -553,10 +565,40 @@ const JobPublisherDashboard = () => {
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'jobs' && renderJobs()}
         {activeTab === 'applications' && renderApplications()}
+        {activeTab === 'interviews' && <InterviewsTab />}
       </div>
 
       {showApplicationModal && renderApplicationModal()}
       {showJobModal && renderJobModal()}
+
+      {/* Site Tour for new users */}
+      <SiteTour
+        tourKey="job-publisher-dashboard"
+        steps={[
+          {
+            selector: '[data-tour="dashboard"]',
+            title: 'الرئيسية',
+            content: 'عرض ملخص سريع لإحصائيات وظائفك وآخر الطلبات المقدمة.'
+          },
+          {
+            selector: '[data-tour="jobs"]',
+            title: 'الوظائف',
+            content: 'إدارة جميع الوظائف المنشورة، إضافة وظائف جديدة، وعرض عدد المتقدمين لكل وظيفة.'
+          },
+          {
+            selector: '[data-tour="applications"]',
+            title: 'الطلبات',
+            content: 'استعراض جميع طلبات التوظيف، فلترة حسب الحالة، ومراجعة بيانات المتقدمين.'
+          },
+          {
+            selector: '[data-tour="interviews"]',
+            title: 'المقابلات',
+            content: 'عرض المقابلات المجدولة وإرسال إشعارات للمتقدمين عبر البريد الإلكتروني أو الرسائل النصية أو الواتساب.'
+          }
+        ]}
+        onComplete={() => console.log('Publisher tour completed!')}
+        onSkip={() => console.log('Publisher tour skipped')}
+      />
     </div>
   );
 };

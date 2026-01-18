@@ -183,7 +183,7 @@ exports.sendMessage = catchAsync(async (req, res) => {
 
     // Emit real-time notification
     if (global.io) {
-      global.io.to(`user_${participant.userId}`).emit('new_message', {
+      global.io.to(participant.userId.toString()).emit('new_message', {
         threadId: thread._id,
         message,
       });
