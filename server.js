@@ -132,6 +132,11 @@ if (NODE_ENV === 'production' || process.env.RENDER || process.env.REPL_ID || pr
   logger.info('Trust proxy enabled for production/cloud deployment');
 }
 
+// ==================== LOGGING MIDDLEWARE ====================
+// Request ID and logging middleware (MUST BE FIRST)
+const { requestLogger } = require('./src/middleware/requestLogger');
+app.use(requestLogger);
+
 // ==================== SECURITY MIDDLEWARE ====================
 // Apply security headers middleware first
 app.use(securityHeadersMiddleware);

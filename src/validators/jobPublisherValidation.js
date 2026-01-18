@@ -392,10 +392,23 @@ const objectIdSchema = Joi.string()
   });
 
 /**
- * Validation Middleware Generator
+ * Validation Middleware Generator (Enhanced with detailed logging)
  */
 const validate = (schema, property = 'body') => {
   return (req, res, next) => {
+    const { getRequestId } = require('../middleware/requestLogger');
+    const logger = require('../utils/logger');
+    const requestId = getRequestId();
+
+    // Log incoming data BEFORE validation
+    logger.debug(`[${requestId}] 🔍 Validating ${property}`, {
+      requestId,
+      property,
+      data: req[property],
+      url: req.originalUrl,
+      method: req.method,
+    });
+
     const { error, value } = schema.validate(req[property], {
       abortEarly: false, // Return all errors
       stripUnknown: true, // Remove unknown fields
@@ -403,19 +416,44 @@ const validate = (schema, property = 'body') => {
     });
 
     if (error) {
+      // Enhanced error details
       const errors = error.details.map(detail => ({
         field: detail.path.join('.'),
         message: detail.message,
-        type: detail.type
+        type: detail.type,
+        value: detail.context?.value,
+        label: detail.context?.label,
       }));
+
+      // Log validation errors with full details
+      logger.error(`[${requestId}] ❌ Validation Failed`, {
+        requestId,
+        property,
+        url: req.originalUrl,
+        method: req.method,
+        errors,
+        receivedData: req[property],
+        errorCount: errors.length,
+      });
 
       return res.status(400).json({
         success: false,
         message: 'Validation error',
         messageAr: 'خطأ في التحقق من البيانات',
-        errors
+        errors,
+        requestId, // Include requestId in response for debugging
+        debug: process.env.NODE_ENV === 'development' ? {
+          receivedData: req[property],
+          expectedSchema: schema.describe(),
+        } : undefined,
       });
     }
+
+    logger.debug(`[${requestId}] ✅ Validation Passed`, {
+      requestId,
+      property,
+      url: req.originalUrl,
+    });
 
     // Replace request data with validated and sanitized data
     req[property] = value;
