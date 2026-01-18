@@ -74,7 +74,7 @@ exports.scheduleInterview = catchAsync(async (req, res) => {
   // Handle online interview
   if (type === 'online') {
     interviewData.meetingPlatform = meetingPlatform || 'internal';
-    
+
     if (meetingPlatform === 'internal') {
       // Generate internal meeting link
       const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -370,6 +370,12 @@ exports.cancelInterview = catchAsync(async (req, res) => {
   // Send cancellation notification
   await notificationService.sendInterviewCancelled(interview);
 
+  // TRIGGER AUTOMATION
+  const automationIntegration = require('../../job-publisher/integrations/automationIntegration');
+  automationIntegration.onInterviewCancelled(interview, reason).catch(err => {
+    logger.error(`Failed to trigger automation for interview cancel ${id}`, err);
+  });
+
   logger.info(`Interview ${id} cancelled by publisher ${publisherId}`);
 
   res.status(200).json({
@@ -445,6 +451,12 @@ exports.submitFeedback = catchAsync(async (req, res) => {
 
   interview.addFeedback(feedbackData, userId);
   await interview.save();
+
+  // TRIGGER AUTOMATION
+  const automationIntegration = require('../../job-publisher/integrations/automationIntegration');
+  automationIntegration.onFeedbackSubmitted(interview, feedbackData).catch(err => {
+    logger.error(`Failed to trigger automation for feedback ${id}`, err);
+  });
 
   logger.info(`Feedback submitted for interview ${id} by user ${userId}`);
 
@@ -534,7 +546,7 @@ exports.joinInterviewByToken = catchAsync(async (req, res) => {
   // Check if interview time has passed significantly
   const now = new Date();
   const interviewEnd = new Date(interview.scheduledAt.getTime() + interview.duration * 60000);
-  
+
   if (now > interviewEnd) {
     throw new AppError('This interview has ended', 400);
   }

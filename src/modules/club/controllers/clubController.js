@@ -565,7 +565,7 @@ exports.getMemberStatistics = async (req, res) => {
 exports.createJob = async (req, res) => {
   try {
     console.log('📝 Creating job posting with data:', req.body);
-    
+
     const jobData = {
       clubId: req.user._id,
       postedBy: req.user._id,
@@ -624,6 +624,12 @@ exports.createJob = async (req, res) => {
     const job = new Job(jobData);
     await job.save();
 
+    // TRIGGER AUTOMATION
+    const automationIntegration = require('../../job-publisher/integrations/automationIntegration');
+    automationIntegration.onJobPublished(job).catch(err => {
+      logger.error(`Failed to trigger automation for job publish ${job._id}`, err);
+    });
+
     console.log('✅ Job posting created successfully:', job._id);
 
     res.status(201).json({
@@ -634,7 +640,7 @@ exports.createJob = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error creating job posting:', error);
-    
+
     // Handle validation errors
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => ({
@@ -1058,7 +1064,7 @@ exports.scheduleInterview = async (req, res) => {
         const emailService = require('../../../utils/email');
         const ClubProfile = require('../models/ClubProfile');
         const clubProfile = await ClubProfile.findOne({ userId: req.user._id });
-        
+
         await emailService.sendInterviewEmail(
           application.applicantId,
           application.jobId.titleAr || application.jobId.title,
@@ -1170,7 +1176,7 @@ exports.makeOffer = async (req, res) => {
         const emailService = require('../../../utils/email');
         const ClubProfile = require('../models/ClubProfile');
         const clubProfile = await ClubProfile.findOne({ userId: req.user._id });
-        
+
         await emailService.sendOfferEmail(
           application.applicantId,
           application.jobId.titleAr || application.jobId.title,
@@ -1280,7 +1286,7 @@ exports.hireApplicant = async (req, res) => {
         const emailService = require('../../../utils/email');
         const ClubProfile = require('../models/ClubProfile');
         const clubProfile = await ClubProfile.findOne({ userId: req.user._id });
-        
+
         await emailService.sendHireEmail(
           application.applicantId,
           application.jobId.titleAr || application.jobId.title,
@@ -1389,7 +1395,7 @@ exports.rejectApplication = async (req, res) => {
         const emailService = require('../../../utils/email');
         const ClubProfile = require('../models/ClubProfile');
         const clubProfile = await ClubProfile.findOne({ userId: req.user._id });
-        
+
         await emailService.sendRejectionEmail(
           application.applicantId,
           application.jobId.titleAr || application.jobId.title,
@@ -1428,7 +1434,7 @@ exports.rejectApplication = async (req, res) => {
 exports.sendDirectMessage = async (req, res) => {
   try {
     const { message, language } = req.body;
-    
+
     if (!message || message.trim().length === 0) {
       return res.status(400).json({
         success: false,
@@ -1558,9 +1564,9 @@ exports.getTeamById = async (req, res) => {
       clubId: req.user._id,
       isDeleted: false
     })
-    .populate('players.userId', 'fullName profilePicture')
-    .populate('coaches.userId', 'fullName profilePicture')
-    .populate('staff.userId', 'fullName profilePicture');
+      .populate('players.userId', 'fullName profilePicture')
+      .populate('coaches.userId', 'fullName profilePicture')
+      .populate('staff.userId', 'fullName profilePicture');
 
     if (!team) {
       return res.status(404).json({
@@ -2207,7 +2213,7 @@ exports.getDashboardStats = async (req, res) => {
         console.warn('[getDashboardStats] Member stats error:', err.message);
         return { newThisMonth: 0 }; // Fallback
       }),
-      
+
       // Get active jobs with timeout fallback
       Job.countDocuments({
         clubId: req.user._id,
@@ -2217,7 +2223,7 @@ exports.getDashboardStats = async (req, res) => {
         console.warn('[getDashboardStats] Active jobs error:', err.message);
         return 0; // Fallback
       }),
-      
+
       // Get pending applications with timeout fallback
       JobApplication.countDocuments({
         clubId: req.user._id,
@@ -2227,13 +2233,13 @@ exports.getDashboardStats = async (req, res) => {
         console.warn('[getDashboardStats] Pending applications error:', err.message);
         return 0; // Fallback
       }),
-      
+
       // Get upcoming events with timeout fallback
       Event.getUpcomingEvents(req.user._id, 7).catch(err => {
         console.warn('[getDashboardStats] Upcoming events error:', err.message);
         return []; // Fallback
       }),
-      
+
       // Get pending membership requests with timeout fallback
       ClubMember.countDocuments({
         clubId: req.user._id,
@@ -2243,7 +2249,7 @@ exports.getDashboardStats = async (req, res) => {
         console.warn('[getDashboardStats] Pending members error:', err.message);
         return 0; // Fallback
       }),
-      
+
       // Get pending bookings with timeout fallback
       FacilityBooking.countDocuments({
         clubId: req.user._id,

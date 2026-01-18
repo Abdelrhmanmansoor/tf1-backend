@@ -190,6 +190,13 @@ exports.sendMessage = catchAsync(async (req, res) => {
     }
   }
 
+  // TRIGGER AUTOMATION (New Message Received)
+  // We fire this asynchronously
+  const automationIntegration = require('../../job-publisher/integrations/automationIntegration');
+  automationIntegration.onMessageReceived(message, thread).catch(err => {
+    logger.error(`Failed to trigger automation for message ${message._id}`, err);
+  });
+
   logger.info(`Message sent in thread ${id} by user ${senderId}`);
 
   res.status(201).json({

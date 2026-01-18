@@ -1,246 +1,219 @@
-/**
- * Integration layer between Job Publisher module and Automation System
- * This file contains hooks and helpers to trigger automation when application status changes
- */
-
-const automationEngine = require('../../automation/services/automationEngine');
+const AutomationQueue = require('../../automation/services/automationQueue');
+const User = require('../../shared/models/User');
 const MessageThread = require('../../messaging/models/MessageThread');
 const logger = require('../../../utils/logger');
+const Job = require('../../club/models/Job');
 
-/**
- * Hook: Application status changed
- * Trigger automation when application moves to different stages
- */
-async function onApplicationStatusChanged(application, oldStatus, newStatus) {
-  try {
-    logger.info(`Application ${application._id} status changed from ${oldStatus} to ${newStatus}`);
-
-    // Prepare automation data
-    const automationData = await prepareApplicationData(application);
-    automationData.oldStatus = oldStatus;
-    automationData.newStatus = newStatus;
-
-    // Trigger automation
-    await automationEngine.trigger(
-      'APPLICATION_STAGE_CHANGED',
-      automationData,
-      application.publisherId || application.jobId.publishedBy
-    );
-
-    // If moving to interview stage, auto-open messaging
-    if (newStatus === 'interview') {
-      await autoOpenMessagingThread(application);
-    }
-
-    logger.info(`Automation triggered for application ${application._id}`);
-  } catch (error) {
-    logger.error('Error in onApplicationStatusChanged hook:', error);
-    // Don't throw error - automation failure shouldn't block application update
-  }
-}
-
-/**
- * Hook: Application submitted
- * Trigger automation when new application is submitted
- */
-async function onApplicationSubmitted(application) {
-  try {
-    logger.info(`New application ${application._id} submitted`);
-
-    const automationData = await prepareApplicationData(application);
-
-    // Trigger automation
-    await automationEngine.trigger(
-      'APPLICATION_SUBMITTED',
-      automationData,
-      application.publisherId || application.jobId.publishedBy
-    );
-
-    logger.info(`Automation triggered for new application ${application._id}`);
-  } catch (error) {
-    logger.error('Error in onApplicationSubmitted hook:', error);
-  }
-}
-
-/**
- * Hook: Interview scheduled
- * Trigger automation when interview is scheduled
- */
-async function onInterviewScheduled(interview) {
-  try {
-    logger.info(`Interview ${interview._id} scheduled`);
-
-    const automationData = await prepareInterviewData(interview);
-
-    // Trigger automation
-    await automationEngine.trigger(
-      'INTERVIEW_SCHEDULED',
-      automationData,
-      interview.publisherId
-    );
-
-    logger.info(`Automation triggered for interview ${interview._id}`);
-  } catch (error) {
-    logger.error('Error in onInterviewScheduled hook:', error);
-  }
-}
-
-/**
- * Hook: Interview completed
- * Trigger automation when interview is completed
- */
-async function onInterviewCompleted(interview) {
-  try {
-    logger.info(`Interview ${interview._id} completed`);
-
-    const automationData = await prepareInterviewData(interview);
-
-    // Trigger automation
-    await automationEngine.trigger(
-      'INTERVIEW_COMPLETED',
-      automationData,
-      interview.publisherId
-    );
-
-    logger.info(`Automation triggered for completed interview ${interview._id}`);
-  } catch (error) {
-    logger.error('Error in onInterviewCompleted hook:', error);
-  }
-}
-
-/**
- * Helper: Auto-open messaging thread when moving to interview stage
- */
-async function autoOpenMessagingThread(application) {
-  try {
-    // Create or find message thread
-    const thread = await MessageThread.findOrCreateForApplication(
-      application._id,
-      application.jobId,
-      application.applicantId,
-      application.publisherId || application.jobId.publishedBy
-    );
-
-    logger.info(`Messaging thread ${thread._id} opened for application ${application._id}`);
-
-    return thread;
-  } catch (error) {
-    logger.error('Error auto-opening messaging thread:', error);
-    throw error;
-  }
-}
-
-/**
- * Helper: Prepare application data for automation
- */
-async function prepareApplicationData(application) {
-  const Job = require('../../club/models/Job');
-  const User = require('../../shared/models/User');
-
-  // Populate if needed
-  if (!application.jobId.title) {
-    await application.populate('jobId');
-  }
-  if (!application.applicantId.firstName) {
-    await application.populate('applicantId');
-  }
-
-  const publisher = await User.findById(
-    application.publisherId || application.jobId.publishedBy
-  ).lean();
-
-  return {
-    applicationId: application._id,
-    jobId: application.jobId._id,
-    applicantId: application.applicantId._id,
-    publisherId: publisher._id,
-    status: application.status,
-    applicationDate: application.createdAt,
-    jobTitle: application.jobId.title,
-    jobTitleAr: application.jobId.titleAr,
-    applicantName: `${application.applicantId.firstName} ${application.applicantId.lastName}`,
-    applicantEmail: application.applicantId.email,
-    companyName: publisher.companyName || `${publisher.firstName} ${publisher.lastName}`,
-    entityType: 'job_application',
-    entityId: application._id,
-  };
-}
-
-/**
- * Helper: Prepare interview data for automation
- */
-async function prepareInterviewData(interview) {
-  const Job = require('../../club/models/Job');
-  const User = require('../../shared/models/User');
-
-  const [job, applicant, publisher] = await Promise.all([
-    Job.findById(interview.jobId).lean(),
-    User.findById(interview.applicantId).lean(),
-    User.findById(interview.publisherId).lean(),
-  ]);
-
-  return {
-    interviewId: interview._id,
-    jobId: interview.jobId,
-    applicationId: interview.applicationId,
-    applicantId: interview.applicantId,
-    publisherId: interview.publisherId,
-    interviewType: interview.type,
-    scheduledAt: interview.scheduledAt,
-    status: interview.status,
-    jobTitle: job.title,
-    jobTitleAr: job.titleAr,
-    applicantName: `${applicant.firstName} ${applicant.lastName}`,
-    applicantEmail: applicant.email,
-    companyName: publisher.companyName || `${publisher.firstName} ${publisher.lastName}`,
-    meetingUrl: interview.meetingUrl,
-    location: interview.location,
-    entityType: 'interview',
-    entityId: interview._id,
-  };
-}
-
-/**
- * Middleware: Add automation hooks to application update
- * Use this middleware in application controller
- */
-function withAutomationHooks(handler) {
-  return async (req, res, next) => {
+class AutomationIntegration {
+  /**
+   * Helper: Trigger automation with Queue support
+   */
+  async trigger(event, data, publisherId, meta = {}) {
     try {
-      // Store original status before update
-      const application = await require('../../club/models/JobApplication').findById(
-        req.params.id || req.body.applicationId
-      );
-
-      if (application) {
-        req.oldApplicationStatus = application.status;
-      }
-
-      // Call original handler
-      await handler(req, res, next);
+      await AutomationQueue.add(event, data, publisherId, meta);
     } catch (error) {
-      next(error);
+      logger.error(`Failed to trigger automation event ${event}:`, error);
     }
-  };
-}
+  }
 
-/**
- * Post-update hook: Trigger automation after application update
- */
-async function afterApplicationUpdate(application, oldStatus) {
-  if (oldStatus && oldStatus !== application.status) {
-    await onApplicationStatusChanged(application, oldStatus, application.status);
+  // ==========================================
+  // EXISTING HOOKS (UPDATED)
+  // ==========================================
+
+  async onApplicationStatusChanged(application, oldStatus, newStatus, meta = {}) {
+    try {
+      if (oldStatus === newStatus) return;
+
+      const data = await this.prepareApplicationData(application);
+      data.oldStatus = oldStatus;
+      data.newStatus = newStatus;
+
+      // Trigger: APPLICATION_STAGE_CHANGED
+      await this.trigger('APPLICATION_STAGE_CHANGED', data, application.publisherId, meta);
+
+      // Helper: Auto-open messaging thread if interviewed
+      if (newStatus === 'interviewed') {
+        this.autoOpenMessagingThread(application);
+      }
+    } catch (error) {
+      logger.error('Error in onApplicationStatusChanged automation hook:', error);
+    }
+  }
+
+  async onApplicationSubmitted(application) {
+    try {
+      const data = await this.prepareApplicationData(application);
+      await this.trigger('APPLICATION_SUBMITTED', data, application.publisherId);
+    } catch (error) {
+      logger.error('Error in onApplicationSubmitted automation hook:', error);
+    }
+  }
+
+  async onInterviewScheduled(interview) {
+    try {
+      const data = await this.prepareInterviewData(interview);
+      await this.trigger('INTERVIEW_SCHEDULED', data, interview.publisherId);
+    } catch (error) {
+      logger.error('Error in onInterviewScheduled automation hook:', error);
+    }
+  }
+
+  async onInterviewCompleted(interview) {
+    try {
+      const data = await this.prepareInterviewData(interview);
+      await this.trigger('INTERVIEW_COMPLETED', data, interview.publisherId);
+    } catch (error) {
+      logger.error('Error in onInterviewCompleted automation hook:', error);
+    }
+  }
+
+  // ==========================================
+  // NEW MISSING HOOKS
+  // ==========================================
+
+  async onInterviewCancelled(interview, reason) {
+    try {
+      const data = await this.prepareInterviewData(interview);
+      data.cancellationReason = reason;
+      await this.trigger('INTERVIEW_CANCELLED', data, interview.publisherId);
+    } catch (error) {
+      logger.error('Error in onInterviewCancelled automation hook:', error);
+    }
+  }
+
+  async onMessageReceived(message, thread) {
+    try {
+      // Only trigger for Publisher if they are a participant
+      if (message.senderRole === 'publisher') return; // Don't trigger on own messages
+
+      const publisherParticipant = thread.participants.find(p => p.role === 'publisher');
+      if (!publisherParticipant) return;
+
+      const publisherId = publisherParticipant.userId;
+      const data = await this.prepareMessageData(message, thread);
+
+      await this.trigger('MESSAGE_RECEIVED', data, publisherId);
+    } catch (error) {
+      logger.error('Error in onMessageReceived automation hook:', error);
+    }
+  }
+
+  async onJobPublished(job) {
+    try {
+      const data = await this.prepareJobData(job);
+      await this.trigger('JOB_PUBLISHED', data, job.publishedBy);
+    } catch (error) {
+      logger.error('Error in onJobPublished automation hook:', error);
+    }
+  }
+
+  async onApplicationUpdated(application, changes) {
+    try {
+      const data = await this.prepareApplicationData(application);
+      data.changes = changes;
+      await this.trigger('APPLICATION_UPDATED', data, application.publisherId);
+    } catch (error) {
+      logger.error('Error in onApplicationUpdated automation hook:', error);
+    }
+  }
+
+  async onFeedbackSubmitted(interview, feedback) {
+    try {
+      const data = await this.prepareInterviewData(interview);
+      data.feedback = feedback;
+      await this.trigger('FEEDBACK_SUBMITTED', data, interview.publisherId);
+    } catch (error) {
+      logger.error('Error in onFeedbackSubmitted automation hook:', error);
+    }
+  }
+
+  // ==========================================
+  // DATA PREPARATION HELPERS
+  // ==========================================
+
+  async prepareApplicationData(application) {
+    // Ensure populated
+    if (!application.jobId?.title || !application.applicantId?.firstName) {
+      // Just in case populate is needed, though usually controllers populate it
+      // Note: checking nested properties safely
+      await application.populate('jobId applicantId');
+    }
+
+    const publisher = await User.findById(application.publisherId).lean();
+
+    return {
+      entityId: application._id, // For idempotency
+      applicationId: application._id,
+      jobId: application.jobId?._id,
+      applicantId: application.applicantId?._id,
+      publisherId: application.publisherId,
+      status: application.status,
+      jobTitle: application.jobId?.title || 'Job',
+      applicantName: `${application.applicantId?.firstName} ${application.applicantId?.lastName}`,
+      applicantEmail: application.applicantId?.email,
+      companyName: publisher ? publisher.companyName : 'Company',
+      applicationDate: application.createdAt,
+    };
+  }
+
+  async prepareInterviewData(interview) {
+    if (!interview.jobId?.title || !interview.applicantId?.firstName) {
+      await interview.populate('jobId applicantId');
+    }
+
+    return {
+      entityId: interview._id,
+      interviewId: interview._id,
+      jobId: interview.jobId?._id,
+      applicantId: interview.applicantId?._id,
+      jobTitle: interview.jobId?.title,
+      applicantName: `${interview.applicantId?.firstName} ${interview.applicantId?.lastName}`,
+      applicantEmail: interview.applicantId?.email,
+      scheduledAt: interview.scheduledAt,
+      type: interview.type,
+      meetingUrl: interview.meetingUrl,
+      location: interview.location
+    };
+  }
+
+  async prepareMessageData(message, thread) {
+    // Ensure populated
+    if (!thread.jobId?.title) await thread.populate('jobId');
+
+    const sender = await User.findById(message.senderId).lean();
+
+    return {
+      entityId: message._id,
+      messageId: message._id,
+      threadId: thread._id,
+      content: message.content,
+      senderName: sender ? `${sender.firstName} ${sender.lastName}` : 'User',
+      jobTitle: thread.jobId?.title || 'Job'
+    };
+  }
+
+  async prepareJobData(job) {
+    return {
+      entityId: job._id,
+      jobId: job._id,
+      jobTitle: job.title,
+      status: job.status,
+      publishedAt: new Date()
+    };
+  }
+
+  async autoOpenMessagingThread(application) {
+    try {
+      await MessageThread.findOrCreateForApplication(
+        application._id,
+        application.jobId._id,
+        application.applicantId._id,
+        application.publisherId
+      );
+    } catch (error) {
+      logger.error('Error auto-opening messaging thread:', error);
+    }
   }
 }
 
-module.exports = {
-  onApplicationStatusChanged,
-  onApplicationSubmitted,
-  onInterviewScheduled,
-  onInterviewCompleted,
-  autoOpenMessagingThread,
-  prepareApplicationData,
-  prepareInterviewData,
-  withAutomationHooks,
-  afterApplicationUpdate,
-};
+module.exports = new AutomationIntegration();

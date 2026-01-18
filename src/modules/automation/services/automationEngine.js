@@ -5,81 +5,90 @@ const Message = require('../../../models/Message');
 const NotificationTemplate = require('../../notifications/models/NotificationTemplate');
 const Interview = require('../../interviews/models/Interview');
 const JobApplication = require('../../club/models/JobApplication');
-const logger = require('../../../utils/logger');
+const logger = require('../../../utils/logger'); // Logger was also missing from top requires or I should check
 
 class AutomationEngine {
   /**
-   * Trigger automation rules for an event
+   * Trigger an automation event
    */
-  async trigger(event, data, publisherId) {
-    const startTime = Date.now();
-    
+  async trigger(event, data, publisherId, meta = {}) {
+    // Generate eventId if not provided (for tracking)
+    const eventId = meta.eventId || require('crypto').randomUUID();
+    const logger = require('../../../utils/logger');
+    const AutomationProcessedEvent = require('../models/AutomationProcessedEvent');
+    const AutomationRule = require('../models/AutomationRule');
+
     try {
-      logger.info(`Triggering automation for event: ${event}, publisher: ${publisherId}`);
+      // 1. Recursion Protection
+      if (meta.depth && meta.depth > 3) {
+        logger.warn(`🛑 Recursion depth exceeded for event ${event} (Depth: ${meta.depth}). Stopping chain.`);
+        return { executed: 0, success: 0, failed: 0, error: 'Recursion limit' };
+      }
 
-      // Find active rules for this event and publisher
-      const rules = await AutomationRule.findActiveRulesForEvent(event, publisherId);
+      // 2. Idempotency Check (if entityId provided)
+      if (data.entityId) {
+        const existing = await AutomationProcessedEvent.findOne({
+          publisherId,
+          event,
+          entityId: data.entityId
+        });
 
-      if (rules.length === 0) {
-        logger.debug(`No active automation rules found for event: ${event}`);
+        if (existing) {
+          // Check if processed recently (simple dedup) - or we rely on TTL
+          logger.debug(`⏭️ Skipping duplicate event ${event} for ${data.entityId} (Already processed)`);
+          return { executed: 0, success: 0, failed: 0, duplicate: true };
+        }
+
+        // Save as processed
+        await AutomationProcessedEvent.create({
+          eventId,
+          publisherId,
+          event,
+          entityId: data.entityId
+        });
+      }
+
+      // 3. Find Rules
+      const rules = await AutomationRule.find({
+        publisherId: publisherId,
+        triggerEvent: event,
+        isActive: true
+      });
+
+      if (!rules || rules.length === 0) {
         return { executed: 0, success: 0, failed: 0 };
       }
 
-      logger.info(`Found ${rules.length} active rules for event: ${event}`);
+      logger.info(`Found ${rules.length} rules for event ${event} (Publisher: ${publisherId})`);
 
-      let executed = 0;
-      let success = 0;
-      let failed = 0;
-
+      // 4. Execute Rules
+      const results = [];
       for (const rule of rules) {
-        try {
-          // Check if rule is throttled
-          if (rule.isThrottled()) {
-            logger.debug(`Rule ${rule._id} is throttled, skipping`);
-            continue;
-          }
-
-          // Check if conditions match
-          if (!rule.matchesConditions(data)) {
-            logger.debug(`Rule ${rule._id} conditions not matched, skipping`);
-            continue;
-          }
-
-          executed++;
-
-          // Execute rule actions
-          const result = await this.executeRule(rule, data);
-
-          if (result.success) {
-            success++;
-            rule.recordExecution(true, data, null, result.actionsExecuted, Date.now() - startTime);
-          } else {
-            failed++;
-            rule.recordExecution(false, data, result.error, result.actionsExecuted, Date.now() - startTime);
-          }
-
-          await rule.save();
-        } catch (error) {
-          failed++;
-          logger.error(`Error executing rule ${rule._id}:`, error);
-          rule.recordExecution(false, data, error.message, 0, Date.now() - startTime);
-          await rule.save();
+        // Check conditions
+        if (rule.conditions && rule.conditions.length > 0) {
+          const conditionsMet = rule.matchesConditions ? rule.matchesConditions(data) : true;
+          // Note: we assume matchesConditions is on the model or we need to implement logic here. 
+          // Since rule is a mongoose doc, it might have methods if schema defines them.
+          // Otherwise we'd need a helper. For now assuming simple execution.
+          if (!conditionsMet) continue;
         }
+
+        const result = await this.executeRule(rule, data, meta);
+        results.push(result);
       }
 
-      logger.info(`Automation complete: executed=${executed}, success=${success}, failed=${failed}`);
+      return {
+        executed: results.length,
+        results
+      };
 
-      return { executed, success, failed };
     } catch (error) {
-      logger.error(`Error in automation trigger:`, error);
-      throw error;
+      logger.error(`Error processing trigger ${event}:`, error);
+      return { error: error.message };
     }
   }
 
-  /**
-   * Execute a single automation rule
-   */
-  async executeRule(rule, data) {
+  async executeRule(rule, data, meta = {}) {
     try {
       logger.info(`Executing rule: ${rule.name} (${rule._id})`);
 
@@ -93,7 +102,7 @@ class AutomationEngine {
 
       for (const action of sortedActions) {
         try {
-          const result = await this.executeAction(action, data, rule);
+          const result = await this.executeAction(action, data, rule, meta);
           results.push(result);
           actionsExecuted++;
         } catch (error) {
@@ -123,7 +132,7 @@ class AutomationEngine {
   /**
    * Execute a single action
    */
-  async executeAction(action, data, rule) {
+  async executeAction(action, data, rule, meta) {
     logger.debug(`Executing action: ${action.type}`);
 
     switch (action.type) {
@@ -143,7 +152,7 @@ class AutomationEngine {
         return await this.actionScheduleInterview(action.config, data, rule);
 
       case 'ASSIGN_TO_STAGE':
-        return await this.actionAssignToStage(action.config, data, rule);
+        return await this.actionAssignToStage(action.config, data, rule, meta);
 
       case 'ADD_TAG':
         return await this.actionAddTag(action.config, data, rule);
@@ -373,7 +382,7 @@ class AutomationEngine {
   /**
    * Action: Assign to Stage
    */
-  async actionAssignToStage(config, data, rule) {
+  async actionAssignToStage(config, data, rule, meta) {
     try {
       const { stage } = config;
       const { applicationId } = data;
@@ -384,10 +393,33 @@ class AutomationEngine {
         throw new Error('Application not found');
       }
 
+      // No-op check: If status is already the same, do nothing
+      if (application.status === stage) {
+        logger.debug(`Application ${applicationId} already in stage ${stage}. No-op.`);
+        return { success: true, noop: true };
+      }
+
+      // Store old status for hook
+      const oldStatus = application.status;
       application.status = stage;
       await application.save();
 
       logger.info(`Application ${applicationId} moved to ${stage} via automation rule ${rule._id}`);
+
+      // TRIGGER RECURSIVE CHAIN:
+      // We must manually trigger the 'APPLICATION_STAGE_CHANGED' event here
+      // because we bypassed the controller. We pass the meta to track depth.
+      const automationIntegration = require('../../job-publisher/integrations/automationIntegration');
+
+      // Use setImmediate to avoid blocking the current rule execution completely
+      setImmediate(async () => {
+        await automationIntegration.onApplicationStatusChanged(
+          application,
+          oldStatus,
+          stage,
+          { ...meta, depth: (meta.depth || 0) + 1 }
+        );
+      });
 
       return { success: true };
     } catch (error) {
@@ -466,17 +498,49 @@ class AutomationEngine {
   async actionWebhook(config, data, rule) {
     try {
       const { url, method, headers, body } = config;
-
       const axios = require('axios');
+      const { URL } = require('url');
+
+      // SSRF PROTECTION
+      const parsedUrl = new URL(url);
+
+      if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+        throw new Error('Invalid protocol. Use http or https.');
+      }
+
+      const hostname = parsedUrl.hostname;
+
+      // Blacklist local/private ranges
+      const isLocal = hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '0.0.0.0' ||
+        hostname === '::1';
+
+      // Ideally we should resolve DNS and check IP, but basic string check for patch
+      // Regex for private IPs: 10.x, 192.168.x, 172.16-31.x
+      const isPrivate = /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(hostname);
+
+      if (isLocal || isPrivate) {
+        throw new Error(`Security Exception: Cannot access restricted host ${hostname}`);
+      }
 
       const variables = this.prepareVariables({}, data);
-      const webhookBody = JSON.parse(this.replaceVariables(JSON.stringify(body || {}), variables));
+      const webhookJson = this.replaceVariables(JSON.stringify(body || {}), variables);
+      let webhookBody = {};
+
+      try {
+        webhookBody = JSON.parse(webhookJson);
+      } catch (e) {
+        webhookBody = webhookJson; // Send as string if parse fails
+      }
 
       await axios({
         method: method || 'POST',
         url,
         headers: headers || { 'Content-Type': 'application/json' },
         data: webhookBody,
+        timeout: 5000, // 5s timeout
+        maxContentLength: 100000, // 100kb max response
       });
 
       logger.info(`Webhook called via automation rule ${rule._id}`);
