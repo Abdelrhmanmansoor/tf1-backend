@@ -269,12 +269,15 @@ export const jobPublisherService = {
 };
 
 export const applicantService = {
-  getDashboard: () => api.get('/applicant/dashboard'),
+  getDashboard: (params = {}) => api.get('/applicant/dashboard', { params }),
+  getRecommendations: (params = {}) => api.get('/applicant/recommendations', { params }),
   getMyApplications: (params = {}) => api.get('/applicant/applications', { params }),
   getApplicationDetails: (applicationId) => api.get(`/applicant/applications/${applicationId}`),
   withdrawApplication: (applicationId, reason = '') => 
     api.put(`/applicant/applications/${applicationId}/withdraw`, { reason }),
   getAvailableJobs: (params = {}) => api.get('/applicant/jobs', { params }),
+  getProfile: () => api.get('/applicant/profile'),
+  updateProfile: (data) => api.put('/applicant/profile', data),
 };
 
 export default api;

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const applicantController = require('../controllers/applicantController');
+const applicantProfileController = require('../controllers/applicantProfileController');
 const { authenticate } = require('../../../middleware/auth');
 const { checkPermission } = require('../../../middleware/rbac');
 const { PERMISSIONS } = require('../../../config/roles');
@@ -30,6 +31,16 @@ router.use(requireApplicant);
  * @access  Private (applicant)
  */
 router.get('/dashboard', applicantController.getDashboard);
+
+/**
+ * @route   GET /api/v1/applicant/recommendations
+ * @desc    Get recommended jobs for applicant
+ * @access  Private (applicant)
+ */
+router.get('/recommendations', applicantController.getRecommendedJobs);
+
+router.get('/profile', applicantProfileController.getMyProfile);
+router.put('/profile', applicantProfileController.updateMyProfile);
 
 /**
  * @route   GET /api/v1/applicant/applications

@@ -1,6 +1,7 @@
 const Job = require('../../club/models/Job');
 const JobApplication = require('../../club/models/JobApplication');
 const User = require('../../shared/models/User');
+const mongoose = require('mongoose');
 const catchAsync = require('../../../utils/catchAsync');
 const AppError = require('../../../utils/appError');
 const logger = require('../../../utils/logger');
@@ -12,47 +13,125 @@ const logger = require('../../../utils/logger');
  */
 exports.getDashboard = catchAsync(async (req, res) => {
   const applicantId = req.user._id;
+  const includeRecommendations =
+    !['0', 'false'].includes(String(req.query.includeRecommendations));
 
-  // Get applicant's applications
-  const applications = await JobApplication.find({ applicantId, isDeleted: false })
-    .populate('jobId', 'title sport category status applicationDeadline')
-    .populate('clubId', 'firstName lastName')
-    .sort({ createdAt: -1 })
-    .limit(10)
-    .lean();
+  const applicantObjectId = new mongoose.Types.ObjectId(applicantId);
 
-  // Get statistics
+  const [recentApplications, statusBuckets] = await Promise.all([
+    JobApplication.find({ applicantId, isDeleted: false })
+      .populate('jobId', 'title titleAr sport category status applicationDeadline')
+      .populate('clubId', 'firstName lastName clubName logo')
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean(),
+    JobApplication.aggregate([
+      { $match: { applicantId: applicantObjectId, isDeleted: false } },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+    ]),
+  ]);
+
   const stats = {
-    totalApplications: await JobApplication.countDocuments({ applicantId, isDeleted: false }),
-    pending: await JobApplication.countDocuments({ applicantId, status: 'new', isDeleted: false }),
-    underReview: await JobApplication.countDocuments({ applicantId, status: 'under_review', isDeleted: false }),
-    interviewed: await JobApplication.countDocuments({ applicantId, status: 'interviewed', isDeleted: false }),
-    offered: await JobApplication.countDocuments({ applicantId, status: 'offered', isDeleted: false }),
-    accepted: await JobApplication.countDocuments({ applicantId, status: 'accepted', isDeleted: false }),
-    rejected: await JobApplication.countDocuments({ applicantId, status: 'rejected', isDeleted: false })
+    totalApplications: 0,
+    pending: 0,
+    underReview: 0,
+    interviewed: 0,
+    offered: 0,
+    accepted: 0,
+    rejected: 0,
+    withdrawn: 0,
+    hired: 0,
   };
 
-  // Get recommended jobs (active jobs not yet applied to)
-  const appliedJobIds = await JobApplication.find({ applicantId, isDeleted: false })
-    .distinct('jobId');
+  for (const bucket of statusBuckets) {
+    stats.totalApplications += bucket.count;
+    switch (bucket._id) {
+      case 'new':
+        stats.pending = bucket.count;
+        break;
+      case 'under_review':
+        stats.underReview = bucket.count;
+        break;
+      case 'interviewed':
+        stats.interviewed = bucket.count;
+        break;
+      case 'offered':
+        stats.offered = bucket.count;
+        break;
+      case 'accepted':
+        stats.accepted = bucket.count;
+        break;
+      case 'rejected':
+        stats.rejected = bucket.count;
+        break;
+      case 'withdrawn':
+        stats.withdrawn = bucket.count;
+        break;
+      case 'hired':
+        stats.hired = bucket.count;
+        break;
+      default:
+        break;
+    }
+  }
 
-  const recommendedJobs = await Job.find({
-    _id: { $nin: appliedJobIds },
-    isDeleted: false,
-    status: 'active'
-  })
-    .populate('clubId', 'firstName lastName')
-    .sort({ createdAt: -1 })
-    .limit(5)
-    .lean();
+  let recommendedJobs = [];
+  if (includeRecommendations) {
+    const appliedJobIds = await JobApplication.distinct('jobId', {
+      applicantId,
+      isDeleted: false,
+    });
+
+    recommendedJobs = await Job.find({
+      _id: { $nin: appliedJobIds },
+      isDeleted: false,
+      status: 'active',
+    })
+      .populate('clubId', 'firstName lastName clubName logo')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+  }
 
   res.status(200).json({
     success: true,
     data: {
       stats,
-      recentApplications: applications,
+      recentApplications,
       recommendedJobs
     }
+  });
+});
+
+/**
+ * @route   GET /api/v1/applicant/recommendations
+ * @desc    Get recommended jobs for applicant
+ * @access  Private (applicant)
+ */
+exports.getRecommendedJobs = catchAsync(async (req, res) => {
+  const applicantId = req.user._id;
+  const { limit = 5 } = req.query;
+
+  const appliedJobIds = await JobApplication.distinct('jobId', {
+    applicantId,
+    isDeleted: false,
+  });
+
+  const recommendedJobs = await Job.find({
+    _id: { $nin: appliedJobIds },
+    isDeleted: false,
+    status: 'active',
+  })
+    .populate('clubId', 'firstName lastName clubName logo')
+    .sort({ createdAt: -1 })
+    .limit(parseInt(limit))
+    .lean();
+
+  res.status(200).json({
+    success: true,
+    data: {
+      recommendedJobs,
+    },
   });
 });
 

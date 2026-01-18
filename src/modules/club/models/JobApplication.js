@@ -286,6 +286,8 @@ const jobApplicationSchema = new mongoose.Schema({
 jobApplicationSchema.index({ jobId: 1, applicantId: 1 }, { unique: true });
 jobApplicationSchema.index({ clubId: 1, status: 1 });
 jobApplicationSchema.index({ applicantId: 1, status: 1 });
+jobApplicationSchema.index({ applicantId: 1, isDeleted: 1, status: 1 });
+jobApplicationSchema.index({ applicantId: 1, isDeleted: 1, createdAt: -1 });
 jobApplicationSchema.index({ createdAt: -1 });
 jobApplicationSchema.index({ 'interview.scheduledDate': 1 });
 
