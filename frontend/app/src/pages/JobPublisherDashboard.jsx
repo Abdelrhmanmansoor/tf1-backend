@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { jobPublisherService } from '../config/api';
 import '../styles/AdminDashboard.css';
 import InterviewsTab from '../components/interviews/InterviewsTab';
+import CompanyProfileTab from '../components/publisher/CompanyProfileTab';
 import SiteTour from '../components/tour/SiteTour';
 
 const JobPublisherDashboard = () => {
@@ -558,6 +559,13 @@ const JobPublisherDashboard = () => {
         >
           📅 المقابلات
         </button>
+        <button
+          data-tour="profile"
+          className={`tab-button ${activeTab === 'profile' ? 'active' : ''}`}
+          onClick={() => setActiveTab('profile')}
+        >
+          🏢 بروفايل الشركة
+        </button>
       </div>
 
       <div className="admin-content">
@@ -566,6 +574,7 @@ const JobPublisherDashboard = () => {
         {activeTab === 'jobs' && renderJobs()}
         {activeTab === 'applications' && renderApplications()}
         {activeTab === 'interviews' && <InterviewsTab />}
+        {activeTab === 'profile' && <CompanyProfileTab />}
       </div>
 
       {showApplicationModal && renderApplicationModal()}
@@ -594,6 +603,11 @@ const JobPublisherDashboard = () => {
             selector: '[data-tour="interviews"]',
             title: 'المقابلات',
             content: 'عرض المقابلات المجدولة وإرسال إشعارات للمتقدمين عبر البريد الإلكتروني أو الرسائل النصية أو الواتساب.'
+          },
+          {
+            selector: '[data-tour="profile"]',
+            title: 'بروفايل الشركة',
+            content: 'تحديث معلومات شركتك، رفع الشعار، وإضافة بيانات التواصل.'
           }
         ]}
         onComplete={() => console.log('Publisher tour completed!')}

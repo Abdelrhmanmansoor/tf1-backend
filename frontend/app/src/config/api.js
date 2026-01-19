@@ -267,7 +267,10 @@ export const jobPublisherService = {
     api.put(`/job-publisher/applications/${applicationId}/status`, { status, message }),
   getProfile: () => api.get('/job-publisher/profile'),
   updateProfile: (data) => api.put('/job-publisher/profile', data),
-  createProfile: (data) => api.post('/job-publisher/profile', data),
+  createProfile: (data) => api.post('/job-publisher/profile/create', data),
+  uploadLogo: (formData) => api.post('/job-publisher/profile/upload-logo', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
 };
 
 export const applicantService = {
