@@ -182,22 +182,17 @@ const CompanyProfileTab = () => {
       const formDataUpload = new FormData();
       formDataUpload.append('logo', file);
 
-      const res = await fetch('/api/v1/job-publisher/profile/upload-logo', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formDataUpload
-      });
+      const res = await jobPublisherService.uploadLogo(formDataUpload);
 
-      const data = await res.json();
-
-      if (data.success) {
-        setLogoPreview(data.data?.logoUrl || data.logoUrl);
+      if (res.data?.success) {
+        const logoUrl = res.data?.data?.logoUrl || res.data?.logoUrl;
+        setLogoPreview(logoUrl);
         setSuccess('تم رفع الشعار بنجاح');
+        // Refresh profile to get updated logo
+        fetchProfile();
         setTimeout(() => setSuccess(''), 3000);
       } else {
-        setError(data.messageAr || data.message || 'فشل رفع الشعار');
+        setError(res.data?.messageAr || res.data?.message || 'فشل رفع الشعار');
         // Revert preview on failure
         if (profile?.companyLogo) {
           setLogoPreview(profile.companyLogo);
@@ -206,7 +201,10 @@ const CompanyProfileTab = () => {
         }
       }
     } catch (err) {
-      setError('حدث خطا اثناء رفع الشعار');
+      const errorMsg = err.response?.data?.messageAr ||
+                       err.response?.data?.message ||
+                       'حدث خطا اثناء رفع الشعار';
+      setError(errorMsg);
       if (profile?.companyLogo) {
         setLogoPreview(profile.companyLogo);
       } else {
