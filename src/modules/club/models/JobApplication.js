@@ -17,8 +17,34 @@ const jobApplicationSchema = new mongoose.Schema({
   applicantId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false, // Optional for guest applications
     index: true
+  },
+
+  // === GUEST APPLICATION (Quick Apply) ===
+  isGuestApplication: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  guestInfo: {
+    fullName: {
+      type: String,
+      trim: true
+    },
+    email: {
+      type: String,
+      lowercase: true,
+      trim: true
+    },
+    phone: {
+      type: String,
+      trim: true
+    },
+    city: {
+      type: String,
+      trim: true
+    }
   },
 
   // === APPLICATION STATUS ===
@@ -283,13 +309,23 @@ const jobApplicationSchema = new mongoose.Schema({
 });
 
 // === INDEXES ===
-jobApplicationSchema.index({ jobId: 1, applicantId: 1 }, { unique: true });
+// Unique index for registered user applications (applicantId is set)
+jobApplicationSchema.index(
+  { jobId: 1, applicantId: 1 },
+  { unique: true, partialFilterExpression: { applicantId: { $exists: true, $ne: null } } }
+);
+// Unique index for guest applications (prevent duplicate by email)
+jobApplicationSchema.index(
+  { jobId: 1, 'guestInfo.email': 1 },
+  { unique: true, partialFilterExpression: { isGuestApplication: true } }
+);
 jobApplicationSchema.index({ clubId: 1, status: 1 });
 jobApplicationSchema.index({ applicantId: 1, status: 1 });
 jobApplicationSchema.index({ applicantId: 1, isDeleted: 1, status: 1 });
 jobApplicationSchema.index({ applicantId: 1, isDeleted: 1, createdAt: -1 });
 jobApplicationSchema.index({ createdAt: -1 });
 jobApplicationSchema.index({ 'interview.scheduledDate': 1 });
+jobApplicationSchema.index({ isGuestApplication: 1, clubId: 1 });
 
 // === VIRTUALS ===
 jobApplicationSchema.virtual('daysSinceApplication').get(function() {
@@ -574,34 +610,50 @@ jobApplicationSchema.statics.getApplicantApplications = async function(applicant
 // Before save - create applicant snapshot if new
 jobApplicationSchema.pre('save', async function(next) {
   if (this.isNew) {
-    const User = mongoose.model('User');
-    const applicant = await User.findById(this.applicantId);
-
-    if (applicant) {
+    // Handle guest applications
+    if (this.isGuestApplication && this.guestInfo) {
       this.applicantSnapshot = {
-        fullName: applicant.fullName,
-        email: applicant.email,
-        phoneNumber: applicant.phoneNumber,
-        location: applicant.location,
-        role: applicant.roles && applicant.roles.length > 0 ? applicant.roles[applicant.roles.length - 1] : 'user'
+        fullName: this.guestInfo.fullName,
+        email: this.guestInfo.email,
+        phoneNumber: this.guestInfo.phone,
+        phone: this.guestInfo.phone,
+        location: {
+          city: this.guestInfo.city,
+          country: 'Saudi Arabia'
+        },
+        role: 'guest'
       };
+    } else if (this.applicantId) {
+      // Handle registered user applications
+      const User = mongoose.model('User');
+      const applicant = await User.findById(this.applicantId);
 
-      // Get additional info based on role
-      if (applicant.roles && applicant.roles.includes('player')) {
-        const PlayerProfile = mongoose.model('PlayerProfile');
-        const profile = await PlayerProfile.findOne({ userId: this.applicantId });
-        if (profile) {
-          this.applicantSnapshot.sport = profile.primarySport;
-          this.applicantSnapshot.position = profile.position;
-          this.applicantSnapshot.rating = profile.ratingStats?.averageRating;
-        }
-      } else if (applicant.roles && applicant.roles.includes('coach')) {
-        const CoachProfile = mongoose.model('CoachProfile');
-        const profile = await CoachProfile.findOne({ userId: this.applicantId });
-        if (profile) {
-          this.applicantSnapshot.sport = profile.primarySport;
-          this.applicantSnapshot.experienceYears = profile.experienceYears;
-          this.applicantSnapshot.rating = profile.ratingStats?.averageRating;
+      if (applicant) {
+        this.applicantSnapshot = {
+          fullName: applicant.fullName,
+          email: applicant.email,
+          phoneNumber: applicant.phoneNumber,
+          location: applicant.location,
+          role: applicant.roles && applicant.roles.length > 0 ? applicant.roles[applicant.roles.length - 1] : 'user'
+        };
+
+        // Get additional info based on role
+        if (applicant.roles && applicant.roles.includes('player')) {
+          const PlayerProfile = mongoose.model('PlayerProfile');
+          const profile = await PlayerProfile.findOne({ userId: this.applicantId });
+          if (profile) {
+            this.applicantSnapshot.sport = profile.primarySport;
+            this.applicantSnapshot.position = profile.position;
+            this.applicantSnapshot.rating = profile.ratingStats?.averageRating;
+          }
+        } else if (applicant.roles && applicant.roles.includes('coach')) {
+          const CoachProfile = mongoose.model('CoachProfile');
+          const profile = await CoachProfile.findOne({ userId: this.applicantId });
+          if (profile) {
+            this.applicantSnapshot.sport = profile.primarySport;
+            this.applicantSnapshot.experienceYears = profile.experienceYears;
+            this.applicantSnapshot.rating = profile.ratingStats?.averageRating;
+          }
         }
       }
     }

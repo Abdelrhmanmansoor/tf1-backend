@@ -1456,6 +1456,319 @@ exports.downloadResumeEnhanced = async (req, res) => {
 };
 
 /**
+ * @route   POST /api/v1/jobs/:id/quick-apply
+ * @desc    Quick Apply to a job without login (guest application)
+ * @access  Public (only for jobs with quickApplyEnabled)
+ */
+exports.quickApply = async (req, res) => {
+  try {
+    const { id: jobId } = req.params;
+    const {
+      fullName,
+      email,
+      phone,
+      city,
+      coverLetter
+    } = req.body;
+
+    // Validate required fields
+    if (!fullName || !email || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Full name, email, and phone are required',
+        messageAr: 'الاسم الكامل والبريد الإلكتروني ورقم الجوال مطلوبة',
+        code: 'MISSING_REQUIRED_FIELDS'
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /.+\@.+\..+/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format',
+        messageAr: 'صيغة البريد الإلكتروني غير صحيحة',
+        code: 'INVALID_EMAIL'
+      });
+    }
+
+    // Find the job
+    const job = await Job.findOne({
+      _id: jobId,
+      isDeleted: false,
+      status: 'active',
+    }).populate('clubId', 'firstName lastName email');
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job not found or no longer active',
+        messageAr: 'الوظيفة غير موجودة أو لم تعد متاحة',
+        code: 'JOB_NOT_FOUND'
+      });
+    }
+
+    // Check if quick apply is enabled for this job
+    if (!job.settings?.quickApplyEnabled) {
+      return res.status(403).json({
+        success: false,
+        message: 'Quick apply is not enabled for this job. Please login to apply.',
+        messageAr: 'التقديم السريع غير متاح لهذه الوظيفة. يرجى تسجيل الدخول للتقديم.',
+        code: 'QUICK_APPLY_DISABLED'
+      });
+    }
+
+    // Check if deadline has passed
+    if (job.isExpired) {
+      return res.status(400).json({
+        success: false,
+        message: 'Application deadline has passed',
+        messageAr: 'انتهت مهلة التقديم',
+        code: 'DEADLINE_PASSED'
+      });
+    }
+
+    // Check for duplicate guest application (same email + job)
+    const existingApplication = await JobApplication.findOne({
+      jobId,
+      isGuestApplication: true,
+      'guestInfo.email': email.toLowerCase(),
+      isDeleted: false
+    });
+
+    if (existingApplication) {
+      return res.status(409).json({
+        success: false,
+        message: 'You have already applied to this job with this email',
+        messageAr: 'لقد قمت بالتقديم على هذه الوظيفة مسبقاً بهذا البريد الإلكتروني',
+        code: 'ALREADY_APPLIED'
+      });
+    }
+
+    // Handle resume upload if provided (LOCAL STORAGE)
+    let resumeAttachment = null;
+    if (req.file) {
+      try {
+        const apiBaseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const relativePath = `/uploads/resumes/${req.file.filename}`;
+        const fullFileUrl = `${apiBaseUrl}${relativePath}`;
+        const fileExt = path.extname(req.file.originalname).toLowerCase();
+
+        resumeAttachment = {
+          type: 'resume',
+          name: req.file.originalname,
+          originalName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          format: fileExt.replace('.', ''),
+          url: fullFileUrl,
+          localPath: req.file.path,
+          size: req.file.size,
+          uploadedAt: new Date(),
+        };
+
+        console.log(
+          `📄 Guest resume uploaded locally: ${req.file.originalname} (${req.file.size} bytes)`
+        );
+      } catch (uploadError) {
+        console.error('Guest resume upload error:', uploadError);
+        // Continue without resume - it's optional for quick apply
+      }
+    }
+
+    // Create guest job application
+    const application = new JobApplication({
+      jobId,
+      clubId: job.clubId._id,
+      isGuestApplication: true,
+      guestInfo: {
+        fullName: fullName.trim(),
+        email: email.toLowerCase().trim(),
+        phone: phone.trim(),
+        city: city?.trim() || ''
+      },
+      coverLetter: coverLetter || '',
+      attachments: resumeAttachment ? [resumeAttachment] : [],
+      status: 'new',
+      source: 'direct'
+    });
+
+    await application.save();
+
+    // Update job application statistics
+    await job.updateApplicationStats();
+
+    // Send notification to club
+    try {
+      const { saveNotification } = require('../middleware/notificationHandler');
+      const ClubProfile = require('../modules/club/models/ClubProfile');
+      const clubProfile = await ClubProfile.findOne({ userId: job.clubId._id });
+      const clubName = clubProfile?.clubName || 'النادي';
+
+      const { notification, source } = await saveNotification({
+        userId: job.clubId._id,
+        userRole: 'club',
+        type: 'new_application',
+        title: 'New Quick Application',
+        titleAr: 'طلب توظيف سريع جديد',
+        message: `${fullName} applied for ${job.title} via Quick Apply.`,
+        messageAr: `${fullName} تقدم لوظيفة ${job.titleAr || job.title} عبر التقديم السريع.`,
+        relatedTo: {
+          entityType: 'job_application',
+          entityId: application._id,
+        },
+        actionUrl: `/club/applications/${application._id}`,
+        priority: 'normal',
+        metadata: {
+          isGuestApplication: true,
+          guestEmail: email
+        }
+      });
+
+      console.log(`📢 Quick Apply notification saved to ${source} for club ${job.clubId._id}`);
+
+      // Send real-time via Socket.io
+      const io = req.app.get('io');
+      if (io) {
+        io.to(job.clubId._id.toString()).emit('new_notification', {
+          _id: notification._id,
+          type: 'job_application',
+          notificationType: 'quick_application',
+          applicationId: application._id,
+          jobId: job._id,
+          jobTitle: job.title,
+          jobTitleAr: job.titleAr,
+          applicantName: fullName,
+          isGuestApplication: true,
+          clubName,
+          title: notification.title,
+          titleAr: notification.titleAr,
+          message: notification.message,
+          messageAr: notification.messageAr,
+          actionUrl: notification.actionUrl,
+          userId: job.clubId._id,
+          status: 'new',
+          priority: 'normal',
+          createdAt: notification.createdAt,
+          isRead: false,
+          storedIn: source,
+        });
+        console.log(`🔔 Real-time quick apply notification sent to club ${job.clubId._id}`);
+      }
+    } catch (notificationError) {
+      console.error('Error sending quick apply notification to club:', notificationError);
+    }
+
+    // Send confirmation email to guest applicant
+    try {
+      const emailService = require('../utils/email');
+      const ClubProfile = require('../modules/club/models/ClubProfile');
+      const clubProfile = await ClubProfile.findOne({ userId: job.clubId._id });
+
+      await emailService.sendQuickApplyConfirmationEmail(
+        { fullName, email },
+        job.titleAr || job.title,
+        clubProfile?.clubName || 'جهة التوظيف',
+        application.createdAt
+      );
+    } catch (emailError) {
+      console.error('⚠️ Quick apply email send error (non-critical):', emailError.message);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Application submitted successfully',
+      messageAr: 'تم إرسال طلبك بنجاح',
+      application: {
+        _id: application._id,
+        jobId: application.jobId,
+        status: application.status,
+        appliedAt: application.createdAt,
+        isGuestApplication: true
+      }
+    });
+  } catch (error) {
+    console.error('Quick apply error:', error);
+
+    // Handle duplicate key error (if partial index constraint fails)
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'You have already applied to this job with this email',
+        messageAr: 'لقد قمت بالتقديم على هذه الوظيفة مسبقاً بهذا البريد الإلكتروني',
+        code: 'ALREADY_APPLIED'
+      });
+    }
+
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => ({
+        field: err.path,
+        message: err.message,
+      }));
+
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        messageAr: 'فشل التحقق من البيانات',
+        errors,
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Error submitting application',
+      messageAr: 'حدث خطأ أثناء إرسال الطلب',
+      error: error.message,
+      code: 'APPLICATION_ERROR'
+    });
+  }
+};
+
+/**
+ * @route   GET /api/v1/jobs/:id/quick-apply-status
+ * @desc    Check if quick apply is enabled for a job
+ * @access  Public
+ */
+exports.checkQuickApplyStatus = async (req, res) => {
+  try {
+    const { id: jobId } = req.params;
+
+    const job = await Job.findOne({
+      _id: jobId,
+      isDeleted: false
+    }).select('settings.quickApplyEnabled title titleAr status');
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job not found',
+        messageAr: 'الوظيفة غير موجودة',
+        code: 'JOB_NOT_FOUND'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        jobId: job._id,
+        title: job.title,
+        titleAr: job.titleAr,
+        quickApplyEnabled: job.settings?.quickApplyEnabled || false,
+        isActive: job.status === 'active'
+      }
+    });
+  } catch (error) {
+    console.error('Check quick apply status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking quick apply status',
+      messageAr: 'خطأ في التحقق من حالة التقديم السريع',
+      error: error.message
+    });
+  }
+};
+
+/**
  * @route   GET /api/v1/jobs/my-jobs
  * @desc    Get jobs created by authenticated user (job-publisher or club)
  * @access  Private

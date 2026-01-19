@@ -227,6 +227,86 @@ class EmailService {
     }
   }
 
+  async sendQuickApplyConfirmationEmail(guestApplicant, jobTitle, clubName, applicationDate) {
+    if (!this.transporter) {
+      logger.warn('Email service not configured - skipping quick apply confirmation email');
+      return false;
+    }
+
+    const { fullName, email } = guestApplicant;
+    const formattedDate = new Date(applicationDate).toLocaleDateString('ar-SA', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const mailOptions = {
+      from: this.getFromAddress(),
+      to: email,
+      subject: 'تم استلام طلبك - Application Received | TF1',
+      html: `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+          <div style="background-color: #ffffff; border-radius: 10px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            ${this.getEmailHeader()}
+
+            <!-- English Content -->
+            <div style="margin-bottom: 40px; border-bottom: 2px solid #f0f0f0; padding-bottom: 30px;">
+              <h2 style="color: #333; font-size: 24px; margin-bottom: 20px;">Quick Application Received</h2>
+              <p style="color: #555; font-size: 16px; line-height: 1.6;">Dear ${fullName},</p>
+              <p style="color: #555; font-size: 16px; line-height: 1.6;">Thank you for your quick application for the position of <strong>${jobTitle}</strong> at <strong>${clubName}</strong>. Your application has been successfully received.</p>
+
+              <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p style="color: #333; font-weight: bold; margin: 0 0 10px 0;">Application Details:</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>Position:</strong> ${jobTitle}</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>Organization:</strong> ${clubName}</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>Status:</strong> Under Review</p>
+              </div>
+
+              <p style="color: #666; font-size: 14px;">The employer will review your application and may contact you via the email or phone number you provided.</p>
+
+              <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                <p style="color: #856404; font-size: 14px; margin: 0;"><strong>Note:</strong> To track your applications and access more features, consider creating an account on our platform.</p>
+              </div>
+            </div>
+
+            <!-- Arabic Content -->
+            <div style="direction: rtl; text-align: right;">
+              <h2 style="color: #333; font-size: 24px; margin-bottom: 20px;">تم استلام طلبك السريع</h2>
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">عزيزنا ${fullName}،</p>
+              <p style="color: #555; font-size: 16px; line-height: 1.8;">شكراً لتقديمك السريع على وظيفة <strong>${jobTitle}</strong> في <strong>${clubName}</strong>. تم استقبال طلبك بنجاح.</p>
+
+              <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p style="color: #333; font-weight: bold; margin: 0 0 10px 0;">تفاصيل الطلب:</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>الوظيفة:</strong> ${jobTitle}</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>المؤسسة:</strong> ${clubName}</p>
+                <p style="color: #666; font-size: 14px; margin: 5px 0;"><strong>الحالة:</strong> قيد المراجعة</p>
+              </div>
+
+              <p style="color: #666; font-size: 14px;">سيقوم صاحب العمل بمراجعة طلبك وقد يتواصل معك عبر البريد الإلكتروني أو رقم الجوال الذي قدمته.</p>
+
+              <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-right: 4px solid #ffc107;">
+                <p style="color: #856404; font-size: 14px; margin: 0;"><strong>ملاحظة:</strong> لتتبع طلباتك والوصول إلى المزيد من الميزات، ننصحك بإنشاء حساب على منصتنا.</p>
+              </div>
+            </div>
+
+            ${this.getEmailFooter()}
+          </div>
+        </div>
+      `,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      logger.info(`✅ Quick apply confirmation email sent to ${email}`);
+      return true;
+    } catch (error) {
+      logger.error('❌ Failed to send quick apply confirmation email:', error);
+      return false;
+    }
+  }
+
   async sendApplicationEmail(applicant, jobTitle, clubName, jobLocation, applicationDate) {
     if (!this.transporter) {
       logger.warn('Email service not configured - skipping application email');

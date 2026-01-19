@@ -247,6 +247,11 @@ const jobSchema = new mongoose.Schema({
     sendAutoResponses: {
       type: Boolean,
       default: true
+    },
+    // Quick Apply - allows applications without login
+    quickApplyEnabled: {
+      type: Boolean,
+      default: false
     }
   },
 

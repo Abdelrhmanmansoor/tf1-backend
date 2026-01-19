@@ -82,6 +82,28 @@ router.post(
 );
 
 /**
+ * @route   GET /api/v1/jobs/:id/quick-apply-status
+ * @desc    Check if quick apply is enabled for a job
+ * @access  Public
+ */
+router.get(
+  '/:id/quick-apply-status',
+  jobsController.checkQuickApplyStatus
+);
+
+/**
+ * @route   POST /api/v1/jobs/:id/quick-apply
+ * @desc    Quick Apply to a job without login (guest application)
+ * @access  Public (only for jobs with quickApplyEnabled)
+ */
+router.post(
+  '/:id/quick-apply',
+  uploadResumeLocal,
+  handleLocalUploadError,
+  jobsController.quickApply
+);
+
+/**
  * @route   POST /api/v1/jobs/:id/apply
  * @desc    Apply to a job (LinkedIn-style easy apply)
  * @access  Private (player, coach, specialist)
