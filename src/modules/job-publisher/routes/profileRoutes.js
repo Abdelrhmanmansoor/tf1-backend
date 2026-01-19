@@ -3,8 +3,8 @@ const router = express.Router();
 const { authenticate, authorize } = require('../../../middleware/auth');
 const rateLimit = require('express-rate-limit');
 const profileController = require('../controllers/jobPublisherProfileController');
+const { uploadLogo, processLogo, handleUploadError } = require('../../../middleware/uploadLogo');
 const {
-  companyLogoUploadService,
   profileImageUploadService,
   documentUploadService
 } = require('../../../services/secureFileUpload');
@@ -23,7 +23,6 @@ const uploadRateLimiter = rateLimit({
 });
 
 // Create secure upload middlewares
-const logoUpload = companyLogoUploadService.createImageUploadMiddleware();
 const photoUpload = profileImageUploadService.createImageUploadMiddleware({ maxFiles: 5 });
 const documentUpload = documentUploadService.createDocumentUploadMiddleware();
 
@@ -37,13 +36,16 @@ router.post('/create', profileController.createProfile);
 // Get profile
 router.get('/', profileController.getProfile);
 
-// Update profile
+// Update profile (PUT is standard, POST added for frontend compatibility)
 router.put('/', profileController.updateProfile);
+router.post('/', profileController.updateProfile);
 
 // Upload company logo (secure, rate-limited)
 router.post('/upload-logo',
   uploadRateLimiter,
-  logoUpload.single('logo'),
+  uploadLogo,
+  processLogo,
+  handleUploadError,
   profileController.uploadLogo
 );
 

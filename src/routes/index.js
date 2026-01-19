@@ -34,6 +34,14 @@ router.use('/search', searchRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/global', globalRoutes);
+
+// Upload routes - direct alias for frontend compatibility
+// Maps /api/v1/upload/image to the global upload handler
+const globalController = require('../controllers/globalController');
+const { authenticate } = require('../middleware/auth');
+router.post('/upload/image', authenticate, globalController.upload.single('file'), globalController.uploadImage);
+router.post('/upload/video', authenticate, globalController.upload.single('file'), globalController.uploadVideo);
+router.post('/upload/document', authenticate, globalController.upload.single('file'), globalController.uploadDocument);
 router.use('/cv', cvRoutes);
 router.use('/ai-assistant', aiAssistantRoutes);
 router.use('/jobs', jobsRoutes);
